@@ -145,7 +145,6 @@ select,input{font-family:inherit;font-size:20px;padding:12px 14px;border-radius:
   </div>
   <div class="tctl">
     <button id="bPrev">◀ 이전</button>
-    <button id="bReveal">정답 공개</button>
     <button class="main" id="bNext">시작하기 ▶</button>
     <span class="hint">스페이스바: 다음 단계</span>
   </div>
@@ -179,7 +178,7 @@ const Q=[
 const $=id=>document.getElementById(id);
 const show=id=>{['landing','tsetup','scode','teacher','student'].forEach(x=>$(x).classList.toggle('hidden',x!==id))};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const PEERCFG={debug:0,config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]}};
+const PEERCFG={debug:0,config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:['turn:openrelay.metered.ca:80','turn:openrelay.metered.ca:443','turn:openrelay.metered.ca:443?transport=tcp'],username:'openrelayproject',credential:'openrelayproject'}]}};
 for(let i=1;i<=15;i++){const o=document.createElement('option');o.textContent=i+'반';$('klass').appendChild(o)}
 
 /* ================= TEACHER ================= */
@@ -242,14 +241,13 @@ function prevStep(){
   saveT();renderT();broadcast();
 }
 $('bNext').onclick=nextStep;$('bPrev').onclick=prevStep;
-$('bReveal').onclick=()=>{if(T.phase==='q'){T.phase='reveal';saveT();renderT();broadcast()}};
 
 function joinURL(){return location.origin+location.pathname+'?r='+T.code}
 function renderT(){
   const ids=Object.keys(T.stu);const on=ids.filter(k=>T.stu[k].online).length;
   $('tCnt').textContent=`${ids.length}명 입장`+(on<ids.length?` (접속 ${on})`:'');
   const q=Q[T.qi];
-  $('bPrev').disabled=T.phase==='lobby';$('bReveal').classList.toggle('hidden',T.phase!=='q');
+  $('bPrev').disabled=T.phase==='lobby';
   $('bNext').textContent=T.phase==='lobby'?'시작하기 ▶':T.phase==='q'?'정답 공개 ▶':T.phase==='reveal'?(T.qi<Q.length-1?'다음 문제 ▶':'최종 결과 ▶'):'끝!';
   $('qside').classList.toggle('hidden',!q||T.phase==='end');
   if(q&&T.phase!=='end'){
@@ -264,7 +262,9 @@ function renderT(){
   layout();
 }
 function slots(rect,n,size){
-  const cols=Math.max(1,Math.floor((rect.w-10)/size));const out=[];
+  // shrink avatars when a zone gets crowded so everyone still fits
+  while(size>40){const c=Math.max(1,Math.floor((rect.w-10)/size));if(Math.ceil(n/c)*(size+4)<=rect.h)break;size-=4}
+  const cols=Math.max(1,Math.floor((rect.w-10)/size));const out=[];out.scale=size/70;
   for(let i=0;i<n;i++){const c=i%cols,r=Math.floor(i/cols);const rowCount=Math.min(cols,n-r*cols);const off=(rect.w-rowCount*size)/2;
     out.push({x:rect.x+off+c*size,y:rect.y+r*(size+4)})}
   return out;
@@ -285,7 +285,7 @@ function layout(){
     } else {
       const sorted=ids.slice().sort((a,b)=>score(T.stu[b])-score(T.stu[a]));
       const pod=document.createElement('div');pod.className='podium';
-      const top=sorted.slice(0,3);const order=[1,0,2].filter(i=>top[i]);const hh=[180,240,140];const cols=['#9CA3AF','#F59E0B','#B45309'];
+      const top=sorted.slice(0,3);const order=[1,0,2].filter(i=>top[i]);const hh=[240,180,130];const cols=['#F59E0B','#9CA3AF','#B45309'];
       pod.innerHTML=order.map(i=>{const s=T.stu[top[i]];return `<div class="pod"><div class="e">${s.av}</div><div class="n">${esc(s.name)}</div><div class="s">${score(s)} / ${Q.length}</div><div class="b" style="height:${hh[i]}px;background:${cols[i]}">${i+1}</div></div>`}).join('');
       A.appendChild(pod);
       const perfect=ids.filter(k=>score(T.stu[k])===Q.length).map(k=>T.stu[k].name);
@@ -320,7 +320,7 @@ function layout(){
       if(!el){el=document.createElement('div');el.className='av';el.dataset.k=k;el.style.left=(W*0.5)+'px';el.style.top=(H*0.5)+'px';A.appendChild(el);el.offsetWidth}
       el.innerHTML=`<div class="e">${s.av}</div><div class="n">${esc(s.name)}</div>`;
       el.classList.remove('hidden');el.classList.toggle('off',!s.online);
-      el.style.left=sl[i].x+'px';el.style.top=sl[i].y+'px';
+      el.style.left=sl[i].x+'px';el.style.top=sl[i].y+'px';el.style.transform=sl.scale<1?`scale(${sl.scale})`:'';el.style.transformOrigin='0 0';
       if(G.win){if(!el.classList.contains('hop')){el.classList.add('hop')}}else el.classList.remove('hop');
     })}
   A.querySelectorAll('.av').forEach(e=>{if(!live.has(e.dataset.k))e.remove()});
