@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>AI 연구소 탈출 작전</title>
+<title>ALGO 보스전</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="https://unpkg.com/qrcode-generator@1.4.4/qrcode.js"></script>
 <style>
-:root{--bg:#F5F3FA;--card:#FFFFFF;--ink:#1F1A2E;--sub:#6B6585;--line:#E6E1F2;--soft:#F1ECFD;--p:#6C2BD9;--p2:#8B5CF6;--o:#FF6B1A;--t:#14B8A6;--pk:#E0457B;--b:#2563EB;--g:#16A34A;--r:#DC2626;--y:#FFE45C;
+:root{--bg:#F5F3FA;--card:#FFFFFF;--ink:#1F1A2E;--sub:#6B6585;--line:#E6E1F2;--soft:#F1ECFD;--p:#6C2BD9;--p2:#8B5CF6;--o:#FF6B1A;--t:#14B8A6;--pk:#E0457B;--g:#16A34A;--r:#E11D48;--y:#FFD43B;
 --font:"Noto Sans KR","Malgun Gothic",sans-serif}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%}
-body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:17px}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:17px;overflow-x:hidden}
 .hidden{display:none!important}
 button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
 button:focus-visible,input:focus-visible{outline:3px solid var(--p2);outline-offset:2px}
@@ -26,10 +26,10 @@ h1,h2,h3,p{margin:0}
 .card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 2px 10px rgba(40,20,90,.05)}
 .chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:5px 12px;font-weight:700;font-size:14px;background:var(--soft);color:var(--p)}
 .muted{color:var(--sub)}
-/* ===== landing / profile ===== */
+/* landing */
 .center{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:20px;text-align:center}
 .brand{display:flex;align-items:center;gap:12px}
-.brand .logo{width:54px;height:54px;border-radius:16px;background:var(--p);display:grid;place-items:center;color:#fff;font-size:28px}
+.brand .logo{width:54px;height:54px;border-radius:16px;background:var(--ink);display:grid;place-items:center;color:#fff;font-size:28px}
 .brand h1{font-size:clamp(28px,5vw,42px);font-weight:900;letter-spacing:-.02em}
 .formcard{width:min(460px,100%);padding:26px;display:flex;flex-direction:column;gap:12px}
 .formcard input{font:inherit;font-size:24px;text-align:center;border:2px solid var(--line);border-radius:12px;padding:12px;background:#fff;color:var(--ink)}
@@ -37,121 +37,113 @@ h1,h2,h3,p{margin:0}
 .avs{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}
 .av{aspect-ratio:1;font-size:26px;border-radius:10px;border:2px solid var(--line);background:#fff}
 .av.on{border-color:var(--p);background:var(--soft)}
-/* ===== host ===== */
+/* host */
 #host{min-height:100vh;display:flex;flex-direction:column}
 .hbar{display:flex;align-items:center;gap:14px;padding:14px 24px;background:#fff;border-bottom:1px solid var(--line)}
 .hbar .title{font-weight:900;font-size:20px}
 .code{font-weight:900;font-size:22px;letter-spacing:.12em;background:var(--ink);color:#fff;border-radius:10px;padding:4px 14px}
 .sp{flex:1}
-.phase{display:flex;align-items:center;gap:10px;font-weight:700}
-.timer{min-width:64px;text-align:center;font-weight:900;font-size:26px;color:var(--p)}
+.timer{font-weight:900;font-size:28px;color:var(--p);min-width:90px;text-align:right;font-variant-numeric:tabular-nums}
 .timer.low{color:var(--r)}
-.hmain{flex:1;display:grid;grid-template-columns:1fr 320px;gap:18px;padding:18px 24px}
-.alert{display:flex;align-items:center;gap:12px;padding:12px 18px}
-.alert .bot{width:44px;height:38px;border-radius:10px;border:3px solid var(--r);display:grid;place-items:center;flex:none}
-.alert .bot i{width:16px;height:16px;border-radius:50%;background:var(--r);box-shadow:0 0 10px var(--r);animation:blink 3s infinite}
-@keyframes blink{0%,92%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
-.meter{flex:1;height:12px;border-radius:999px;background:var(--soft);overflow:hidden}
-.meter i{display:block;height:100%;background:linear-gradient(90deg,var(--o),var(--r));transition:width .6s}
-.map{display:grid;grid-template-columns:repeat(5,1fr) 150px;gap:12px;margin-top:14px}
-.room{padding:14px;display:flex;flex-direction:column;gap:10px;min-height:max(340px,calc(100vh - 240px))}
-.room .rh{display:flex;align-items:center;gap:8px}
-.room .no{width:30px;height:30px;border-radius:9px;background:var(--soft);color:var(--p);display:grid;place-items:center;font-weight:900}
-.room .nm{font-weight:700;font-size:15px;line-height:1.25}
-.room .cl{font-size:12px;color:var(--sub)}
-.lt{margin-left:auto;width:30px;height:34px;border-radius:8px;border:2px dashed var(--line);display:grid;place-items:center;font-weight:900;color:#c9c1e3}
-.lt.on{border:2px solid var(--g);color:var(--g);background:#ecfdf3}
-.lanes{flex:1;display:flex;flex-direction:column;gap:6px}
-.lane{flex:1;display:flex;flex-wrap:wrap;align-content:flex-start;gap:4px;border-radius:10px;background:#FAF9FD;padding:6px 6px 6px;padding-top:20px;position:relative;min-height:46px;flex:1 0 auto}
-.lane::before{content:attr(data-s);position:absolute;right:6px;top:4px;font-size:11px;color:#b9b2d4;font-weight:700}
-.lane.door{background:#FFF4EC;border:1px dashed #ffc7a3}
-.lane.door::before{content:"🚪 문 앞";color:var(--o)}
-.bot2{display:flex;align-items:center;gap:4px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:2px 8px 2px 3px;font-size:12px;font-weight:700;max-width:120px;transition:transform .3s}
-.bot2 .e{font-size:18px}.bot2 .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bot2.moved{animation:hop .6s}
-@keyframes hop{0%{transform:translateY(0)}40%{transform:translateY(-8px)}100%{transform:translateY(0)}}
-.exitcol{background:linear-gradient(180deg,#ecfdf3,#fff);border-color:#bbf7d0}
-.exitcol .lanes .lane{background:transparent}
-.side{display:flex;flex-direction:column;gap:14px}
-.rank{padding:14px 16px;display:flex;flex-direction:column;gap:6px}
-.rank h3{font-size:16px;margin-bottom:4px}
-.rrow{display:grid;grid-template-columns:22px 26px 1fr auto;gap:8px;align-items:center;font-size:14px;padding:4px 0;border-bottom:1px solid #f3f0fa}
-.rrow b{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rrow .pg{font-size:12px;color:var(--sub)}
-.ctrl{padding:16px;display:flex;flex-direction:column;gap:10px}
-.ctrl .pt{font-weight:900;font-size:18px}
 .lobby{display:grid;grid-template-columns:360px 1fr;gap:20px;padding:20px 24px}
 .qrc{padding:20px;text-align:center;display:flex;flex-direction:column;gap:10px}
 .qrc svg{width:100%;height:auto}
-.qrc .big{font-size:56px;font-weight:900;letter-spacing:.12em}
+.qrc .bigc{font-size:56px;font-weight:900;letter-spacing:.12em}
 .qrc .u{font-size:13px;color:var(--sub);word-break:break-all}
 .crowd{display:flex;flex-wrap:wrap;gap:10px}
 .kid{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px 14px 4px 6px;font-weight:700;animation:pop .35s}
 .kid .e{font-size:26px}
 @keyframes pop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
-.howto{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-.howto div{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;font-size:14px;line-height:1.45}
-.howto b{display:block;font-size:22px;margin-bottom:4px}
-/* event overlay */
+.rules{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.rules div{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;font-size:16px;line-height:1.45}
+.rules b{display:block;font-size:34px;margin-bottom:6px}
+.rules strong{font-size:19px}
+.seg{display:flex;gap:6px;align-items:center}
+.seg button{padding:8px 14px;border-radius:10px;background:var(--soft);color:var(--p);font-weight:700}
+.seg button.on{background:var(--p);color:#fff}
+.battle{flex:1;display:grid;grid-template-columns:1fr 330px;gap:18px;padding:18px 24px}
+.stage{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;padding:22px 24px 26px;gap:16px}
+.hpwrap{width:100%;display:flex;flex-direction:column;gap:8px}
+.hpline{display:flex;align-items:center;gap:12px;font-weight:900}
+.hpline .nm{font-size:22px}.hpline .pc{margin-left:auto;font-size:22px;color:var(--r);font-variant-numeric:tabular-nums}
+.hp{position:relative;height:30px;border-radius:999px;background:#F3EFF9;overflow:hidden;border:1px solid var(--line)}
+.hp .fill{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#FF6B1A,#E11D48);transition:width .35s ease-out}
+.hp .ghost{position:absolute;inset:0 auto 0 0;background:#FECACA;transition:width 1.2s ease-out .3s}
+.hp .tick{position:absolute;top:0;bottom:0;width:2px;background:#fff}
+.letters{display:flex;gap:8px;justify-content:center}
+.letters i{font-style:normal;width:46px;height:52px;border-radius:12px;border:2px dashed var(--line);display:grid;place-items:center;font-weight:900;font-size:26px;color:#cfc8e6;background:#fff;transition:all .3s}
+.letters i.on{border:2px solid var(--g);color:var(--g);background:#ecfdf3;transform:scale(1.08)}
+.boss{position:relative;width:min(380px,60%);aspect-ratio:1;display:grid;place-items:center;margin-top:4px}
+.boss svg{width:100%;height:100%;filter:drop-shadow(0 18px 24px rgba(60,20,120,.18));animation:float 3s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.boss.hit svg{animation:shake .3s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-10px) rotate(-2deg)}75%{transform:translateX(10px) rotate(2deg)}}
+.boss.dead svg{animation:none;transform:rotate(-12deg) translateY(30px);opacity:.35;transition:all 1s}
+.dmg{position:absolute;font-weight:900;font-size:26px;color:var(--r);pointer-events:none;animation:up 1.1s ease-out forwards;white-space:nowrap;text-shadow:0 2px 0 #fff}
+.dmg.crit{font-size:38px;color:var(--o)}
+.dmg span{font-size:24px}
+@keyframes up{0%{opacity:0;transform:translateY(10px) scale(.6)}15%{opacity:1;transform:translateY(0) scale(1.1)}100%{opacity:0;transform:translateY(-90px) scale(1)}}
+.phasebanner{font-weight:700;color:var(--sub)}
+.phasebanner b{color:var(--p)}
+.side{display:flex;flex-direction:column;gap:14px}
+.rank{padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.rank h3{font-size:16px;margin-bottom:6px}
+.rrow{display:grid;grid-template-columns:22px 28px 1fr auto;gap:8px;align-items:center;font-size:15px;padding:5px 0;border-bottom:1px solid #f3f0fa}
+.rrow b{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rrow .v{font-weight:900;color:var(--r);font-variant-numeric:tabular-nums}
+.feed{padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-height:200px}
+.feed h3{font-size:16px;margin-bottom:4px}
+.feed div{font-size:14px;animation:pop .25s}
+.ctrl{padding:16px;display:flex;flex-direction:column;gap:10px}
 .ov{position:fixed;inset:0;background:rgba(20,10,40,.55);display:grid;place-items:center;z-index:20;animation:fade .2s}
 @keyframes fade{from{opacity:0}}
-.evcard{width:min(640px,92vw);padding:34px;text-align:center;display:flex;flex-direction:column;gap:12px;animation:pop .35s}
-.evcard .ic{font-size:80px}
-.evcard h2{font-size:34px;font-weight:900}
-.evcard .who{font-size:18px;color:var(--sub);line-height:1.5}
+.endcard{width:min(860px,94vw);padding:34px;text-align:center;display:flex;flex-direction:column;gap:12px;animation:pop .35s}
+.endcard .ic{font-size:72px}
+.endcard h2{font-size:36px;font-weight:900}
+.endcard .who{font-size:18px;color:var(--sub);line-height:1.5}
 .podium{display:flex;align-items:flex-end;justify-content:center;gap:16px;margin:10px 0}
-.pd{width:180px;border-radius:16px 16px 0 0;display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px;color:var(--ink)}
-.pd .e{font-size:56px}.pd b{font-size:18px}.pd .rk{font-size:40px;font-weight:900}
-/* ===== student ===== */
+.pd{width:180px;border-radius:16px 16px 0 0;display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px}
+.pd .e{font-size:54px}.pd b{font-size:18px}.pd .rk{font-size:36px;font-weight:900}.pd small{font-size:14px;color:var(--sub);font-weight:700}
+.flash{position:fixed;inset:0;pointer-events:none;background:radial-gradient(circle,rgba(255,212,59,.0),rgba(255,107,26,.25));animation:fl .5s forwards;z-index:15}
+@keyframes fl{from{opacity:1}to{opacity:0}}
+/* student */
 #student{min-height:100vh;display:flex;flex-direction:column;max-width:720px;margin:0 auto}
 .sbar{display:flex;align-items:center;gap:10px;padding:12px 16px}
 .sbar .me{font-size:30px}.sbar .nm{font-weight:900;font-size:18px;flex:1}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 16px}
-.stat.wide{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between}
-.stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+.mini{padding:0 16px;display:flex;flex-direction:column;gap:6px}
+.mini .hp{height:16px}
+.mini .row{display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:var(--sub)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:10px 16px 0}
+.stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 12px}
 .stat span{display:block;font-size:12px;color:var(--sub)}
-.stat b{font-size:20px;font-weight:900}
-.letters{display:flex;gap:4px}
-.letters i{font-style:normal;width:30px;height:32px;border-radius:6px;border:2px dashed var(--line);display:grid;place-items:center;font-weight:900;font-size:14px;color:#c9c1e3}
-.letters i.on{border:2px solid var(--g);color:var(--g);background:#ecfdf3}
+.stat b{font-size:22px;font-weight:900;font-variant-numeric:tabular-nums}
+.stat.combo b{color:var(--o)}
 .sbody{flex:1;padding:14px 16px 20px;display:flex;flex-direction:column;gap:12px}
-.ptitle{display:flex;align-items:center;justify-content:space-between}
-.ptitle{gap:10px}.ptitle h2{font-size:21px;font-weight:900;line-height:1.3}.ptitle .chip{flex:none}
-.energy{display:flex;gap:4px;flex-wrap:wrap}
-.energy i{width:22px;height:30px;border-radius:6px;background:var(--y);border:1px solid #e9c93a}
-.energy i.off{background:#eee;border-color:#ddd}
-.alloc{display:flex;flex-direction:column;gap:10px}
-.arow{display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;padding:12px 14px}
-.arow .ic{font-size:30px;text-align:center}
-.arow b{font-size:17px}.arow p{font-size:13px;color:var(--sub);margin-top:2px;line-height:1.4}
-.step{display:flex;align-items:center;gap:6px}
-.step button{width:40px;height:40px;border-radius:10px;background:var(--soft);color:var(--p);font-size:22px;font-weight:900}
-.step button:disabled{opacity:.35}
-.step span{min-width:30px;text-align:center;font-size:22px;font-weight:900}
-.qcard{padding:18px;font-size:20px;font-weight:700;line-height:1.45}
+.qtag{align-self:flex-start}
+.qcard{padding:20px;font-size:21px;font-weight:700;line-height:1.45}
 .opts{display:grid;gap:10px}
-.opt{text-align:left;background:#fff;border:2px solid var(--line);border-radius:14px;padding:14px 16px;font-size:18px;font-weight:500;display:flex;gap:12px;align-items:center}
-.opt:hover{border-color:var(--p2)}
+.opt{text-align:left;background:#fff;border:2px solid var(--line);border-radius:14px;padding:15px 16px;font-size:18px;font-weight:500;display:flex;gap:12px;align-items:center;transition:transform .08s}
+.opt:hover{border-color:var(--p2)}.opt:active{transform:scale(.99)}
 .opt .k{width:30px;height:30px;border-radius:8px;background:var(--soft);color:var(--p);display:grid;place-items:center;font-weight:900;flex:none}
-.opt.gone{opacity:.3;text-decoration:line-through;pointer-events:none}
 .opt.pick{border-color:var(--p);background:var(--soft)}
-.wait{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:30px 10px}
-.wait .e{font-size:84px}
-.wait h2{font-size:26px;font-weight:900}
-.log{display:flex;flex-direction:column;gap:8px;width:100%}
-.log div{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px;text-align:left;font-weight:500}
-.log .good{border-color:#bbf7d0;background:#f0fdf4}
-.log .bad{border-color:#fecaca;background:#fef2f2}
+.opt.wrong{border-color:var(--r);background:#fff1f2}
+.opt[disabled]{cursor:default}
+.res{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:24px 10px}
+.res .e{font-size:88px;animation:pop .3s}
+.res h2{font-size:30px;font-weight:900}
+.res .big{font-size:46px;font-weight:900;color:var(--r)}
+.res .big.crit{color:var(--o)}
+.res .ans{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-weight:700}
+.stun{font-size:64px;font-weight:900;color:var(--sub)}
 .net{font-size:12px;color:var(--sub);text-align:center;padding:8px}
-@media (max-width:1100px){.hmain{grid-template-columns:1fr}.map{grid-template-columns:repeat(3,1fr)}}
-@media (max-width:760px){.lobby{grid-template-columns:1fr}.howto{grid-template-columns:1fr 1fr}.map{grid-template-columns:1fr 1fr}}
+@media (max-width:1000px){.battle{grid-template-columns:1fr}.lobby{grid-template-columns:1fr}.rules{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
 <div id="landing" class="center">
-  <div class="brand"><div class="logo">🤖</div><h1>AI 연구소 탈출 작전</h1></div>
-  <p class="muted">에너지를 잘 나눠 쓰고, 퀴즈로 문을 열어 연구소를 탈출하세요</p>
+  <div class="brand"><div class="logo">👾</div><h1>ALGO 보스전</h1></div>
+  <p class="muted">다 같이 문제를 맞혀 연구소를 잠근 ALGO를 쓰러뜨려요</p>
   <div class="card formcard">
     <input id="codeIn" inputmode="numeric" maxlength="5" placeholder="방 코드 5자리" autocomplete="off">
     <button class="btn big" id="toJoin">입장하기</button>
@@ -160,27 +152,27 @@ h1,h2,h3,p{margin:0}
 </div>
 
 <div id="prof" class="center hidden">
-  <div class="brand"><div class="logo">🤖</div><h1>내 탈출 로봇</h1></div>
+  <div class="brand"><div class="logo">👾</div><h1>내 히어로 고르기</h1></div>
   <div class="card formcard">
     <div class="avs" id="avs"></div>
     <input id="nameIn" maxlength="8" placeholder="별명 (실명 X)" autocomplete="off">
-    <button class="btn big" id="joinGo">작전 참가</button>
+    <button class="btn big" id="joinGo">전투 참가</button>
     <p class="muted" id="pmsg" style="font-size:14px"></p>
   </div>
 </div>
 
 <div id="host" class="hidden">
-  <div class="hbar"><span class="title">🤖 AI 연구소 탈출 작전</span><span class="code" id="hCode">-----</span><span class="muted" id="hInfo"></span><span class="sp"></span><span class="phase" id="hPhase"></span><span class="timer" id="hTimer"></span></div>
+  <div class="hbar"><span class="title">👾 ALGO 보스전</span><span class="code" id="hCode">-----</span><span class="muted" id="hInfo"></span><span class="sp"></span><span class="timer" id="hTimer"></span></div>
   <div id="hBody"></div>
 </div>
 
 <div id="student" class="hidden">
-  <div class="sbar"><span class="me" id="sAv"></span><span class="nm" id="sNm"></span><span class="chip" id="sTurn"></span></div>
+  <div class="sbar"><span class="me" id="sAv"></span><span class="nm" id="sNm"></span><span class="chip" id="sRank">-</span></div>
+  <div class="mini"><div class="row"><span>👾 ALGO</span><span id="sHpTxt">100%</span></div><div class="hp"><div class="fill" id="sHp" style="width:100%"></div></div></div>
   <div class="stats">
-    <div class="stat"><span>위치</span><b id="sZone">1구역</b></div>
-    <div class="stat"><span>문까지</span><b id="sSteps">0/4</b></div>
-    <div class="stat"><span>순위</span><b id="sRank">-</b></div>
-    <div class="stat wide"><span>비밀 글자</span><div class="letters" id="sLet"></div></div>
+    <div class="stat"><span>내 공격력</span><b id="sDmg">0</b></div>
+    <div class="stat combo"><span>연속 정답</span><b id="sCombo">0</b></div>
+    <div class="stat"><span>남은 시간</span><b id="sTime">-</b></div>
   </div>
   <div class="sbody" id="sBody"></div>
   <div class="net" id="sNet">연결 중…</div>
@@ -189,232 +181,227 @@ h1,h2,h3,p{margin:0}
 
 <script>
 "use strict";
-/* ===== 구역과 문제 (인공지능 히어로 1~6교시) ===== */
+/* ===== 문제 (인공지능 히어로 1~6교시) — HP 20%씩 깎일 때마다 다음 교시로 ===== */
 const ZONES=[
- {name:"정체 확인실",cls:"1교시",L:"H",pool:[
+ {name:"1교시 · AI의 정체",L:"H",pool:[
   {q:"다음 중 AI가 아닌 것은?",o:["넷플릭스 영화 추천","유튜브 자동 자막","계산기의 3×7=21","얼굴 인식 잠금"],a:2},
   {q:"챗GPT와 알파고는 어떤 AI일까요?",o:["강한 AI","약한 AI (한 분야를 잘하는 AI)","초지능 AI","AI가 아니다"],a:1},
   {q:"AI의 실력을 결정하는 가장 중요한 것은?",o:["화면 크기","데이터","프로그램 이름","전기 요금"],a:1},
   {q:"AI가 사실이 아닌 내용을 그럴듯하게 지어내는 것은?",o:["할루시네이션(환각)","업데이트","로그인","다운로드"],a:0},
   {q:"'컴퓨터'는 원래 무엇을 부르는 말이었을까요?",o:["계산하는 사람","전자 기계","게임기","전화기"],a:0},
-  {q:"AI는 모르는 질문에 항상 '모른다'고 답한다.",o:["맞다 (O)","아니다 (X)"],a:1}]},
- {name:"얼굴 학습실",cls:"2교시",L:"U",pool:[
+  {q:"AI는 모르는 질문에 항상 '모른다'고 답한다.",o:["맞다 (O)","아니다 (X)"],a:1},
+  {q:"AI가 만든 사진인지 알아볼 때 좋은 방법은?",o:["좋아요 수 보기","출처와 원본 확인하기","그냥 믿기","화질만 보기"],a:1}]},
+ {name:"2교시 · 닮은꼴 AI",L:"U",pool:[
   {q:"컴퓨터에게 사진은 무엇으로 보일까요?",o:["숫자 바둑판(픽셀)","사람 눈과 같은 그림","글자 설명","소리"],a:0},
   {q:"티처블 머신으로 AI를 만드는 순서로 알맞은 것은?",o:["테스트 → 학습 → 사진 모으기","사진 모으기 → 학습 → 테스트","학습 → 사진 모으기 → 테스트","테스트 → 사진 모으기 → 학습"],a:1},
   {q:"얼굴 사진 수십억 장을 허락 없이 모아 벌금을 낸 회사. 가장 큰 문제는?",o:["사진 화질","주인의 동의 없이 모았다","AI 이름","컴퓨터 속도"],a:1},
   {q:"얼굴 인식 AI가 어떤 사람들의 얼굴을 더 자주 틀리는 이유는?",o:["사진을 싫어해서","학습 데이터에 그런 얼굴이 적어서","카메라 고장","일부러 틀려서"],a:1},
-  {q:"친구 얼굴을 허락 없이 AI로 합성해 단톡방에 올려도 장난이면 괜찮다.",o:["맞다 (O)","아니다 (X)"],a:1}]},
- {name:"미래 직업실",cls:"3교시",L:"M",pool:[
+  {q:"친구 얼굴을 허락 없이 AI로 합성해 단톡방에 올려도 장난이면 괜찮다.",o:["맞다 (O)","아니다 (X)"],a:1},
+  {q:"AI에게 사진을 더 많이, 더 다양하게 보여 주면?",o:["더 정확해진다","더 느려지기만 한다","아무 변화 없다","고장 난다"],a:0}]},
+ {name:"3교시 · 미래 직업",L:"M",pool:[
   {q:"ATM이 생긴 뒤 은행원은 어떻게 됐을까요?",o:["모두 사라졌다","돈 세는 일↓ 상담 같은 일↑","ATM만 고친다","전혀 안 바뀌었다"],a:1},
   {q:"3교시 새 직업 발명 공식은?",o:["문제 + AI 기술 + 사람의 강점","돈 + 유행 + 운","AI + AI + AI","연예인 + 게임"],a:0},
   {q:"캔바 동영상에서 AI로 장면 이미지를 만드는 앱은?",o:["Magic Media","계산기","메모장","휴지통"],a:0},
   {q:"대부분의 직업은 AI 때문에 완전히 사라진다.",o:["맞다 (O)","아니다 (X)"],a:1},
-  {q:"AI 이미지 프롬프트로 가장 좋은 것은?",o:["멋지게","의사","병원에서 AI 로봇과 환자를 돌보는 간호사, 3D 일러스트","아무거나"],a:2}]},
- {name:"서비스 기획실",cls:"4교시",L:"A",pool:[
+  {q:"AI 이미지 프롬프트로 가장 좋은 것은?",o:["멋지게","의사","병원에서 AI 로봇과 환자를 돌보는 간호사, 3D 일러스트","아무거나"],a:2},
+  {q:"AI와 함께 일할 때 사람이 더 잘하는 것은?",o:["엄청 빠른 계산","공감하고 배려하기","데이터 수억 개 외우기","밤새 쉬지 않기"],a:1}]},
+ {name:"4교시 · 서비스 기획",L:"A",pool:[
   {q:"디자인씽킹의 첫 단계는?",o:["프로토타입","공감","테스트","아이디어"],a:1},
   {q:"AI 서비스 탄생 공식은?",o:["관심 영역 + 불편함 + How? + 데이터","돈 + 광고","코딩 + 코딩","유행 + 운"],a:0},
   {q:"번역 앱이 주로 쓰는 AI 능력은?",o:["시각","청각","언어","예측"],a:2},
   {q:"급식 잔반을 줄이는 AI에게 알맞은 데이터는?",o:["학생 집 주소","남긴 양 사진·날씨·메뉴","전교생 성적표","인기 동영상"],a:1},
-  {q:"좋은 '문제 문장'은?",o:["환경 문제가 심각하다","세상을 바꾸고 싶다","우리 반은 분리수거할 때 몰라서 일반쓰레기에 버린다","쓰레기가 많다"],a:2}]},
- {name:"앱 통제실",cls:"5~6교시",L:"N",pool:[
+  {q:"좋은 '문제 문장'은?",o:["환경 문제가 심각하다","세상을 바꾸고 싶다","우리 반은 분리수거할 때 몰라서 일반쓰레기에 버린다","쓰레기가 많다"],a:2},
+  {q:"디자인씽킹 '공감' 단계에서 하는 일은?",o:["사용자의 불편함을 듣고 관찰하기","바로 코딩하기","광고 만들기","가격 정하기"],a:0}]},
+ {name:"5~6교시 · 앱과 미래",L:"N",pool:[
   {q:"ALGO가 만든 분리수거 앱의 버그는? 🧴 투명 페트병 → ?",o:["투명 페트병 따로 배출","음식물쓰레기","종이류","캔류"],a:1},
   {q:"앱을 고칠 때 가장 좋은 요청은?",o:["더 좋게 해 줘","이상한 거 다 고쳐 줘","'다' 버튼을 '다 쓴 볼펜'으로 바꿔 줘","알아서 해"],a:2},
   {q:"AI가 만든 앱에 틀린 정보가 있다면?",o:["AI가 만들었으니 맞겠지","확인하고 고쳐 달라고 요청한다","그냥 퍼뜨린다","모른 척한다"],a:1},
   {q:"'자율주행 버스 → 버스 기사 일자리 감소' 다음 2차 영향은?",o:["기사 재교육·새 직업 프로그램","버스 색이 바뀐다","걷기를 싫어한다","AI가 운전 안 함"],a:0},
-  {q:"앱 프롬프트에 넣으면 안 되는 것은?",o:["앱 이름","누구를 위한 앱인지","내 전화번호와 집 주소","화면 디자인"],a:2}]}
+  {q:"앱 프롬프트에 넣으면 안 되는 것은?",o:["앱 이름","누구를 위한 앱인지","내 전화번호와 집 주소","화면 디자인"],a:2},
+  {q:"만든 앱을 친구가 직접 써 보며 문제를 찾는 단계는?",o:["테스트","광고","다운로드","삭제"],a:0}]}
 ];
-const ROOM=4,TURNS=10,PLAN_S=35,QUIZ_S=20,BASE_E=6;
-const ACTS=[
- {k:'move',ic:'🦿',name:'이동',d:'1칸 = 1걸음 앞으로. 문 앞(4걸음)에 서야 퀴즈로 문을 열 수 있어요'},
- {k:'data',ic:'🧠',name:'데이터 분석',d:'2칸↑ 퀴즈 오답 1개 지우기 · 4칸↑ 2개 · 3칸↑ 틀려도 안 밀려남'},
- {k:'shield',ic:'🛡️',name:'보안',d:'2칸↑ ALGO 해킹을 막아요'},
- {k:'charge',ic:'🔋',name:'충전',d:'1칸 = 다음 턴 에너지 +1 (최대 +4) · 정전에 대비'}];
-const EVENTS=[
- {id:'hack',ic:'💥',t:'ALGO 해킹 공격!',d:'보안 2칸 미만인 로봇은 2걸음 뒤로 밀려납니다'},
- {id:'black',ic:'⚡',t:'연구소 정전!',d:'이번 턴 충전을 안 한 로봇은 다음 턴 에너지 -2'},
- {id:'bias',ic:'🧪',t:'데이터 오염 폭풍!',d:'데이터 분석 2칸 미만인 로봇은 1걸음 뒤로'},
- {id:'secret',ic:'🗝️',t:'비밀 통로 발견!',d:'모든 로봇이 1걸음 앞으로!'}];
+const BASE=10,STUN=3000,PER_HP=450;
 const AV=['🐶','🐱','🦊','🐼','🐸','🐯','🐰','🐻','🐨','🐵','🐧','🦁','🐙','🦄','🐲','🦖','🐥','🦉','🐳','🦋','🐝','🐹','🤖','👾','🐢','🦈','🦔','🐞','🦩','🐿️','🦀','🐌'];
-const PREFIX='aihero-ops-v1-';
+const PREFIX='aihero-boss-v1-';
 const PEERCFG={debug:0,config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:['turn:openrelay.metered.ca:80','turn:openrelay.metered.ca:443','turn:openrelay.metered.ca:443?transport=tcp'],username:'openrelayproject',credential:'openrelayproject'}]}};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const show=id=>['landing','prof','host','student'].forEach(x=>$(x).classList.toggle('hidden',x!==id));
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const mmss=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
 const params=new URLSearchParams(location.search);
-let actx=null;function tone(f,d,v=.04,delay=0){try{actx=actx||new(window.AudioContext||window.webkitAudioContext)();const t=actx.currentTime+delay,o=actx.createOscillator(),g=actx.createGain();o.type='triangle';o.frequency.setValueAtTime(f,t);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(actx.destination);o.start(t);o.stop(t+d)}catch(e){}}
-const ding=()=>{tone(784,.12);tone(1046,.18,.04,.1)},buzz=()=>tone(180,.3,.05);
+let actx=null;function tone(f,d,v=.04,delay=0,type='triangle'){try{actx=actx||new(window.AudioContext||window.webkitAudioContext)();const t=actx.currentTime+delay,o=actx.createOscillator(),g=actx.createGain();o.type=type;o.frequency.setValueAtTime(f,t);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(actx.destination);o.start(t);o.stop(t+d)}catch(e){}}
+const BOSS_SVG=`<svg viewBox="0 0 200 200" aria-hidden="true">
+<defs><linearGradient id="bg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3B2A6B"/><stop offset="1" stop-color="#1F1A2E"/></linearGradient></defs>
+<line x1="100" y1="22" x2="100" y2="44" stroke="#1F1A2E" stroke-width="6" stroke-linecap="round"/><circle cx="100" cy="18" r="9" fill="#E11D48"/>
+<rect x="34" y="44" width="132" height="104" rx="30" fill="url(#bg1)"/>
+<rect x="50" y="64" width="100" height="50" rx="18" fill="#0F0B1C"/>
+<circle id="eyeL" cx="78" cy="89" r="12" fill="#FF3B5C"/><circle id="eyeR" cx="122" cy="89" r="12" fill="#FF3B5C"/>
+<path d="M66 72 L90 80" stroke="#FF3B5C" stroke-width="5" stroke-linecap="round"/><path d="M134 72 L110 80" stroke="#FF3B5C" stroke-width="5" stroke-linecap="round"/>
+<rect x="72" y="124" width="56" height="10" rx="5" fill="#FF6B1A"/>
+<rect x="18" y="80" width="20" height="44" rx="10" fill="#3B2A6B"/><rect x="162" y="80" width="20" height="44" rx="10" fill="#3B2A6B"/>
+<rect x="62" y="150" width="76" height="30" rx="12" fill="#3B2A6B"/><text x="100" y="171" text-anchor="middle" font-size="14" font-weight="900" fill="#FFD43B" font-family="sans-serif">ALGO</text>
+</svg>`;
 
 /* ================= HOST ================= */
 let H=null;
 function hostStart(){
- H={code:String(Math.floor(10000+Math.random()*90000)),phase:'lobby',turn:0,stu:{},conns:{},deadline:0,ev:null,tick:null};
+ H={code:String(Math.floor(10000+Math.random()*90000)),phase:'lobby',dur:8,stu:{},conns:{},hp:0,max:0,end:0,feed:[],dirty:true,win:false};
  show('host');$('hCode').textContent=H.code;openHost();renderH();
- H.tick=setInterval(hostTick,500);
+ setInterval(hostTick,400);
 }
 function openHost(){
  if(typeof Peer==='undefined'){$('hInfo').textContent='연결 라이브러리를 불러오지 못했어요';return}
  const p=new Peer(PREFIX+H.code,PEERCFG);H.peer=p;
- p.on('open',()=>renderH());
- p.on('connection',c=>{c.on('data',d=>onH(c,d));c.on('close',()=>{for(const k in H.conns)if(H.conns[k]===c){delete H.conns[k];if(H.stu[k])H.stu[k].on=false}renderH()})});
+ p.on('connection',c=>{c.on('data',d=>onH(c,d));c.on('close',()=>{for(const k in H.conns)if(H.conns[k]===c){delete H.conns[k];if(H.stu[k])H.stu[k].on=false}if(H.phase==='lobby')renderH()})});
  p.on('error',e=>{if(e.type==='unavailable-id'){H.code=String(Math.floor(10000+Math.random()*90000));$('hCode').textContent=H.code;setTimeout(openHost,300)}});
  p.on('disconnected',()=>{try{p.reconnect()}catch(e){}});
 }
-function newStu(name,av){return {name,av,on:true,zone:0,steps:0,energy:BASE_E,bonus:0,penalty:0,alloc:null,cur:null,quiz:null,ans:null,used:{},letters:[],escaped:false,escTurn:0,correct:0,log:[],moved:false}}
+function newStu(name,av){return {name,av,on:true,dmg:0,hits:0,miss:0,combo:0,best:0,q:null,used:{},stunUntil:0}}
+const zoneNow=()=>Math.min(ZONES.length-1,Math.floor((1-H.hp/H.max)*ZONES.length));
+function pickQ(s){
+ const z=zoneNow(),pool=ZONES[z].pool;let idx=pool.map((_,i)=>i).filter(i=>!s.used[z+'-'+i]);
+ if(!idx.length){pool.forEach((_,i)=>delete s.used[z+'-'+i]);idx=pool.map((_,i)=>i)}
+ const i=idx[Math.floor(Math.random()*idx.length)];s.used[z+'-'+i]=1;const q=pool[i];
+ const order=q.o.length===2?[0,1]:shuffle(q.o.map((_,k)=>k));
+ s.q={z,o:order.map(k=>q.o[k]),a:order.indexOf(q.a),q:q.q,id:Math.random().toString(36).slice(2,8)};
+}
+function sendTo(sid,msg){const c=H.conns[sid];if(c&&c.open)try{c.send(msg)}catch(e){}}
+function sendQ(sid){const s=H.stu[sid];if(!s.q)pickQ(s);sendTo(sid,{t:'q',id:s.q.id,q:s.q.q,o:s.q.o,zone:ZONES[s.q.z].name})}
 function onH(c,d){
  if(!d||!d.sid)return;const s=H.stu[d.sid];
  if(d.t==='join'){const name=String(d.name||'').slice(0,8)||'익명',av=AV.includes(d.av)?d.av:'🙂';
-  if(s){s.name=name;s.av=av;s.on=true}else H.stu[d.sid]=newStu(name,av);H.conns[d.sid]=c;if(H.phase==='lobby')tone(600+Math.random()*400,.08);renderH();send(d.sid);return}
- if(!s)return;
- if(d.t==='alloc'&&H.phase==='plan'&&!s.alloc&&!s.escaped){const a={},tot=s.energy;let sum=0;for(const x of ACTS){a[x.k]=Math.max(0,Math.min(tot,Math.floor(+d.a[x.k]||0)));sum+=a[x.k]}if(sum>tot)return;a.move+=tot-sum;s.alloc=a;renderH();send(d.sid);if(allIn('alloc'))resolvePlan();return}
- if(d.t==='ans'&&H.phase==='quiz'&&s.quiz&&s.ans===null&&!s.escaped){s.ans=+d.c;renderH();send(d.sid);if(allIn('ans'))resolveQuiz();return}
-}
-function active(){return Object.values(H.stu).filter(s=>s.on&&!s.escaped)}
-function allIn(kind){const a=active();return a.length>0&&a.every(s=>kind==='alloc'?!!s.alloc:s.ans!==null)}
-function stateFor(sid){const s=H.stu[sid],r=ranked();
- return {t:'st',phase:H.phase,turn:H.turn,turns:TURNS,left:Math.max(0,H.deadline-Date.now()),ev:H.phase==='event'?H.ev:null,
-  me:s?{zone:s.zone,steps:s.steps,energy:s.energy,letters:s.letters,escaped:s.escaped,submitted:!!s.alloc,alloc:s.alloc,
-   quiz:H.phase==='quiz'&&s.quiz?{q:s.quiz.q,o:s.quiz.o,gone:s.quiz.gone}:null,answered:s.ans!==null,log:s.log,rank:r.findIndex(x=>x.sid===sid)+1,n:r.length}:null}}
-function send(sid){const c=H.conns[sid];if(c&&c.open)try{c.send(stateFor(sid))}catch(e){}}
-function sendAll(){for(const k in H.conns)send(k)}
-function prog(s){return s.escaped?1000-s.escTurn:s.zone*10+s.steps}
-function ranked(){return Object.entries(H.stu).map(([sid,s])=>Object.assign({sid},s)).sort((a,b)=>prog(b)-prog(a)||b.correct-a.correct)}
-function startTurn(){
- H.turn++;if(H.turn>TURNS||!active().length){endGame();return}
- for(const s of Object.values(H.stu)){if(s.escaped)continue;s.energy=Math.max(3,Math.min(12,BASE_E+s.bonus-s.penalty));s.bonus=0;s.penalty=0;s.alloc=null;s.cur=null;s.quiz=null;s.ans=null;s.log=[];s.moved=false}
- H.phase='plan';H.deadline=Date.now()+PLAN_S*1000;tone(523,.1);tone(659,.12,.04,.1);renderH();sendAll();
-}
-function resolvePlan(){
- if(H.phase!=='plan')return;
- for(const s of Object.values(H.stu)){if(s.escaped)continue;
-  if(!s.alloc){s.alloc={move:s.energy,data:0,shield:0,charge:0};s.log.push({c:'bad',t:'⏰ 시간 초과! 자동 조종으로 이동에 전부 썼어요'})}
-  const a=s.alloc,before=s.steps;s.steps=Math.min(ROOM,s.steps+a.move);s.bonus=Math.min(4,a.charge);s.cur=a;
-  if(s.steps>before){s.moved=true;s.log.push({c:'good',t:`🦿 ${s.steps-before}걸음 전진${s.steps>=ROOM?' · 문 앞 도착!':''}`})}
-  const z=ZONES[s.zone],idx=z.pool.map((_,i)=>i).filter(i=>!s.used[s.zone+'-'+i]);const pick=(idx.length?idx:z.pool.map((_,i)=>i))[Math.floor(Math.random()*(idx.length||z.pool.length))];s.used[s.zone+'-'+pick]=1;
-  const q=z.pool[pick],nGone=a.data>=4?2:a.data>=2?1:0;const wrongs=shuffle(q.o.map((_,i)=>i).filter(i=>i!==q.a)).slice(0,Math.min(nGone,q.o.length-2));
-  s.quiz={q:q.q,o:q.o,a:q.a,gone:wrongs};s.ans=null;
+  if(s){s.name=name;s.av=av;s.on=true}else{H.stu[d.sid]=newStu(name,av);if(H.phase==='battle'){const add=Math.round(PER_HP*H.dur/8*(H.end-Date.now())/(H.dur*60000)/10)*10;H.max+=add;H.hp+=add}}
+  H.conns[d.sid]=c;if(H.phase==='lobby'){tone(600+Math.random()*400,.08);renderH()}
+  pushState(d.sid);if(H.phase==='battle')sendQ(d.sid);return}
+ if(!s||H.phase!=='battle')return;
+ if(d.t==='next'){if(Date.now()<s.stunUntil-200)return;if(!s.q)pickQ(s);sendQ(d.sid);return}
+ if(d.t==='ans'&&s.q&&d.id===s.q.id){
+  const ok=+d.c===s.q.a,correct=s.q.a;let dmg=0,crit=0;
+  if(ok){s.combo++;s.best=Math.max(s.best,s.combo);s.hits++;crit=s.combo>=5?3:s.combo>=3?2:1;dmg=Math.min(H.hp,BASE*crit);s.dmg+=dmg;H.hp-=dmg;hitFx(s,BASE*crit,crit)}
+  else{s.combo=0;s.miss++;s.stunUntil=Date.now()+STUN}
+  s.q=null;sendTo(d.sid,{t:'res',ok,dmg:ok?BASE*crit:0,crit,correct,stun:ok?0:STUN});
+  H.dirty=true;if(H.hp<=0){H.hp=0;finish(true)}
  }
- H.phase='quiz';H.deadline=Date.now()+QUIZ_S*1000;renderH();sendAll();
 }
-function resolveQuiz(){
- if(H.phase!=='quiz')return;
- for(const s of Object.values(H.stu)){if(s.escaped||!s.quiz)continue;const ok=s.ans===s.quiz.a;
-  if(ok){s.correct++;
-   if(s.steps>=ROOM){s.letters.push(ZONES[s.zone].L);s.log.push({c:'good',t:`🔓 정답! ${ZONES[s.zone].name} 문이 열렸다 · 비밀 글자 ${ZONES[s.zone].L}`});s.zone++;s.steps=0;s.moved=true;
-    if(s.zone>=ZONES.length){s.escaped=true;s.escTurn=H.turn;s.log.push({c:'good',t:'🎉 연구소 탈출 성공!'})}}
-   else{s.steps=Math.min(ROOM,s.steps+1);s.moved=true;s.log.push({c:'good',t:'✅ 정답! 지름길 발견 · 1걸음 보너스'})}}
-  else{const lose=s.cur&&s.cur.data>=3?0:1;s.steps=Math.max(0,s.steps-lose);s.log.push({c:'bad',t:s.ans===null?`⏰ 시간 초과${lose?' · 1걸음 뒤로':''}`:`❌ 오답! ${lose?'ALGO가 길을 막아 1걸음 뒤로':'데이터 분석 덕분에 제자리 유지'}`})}
- }
- H.phase='result';H.deadline=0;ding();renderH();sendAll();
+function ranked(){return Object.entries(H.stu).map(([sid,s])=>Object.assign({sid},s)).sort((a,b)=>b.dmg-a.dmg||b.best-a.best)}
+function pushState(sid){const s=H.stu[sid];if(!s)return;const r=ranked();
+ sendTo(sid,{t:'st',phase:H.phase,hp:H.hp,max:H.max,left:H.phase==='battle'?H.end-Date.now():0,win:H.win,me:{dmg:s.dmg,combo:s.combo,best:s.best,hits:s.hits,rank:r.findIndex(x=>x.sid===sid)+1,n:r.length},letters:H.max?lettersOn():0})}
+function pushAll(){for(const k in H.conns)pushState(k)}
+const lettersOn=()=>H.max?Math.min(5,Math.floor((1-H.hp/H.max)*5+1e-9)):0;
+function start(){
+ const n=Object.keys(H.stu).length;if(!n)return;
+ H.max=H.hp=n*PER_HP*(H.dur/8);H.max=Math.round(H.max/10)*10;H.hp=H.max;
+ H.phase='battle';H.end=Date.now()+H.dur*60000;H.feed=[];H.win=false;
+ for(const s of Object.values(H.stu)){Object.assign(s,{dmg:0,hits:0,miss:0,combo:0,best:0,q:null,used:{},stunUntil:0})}
+ [392,523,659].forEach((f,i)=>tone(f,.18,.05,i*.1));renderH();pushAll();for(const k in H.conns)sendQ(k);
 }
-function fireEvent(){
- const ev=EVENTS[Math.floor(Math.random()*EVENTS.length)];H.ev={ic:ev.ic,t:ev.t,d:ev.d,hit:[],secret:ev.id==='secret'};
- for(const s of Object.values(H.stu)){if(s.escaped)continue;const a=s.cur||{move:0,data:0,shield:0,charge:0};let hit=false;
-  if(ev.id==='hack'&&a.shield<2){s.steps=Math.max(0,s.steps-2);hit=true;s.log.push({c:'bad',t:'💥 해킹 공격! 2걸음 뒤로'})}
-  if(ev.id==='black'&&a.charge<1){s.penalty+=2;hit=true;s.log.push({c:'bad',t:'⚡ 정전! 다음 턴 에너지 -2'})}
-  if(ev.id==='bias'&&a.data<2){s.steps=Math.max(0,s.steps-1);hit=true;s.log.push({c:'bad',t:'🧪 데이터 오염! 1걸음 뒤로'})}
-  if(ev.id==='secret'){s.steps=Math.min(ROOM,s.steps+1);s.log.push({c:'good',t:'🗝️ 비밀 통로! 1걸음 앞으로'})}
-  if(!hit&&ev.id!=='secret')s.log.push({c:'good',t:`${ev.ic} ${ev.t.replace('!','')} · 대비 성공! 피해 없음`});
-  if(hit)H.ev.hit.push(s.av+' '+s.name)}
- H.phase='event';buzz();renderH();sendAll();
+function finish(win){if(H.phase!=='battle')return;H.phase='end';H.win=win;
+ if(win){[523,659,784,1046].forEach((f,i)=>tone(f,.25,.05,i*.12))}else tone(220,.6,.05,0,'sawtooth');
+ renderH();pushAll()}
+let lastLetters=0;
+function hitFx(s,amount,crit){
+ H.feed.unshift({t:`${s.av} ${s.name} ${crit>1?'크리티컬 ':''}-${amount}`,crit});H.feed=H.feed.slice(0,9);
+ const b=$('boss');if(!b)return;b.classList.remove('hit');void b.offsetWidth;b.classList.add('hit');
+ const el=document.createElement('div');el.className='dmg'+(crit>1?' crit':'');el.innerHTML=`<span>${esc(s.av)}</span> -${amount}${crit>1?'!':''}`;
+ el.style.left=(15+Math.random()*60)+'%';el.style.top=(20+Math.random()*45)+'%';b.appendChild(el);setTimeout(()=>el.remove(),1100);
+ tone(crit>1?880:520+Math.random()*120,.07,.03);
+ if(crit>2){const f=document.createElement('div');f.className='flash';document.body.appendChild(f);setTimeout(()=>f.remove(),500)}
 }
-function endGame(){H.phase='end';H.deadline=0;[523,659,784,1046].forEach((f,i)=>tone(f,.25,.05,i*.12));renderH();sendAll()}
 function hostTick(){
  if(!H)return;const t=$('hTimer');
- if(H.deadline){const l=Math.ceil((H.deadline-Date.now())/1000);t.textContent=Math.max(0,l)+'초';t.classList.toggle('low',l<=5);if(l<=0){if(H.phase==='plan')resolvePlan();else if(H.phase==='quiz')resolveQuiz()}}else t.textContent='';
+ if(H.phase==='battle'){const l=H.end-Date.now();t.textContent=mmss(l);t.classList.toggle('low',l<30000);if(l<=0){finish(false);return}
+  if(H.dirty){H.dirty=false;updateBattle();pushAll()}else if(Math.random()<.4)pushAll()}
+ else t.textContent='';
+}
+function hpBar(){const pc=H.max?H.hp/H.max*100:100;return `<div class="hp"><div class="ghost" id="hGhost" style="width:${pc}%"></div><div class="fill" id="hFill" style="width:${pc}%"></div>${[20,40,60,80].map(x=>`<i class="tick" style="left:${x}%"></i>`).join('')}</div>`}
+function lettersHtml(){const on=lettersOn();return ZONES.map((z,i)=>`<i class="${i<on?'on':''}">${i<on?z.L:'?'}</i>`).join('')}
+function updateBattle(){
+ const pc=H.max?H.hp/H.max*100:0;const f=$('hFill');if(!f)return;f.style.width=pc+'%';$('hGhost').style.width=pc+'%';$('hPc').textContent=Math.ceil(pc)+'%';
+ const on=lettersOn();if(on!==lastLetters){lastLetters=on;$('hLet').innerHTML=lettersHtml();if(on>0)[660,880].forEach((x,i)=>tone(x,.15,.05,i*.1))}
+ $('hZone').innerHTML=`지금 문제: <b>${ZONES[zoneNow()].name}</b>`;
+ const r=ranked();$('hRank').innerHTML='<h3>⚔️ 공격왕</h3>'+r.slice(0,8).map((s,i)=>`<div class="rrow"><span>${i+1}</span><span>${esc(s.av)}</span><b>${esc(s.name)}</b><span class="v">${s.dmg}</span></div>`).join('');
+ $('hFeed').innerHTML='<h3>실시간 공격</h3>'+H.feed.map(x=>`<div style="${x.crit>1?'color:var(--o);font-weight:700':''}">${esc(x.t)}</div>`).join('');
 }
 function renderH(){
- const r=ranked(),n=r.length,b=$('hBody');
- $('hInfo').textContent=`참가 ${n}명`;
- const PH={lobby:'대기 중',plan:`턴 ${H.turn}/${TURNS} · ⚙️ 작전 시간`,quiz:`턴 ${H.turn}/${TURNS} · ❓ 문 앞 퀴즈`,result:`턴 ${H.turn}/${TURNS} · 결과`,event:`턴 ${H.turn}/${TURNS} · 돌발 사건`,end:'작전 종료'};
- $('hPhase').textContent=PH[H.phase]||'';
- $('ov').innerHTML='';
+ const r=ranked(),n=r.length,b=$('hBody');$('hInfo').textContent=`참가 ${n}명`;$('ov').innerHTML='';
  if(H.phase==='lobby'){
   const url=location.origin+location.pathname+'?r='+H.code;let qr='';try{const q=qrcode(0,'M');q.addData(url);q.make();qr=q.createSvgTag({cellSize:6,margin:1,scalable:true})}catch(e){}
-  b.innerHTML=`<div class="lobby"><div class="card qrc">${qr}<div class="big">${H.code}</div><div class="u">${esc(url)}</div></div>
-  <div style="display:flex;flex-direction:column;gap:16px"><div><h2 style="font-size:30px;font-weight:900">ALGO가 연구소를 잠갔어요 🔒</h2><p class="muted" style="margin-top:6px">QR을 찍거나 주소로 들어와 방 코드를 넣고, 로봇을 고르세요. 총 ${TURNS}턴 안에 5개 구역을 지나 탈출해야 해요.</p></div>
-  <div class="howto">${ACTS.map(a=>`<div><b>${a.ic}</b><strong>${a.name}</strong><br>${a.d}</div>`).join('')}</div>
+  b.innerHTML=`<div class="lobby"><div class="card qrc">${qr}<div class="bigc">${H.code}</div><div class="u">${esc(url)}</div></div>
+  <div style="display:flex;flex-direction:column;gap:16px"><div><h2 style="font-size:30px;font-weight:900">ALGO가 연구소를 잠갔어요! 👾</h2><p class="muted" style="margin-top:6px">QR을 찍거나 주소로 들어와 방 코드를 넣고, 히어로를 고르세요. 반 전체가 힘을 합쳐 ALGO의 체력을 0으로!</p></div>
+  <div class="rules"><div><b>⚔️</b><strong>맞히면 공격</strong><br>정답 하나 = ALGO 체력 -10</div><div><b>🔥</b><strong>연속 정답은 크리티컬</strong><br>3연속 2배 · 5연속 3배</div><div><b>💫</b><strong>틀리면 3초 기절</strong><br>찍기보다 정확하게!</div></div>
+  <div class="seg"><span class="muted" style="margin-right:6px">전투 시간</span>${[6,8,10].map(m=>`<button data-m="${m}" class="${H.dur===m?'on':''}">${m}분</button>`).join('')}</div>
   <div class="crowd">${r.map(s=>`<span class="kid"><span class="e">${esc(s.av)}</span>${esc(s.name)}</span>`).join('')||'<span class="muted">아직 참가한 학생이 없어요</span>'}</div>
-  <div><button class="btn big o" id="go" ${n?'':'disabled'}>작전 시작 ▶</button></div></div></div>`;
-  $('go').onclick=()=>{if(n)startTurn()};return}
- // map
- const maxAlert=Math.round(Math.min(1,H.turn/TURNS)*100);
- const lanesFor=z=>{let h='';for(let st=ROOM;st>=0;st--){const here=r.filter(s=>!s.escaped&&s.zone===z&&s.steps===st);h+=`<div class="lane ${st===ROOM?'door':''}" data-s="${st}걸음">${here.map(s=>`<span class="bot2 ${s.moved&&H.phase!=='plan'?'moved':''}"><span class="e">${esc(s.av)}</span><span class="n">${esc(s.name)}</span></span>`).join('')}</div>`}return h};
- const rooms=ZONES.map((z,i)=>`<div class="card room"><div class="rh"><span class="no">${i+1}</span><div><div class="nm">${esc(z.name)}</div><div class="cl">${z.cls}</div></div><span class="lt">${z.L}</span></div><div class="lanes">${lanesFor(i)}</div></div>`).join('');
- const esc_=r.filter(s=>s.escaped);
- const exitc=`<div class="card room exitcol"><div class="rh"><span class="no" style="background:#dcfce7;color:var(--g)">🚪</span><div><div class="nm">탈출!</div><div class="cl">${esc_.length}명</div></div></div><div class="lanes"><div class="lane">${esc_.map(s=>`<span class="bot2"><span class="e">${esc(s.av)}</span><span class="n">${esc(s.name)}</span></span>`).join('')}</div></div></div>`;
- const sub=H.phase==='plan'?`제출 ${active().filter(s=>s.alloc).length} / ${active().length}`:H.phase==='quiz'?`답변 ${active().filter(s=>s.ans!==null).length} / ${active().length}`:'';
- const ctrl={plan:`<div class="pt">⚙️ 작전 시간</div><p class="muted">학생들이 에너지를 4곳에 나누고 있어요. ${sub}</p><button class="btn light" id="act">마감하고 퀴즈로</button>`,
-  quiz:`<div class="pt">❓ 문 앞 퀴즈</div><p class="muted">문 앞에 선 로봇은 맞히면 다음 구역으로! ${sub}</p><button class="btn light" id="act">마감하고 결과 보기</button>`,
-  result:`<div class="pt">📋 이번 턴 결과</div><p class="muted">로봇들이 움직였어요. 돌발 사건을 터뜨리거나 다음 턴으로 넘어가세요.</p><button class="btn o" id="ev">🎲 돌발 사건 카드</button><button class="btn" id="act">${H.turn>=TURNS?'작전 종료 · 결과 발표':'다음 턴 ▶'}</button>`,
-  event:`<div class="pt">🎲 돌발 사건</div><button class="btn" id="act">${H.turn>=TURNS?'작전 종료 · 결과 발표':'다음 턴 ▶'}</button>`,
-  end:`<div class="pt">🏆 작전 종료</div><button class="btn light" id="act">같은 반 다시 하기</button>`}[H.phase];
- b.innerHTML=`<div class="hmain"><div><div class="card alert"><span class="bot"><i></i></span><b>ALGO 경보</b><div class="meter"><i style="width:${maxAlert}%"></i></div><span class="muted">${Math.max(0,TURNS-H.turn)}턴 남음</span></div>
-  <div class="map">${rooms}${exitc}</div></div>
-  <div class="side"><div class="card ctrl">${ctrl}</div><div class="card rank"><h3>실시간 순위</h3>${r.slice(0,12).map((s,i)=>`<div class="rrow"><span>${i+1}</span><span>${esc(s.av)}</span><b>${esc(s.name)}</b><span class="pg">${s.escaped?'탈출 '+s.escTurn+'턴':(s.zone+1)+'구역 '+s.steps+'/4'}</span></div>`).join('')}</div></div></div>`;
- const act=$('act');if(act)act.onclick=()=>{if(H.phase==='plan')resolvePlan();else if(H.phase==='quiz')resolveQuiz();else if(H.phase==='result'||H.phase==='event')startTurn();else if(H.phase==='end'){for(const k in H.stu){const s=H.stu[k];H.stu[k]=Object.assign(newStu(s.name,s.av),{on:s.on})}H.turn=0;H.phase='lobby';renderH();sendAll()}};
- const ev=$('ev');if(ev)ev.onclick=fireEvent;
- if(H.phase==='event'&&H.ev){$('ov').innerHTML=`<div class="ov" id="ovc"><div class="card evcard"><div class="ic">${H.ev.ic}</div><h2>${esc(H.ev.t)}</h2><p class="who">${esc(H.ev.d)}</p><p class="who">${H.ev.secret?'모두 한 걸음 앞으로!':H.ev.hit.length?'피해: '+H.ev.hit.slice(0,12).map(esc).join(', ')+(H.ev.hit.length>12?' 외 '+(H.ev.hit.length-12)+'명':''):'모두 대비 성공!'}</p><div style="display:flex;gap:10px;justify-content:center"><button class="btn light" id="ovx">닫고 지도 보기</button><button class="btn" id="ovn">${H.turn>=TURNS?'작전 종료 · 결과 발표':'다음 턴 ▶'}</button></div></div></div>`;$('ovx').onclick=()=>{$('ov').innerHTML=''};$('ovn').onclick=()=>startTurn()}
+  <div><button class="btn big o" id="go" ${n?'':'disabled'}>전투 시작 ⚔️</button></div></div></div>`;
+  b.querySelectorAll('.seg button').forEach(x=>x.onclick=()=>{H.dur=+x.dataset.m;renderH()});
+  $('go').onclick=start;return}
+ lastLetters=lettersOn();
+ b.innerHTML=`<div class="battle"><div class="card stage"><div class="hpwrap"><div class="hpline"><span class="nm">👾 ALGO</span><span class="muted" style="font-weight:500;font-size:15px">체력 20%마다 비밀 글자 1개</span><span class="pc" id="hPc">${Math.ceil(H.hp/H.max*100)}%</span></div>${hpBar()}</div>
+  <div class="letters" id="hLet">${lettersHtml()}</div>
+  <div class="boss ${H.phase==='end'&&H.win?'dead':''}" id="boss">${BOSS_SVG}</div>
+  <div class="phasebanner" id="hZone">지금 문제: <b>${ZONES[zoneNow()].name}</b></div></div>
+  <div class="side"><div class="card rank" id="hRank"></div><div class="card feed" id="hFeed"></div>
+  <div class="card ctrl">${H.phase==='battle'?'<button class="btn light" id="stop">전투 끝내기</button>':'<button class="btn light" id="again">같은 반 다시 하기</button>'}</div></div></div>`;
+ updateBattle();
+ const st=$('stop');if(st)st.onclick=()=>finish(H.hp<=0);
+ const ag=$('again');if(ag)ag.onclick=()=>{H.phase='lobby';renderH();pushAll()};
  if(H.phase==='end'){const t=r.slice(0,3),o=[t[1],t[0],t[2]],hs=[190,240,170],rk=[2,1,3],bg=['#E5E7EB','#FFE45C','#FCD9B6'];
-  $('ov').innerHTML=`<div class="ov"><div class="card evcard" style="width:min(820px,94vw)"><div class="ic">🏆</div><h2>작전 종료! 탈출 ${r.filter(s=>s.escaped).length}명</h2>
-  <div class="podium">${o.map((s,i)=>s?`<div class="pd" style="height:${hs[i]}px;background:${bg[i]}"><span class="e">${esc(s.av)}</span><b>${esc(s.name)}</b><span class="rk">${rk[i]}</span></div>`:'').join('')}</div>
-  <p class="who">출구 암호는 <b style="color:var(--p)">HUMAN</b> · AI는 데이터로 배우지만, 고르고 확인하고 책임지는 건 사람!</p><button class="btn light" id="cls">닫기</button></div></div>`;$('cls').onclick=()=>{$('ov').innerHTML=''}}
+  const crit=r.slice().sort((a,b)=>b.best-a.best)[0];
+  setTimeout(()=>{$('ov').innerHTML=`<div class="ov"><div class="card endcard"><div class="ic">${H.win?'🎉':'💨'}</div><h2>${H.win?'ALGO 격파! 연구소 탈출 성공':'ALGO가 도망쳤어요… 체력 '+Math.ceil(H.hp/H.max*100)+'% 남음'}</h2>
+  <div class="podium">${o.map((s,i)=>s?`<div class="pd" style="height:${hs[i]}px;background:${bg[i]}"><span class="e">${esc(s.av)}</span><b>${esc(s.name)}</b><small>공격력 ${s.dmg}</small><span class="rk">${rk[i]}</span></div>`:'').join('')}</div>
+  ${crit&&crit.best>=3?`<p class="who">🔥 최고 연속 정답: ${esc(crit.av)} ${esc(crit.name)} · ${crit.best}연속</p>`:''}
+  <p class="who">출구 암호는 <b style="color:var(--p)">HUMAN</b> · AI는 데이터로 배우지만, 고르고 확인하고 책임지는 건 사람!</p><div><button class="btn light" id="cls">닫기</button></div></div></div>`;$('cls').onclick=()=>{$('ov').innerHTML=''}},H.win?1100:300)}
 }
 
 /* ================= STUDENT ================= */
-let S={code:'',sid:'',name:'',av:'',peer:null,conn:null,st:null,alloc:null,pick:null,deadline:0,lastTurn:-1};
+let S={code:'',sid:'',name:'',av:'',peer:null,conn:null,st:null,q:null,res:null,deadline:0,lock:false};
 function studentProfile(code){
- S.code=code;try{S.sid=localStorage.getItem('aihero_ops_sid')||Math.random().toString(36).slice(2,10);localStorage.setItem('aihero_ops_sid',S.sid);const p=JSON.parse(localStorage.getItem('aihero_ops_prof')||'null');if(p){S.name=p.name;S.av=p.av}}catch(e){S.sid=S.sid||Math.random().toString(36).slice(2,10)}
+ S.code=code;try{S.sid=localStorage.getItem('aihero_boss_sid')||Math.random().toString(36).slice(2,10);localStorage.setItem('aihero_boss_sid',S.sid);const p=JSON.parse(localStorage.getItem('aihero_boss_prof')||'null');if(p){S.name=p.name;S.av=p.av}}catch(e){S.sid=S.sid||Math.random().toString(36).slice(2,10)}
  S.av=S.av||AV[Math.floor(Math.random()*AV.length)];show('prof');
  $('avs').innerHTML=AV.map(a=>`<button class="av${a===S.av?' on':''}" data-a="${a}">${a}</button>`).join('');
  $('avs').querySelectorAll('.av').forEach(b=>b.onclick=()=>{S.av=b.dataset.a;$('avs').querySelectorAll('.av').forEach(x=>x.classList.toggle('on',x===b))});
  $('nameIn').value=S.name||'';
- $('joinGo').onclick=()=>{const v=$('nameIn').value.trim();if(!v){$('pmsg').textContent='별명을 써 주세요';return}S.name=v;try{localStorage.setItem('aihero_ops_prof',JSON.stringify({name:S.name,av:S.av}))}catch(e){}
+ $('joinGo').onclick=()=>{const v=$('nameIn').value.trim();if(!v){$('pmsg').textContent='별명을 써 주세요';return}S.name=v;try{localStorage.setItem('aihero_boss_prof',JSON.stringify({name:S.name,av:S.av}))}catch(e){}
   show('student');$('sAv').textContent=S.av;$('sNm').textContent=S.name;renderS();connectS()};
+ $('nameIn').onkeydown=e=>{if(e.key==='Enter')$('joinGo').click()};
 }
 function connectS(){
  if(typeof Peer==='undefined'){$('sNet').textContent='연결 라이브러리를 불러오지 못했어요';return}
  if(!S.peer||S.peer.destroyed){S.peer=new Peer(undefined,PEERCFG);S.peer.on('open',dial);
-  S.peer.on('error',e=>{$('sNet').textContent=e.type==='peer-unavailable'?'방을 찾을 수 없어요 · 다시 연결 중':'연결 문제 · 다시 시도 중';setTimeout(dial,3000)});
+  S.peer.on('error',e=>{$('sNet').textContent=e.type==='peer-unavailable'?'방을 찾을 수 없어요 · 방 코드를 확인하세요':'연결 문제 · 다시 시도 중';setTimeout(dial,3000)});
   S.peer.on('disconnected',()=>{try{S.peer.reconnect()}catch(e){}})}else dial();
 }
 function dial(){if(!S.peer||S.peer.destroyed||S.peer.disconnected)return;const c=S.peer.connect(PREFIX+S.code,{reliable:true});S.conn=c;
  c.on('open',()=>{$('sNet').textContent='연결됨 · 방 '+S.code;c.send({t:'join',sid:S.sid,name:S.name,av:S.av})});
- c.on('data',d=>{if(d&&d.t==='st'){const prev=S.st;S.st=d;S.deadline=Date.now()+(d.left||0);if(!prev||prev.turn!==d.turn||prev.phase!==d.phase){S.pick=null;if(d.phase==='plan')S.alloc=null}renderS()}});
+ c.on('data',onS);
  c.on('close',()=>{$('sNet').textContent='연결 끊김 · 다시 연결 중';setTimeout(dial,2000)});
 }
-let sT=null;
+function sendS(m){try{S.conn.send(Object.assign({sid:S.sid},m))}catch(e){}}
+function onS(d){
+ if(!d)return;
+ if(d.t==='st'){const prev=S.st;S.st=d;S.deadline=Date.now()+(d.left||0);updStats();
+  if(!prev||prev.phase!==d.phase){if(d.phase!=='battle'){S.q=null;S.res=null}renderS()}return}
+ if(d.t==='q'){S.q=d;S.res=null;S.lock=false;renderS();return}
+ if(d.t==='res'){S.res=d;renderS();
+  if(d.ok){tone(d.crit>1?880:660,.1,.04);setTimeout(()=>{if(S.res===d)sendS({t:'next'})},d.crit>1?1100:800)}
+  else{tone(180,.3,.05);const until=Date.now()+d.stun;const tick=()=>{const el=$('sStun');if(!el||S.res!==d)return;const l=until-Date.now();if(l<=0){sendS({t:'next'});return}el.textContent=Math.ceil(l/1000);setTimeout(tick,200)};setTimeout(tick,50)}
+  return}
+}
+function updStats(){const d=S.st;if(!d)return;const pc=d.max?d.hp/d.max*100:100;$('sHp').style.width=pc+'%';$('sHpTxt').textContent=Math.ceil(pc)+'%';
+ if(d.me){$('sDmg').textContent=d.me.dmg;$('sCombo').textContent=d.me.combo+(d.me.combo>=3?'🔥':'');$('sRank').textContent=d.me.n?`공격 ${d.me.rank}위 / ${d.me.n}명`:'-'}}
+setInterval(()=>{if(S.st&&S.st.phase==='battle')$('sTime').textContent=mmss(S.deadline-Date.now());else $('sTime').textContent='-'},500);
 function renderS(){
- const d=S.st,b=$('sBody');clearInterval(sT);
- const me=d&&d.me;
- if(me){$('sZone').textContent=me.escaped?'탈출!':(me.zone+1)+'구역';$('sSteps').textContent=me.escaped?'-':me.steps+'/4';$('sRank').textContent=me.rank+'/'+me.n;
-  $('sLet').innerHTML=ZONES.map((z,i)=>`<i class="${i<me.letters.length?'on':''}">${i<me.letters.length?z.L:'?'}</i>`).join('');$('sTurn').textContent=d.turn?`턴 ${Math.min(d.turn,d.turns)}/${d.turns}`:'대기'}
- else $('sLet').innerHTML=ZONES.map(()=>'<i>?</i>').join('');
- if(!d||d.phase==='lobby'){b.innerHTML=`<div class="wait"><div class="e">${esc(S.av)}</div><h2>입장 완료!</h2><p class="muted">선생님 화면에 내 로봇이 보이나요?<br>작전 시작을 기다려요</p></div>`;return}
- if(me&&me.escaped&&d.phase!=='end'){b.innerHTML=`<div class="wait"><div class="e">🎉</div><h2>탈출 성공!</h2><p class="muted">선생님 화면에서 친구들을 응원해요</p></div>`;return}
- const timer=()=>{const f=()=>{const t=$('sTm');if(t)t.textContent=Math.max(0,Math.ceil((S.deadline-Date.now())/1000))+'초'};f();sT=setInterval(f,300)};
- if(d.phase==='plan'){
-  if(me.submitted){b.innerHTML=`<div class="wait"><div class="e">⚙️</div><h2>작전 제출 완료</h2><p class="muted">${ACTS.map(a=>a.ic+' '+(me.alloc?me.alloc[a.k]:0)).join(' · ')}</p><p class="muted">퀴즈를 기다려요</p></div>`;return}
-  if(!S.alloc)S.alloc={move:0,data:0,shield:0,charge:0};
-  const used=Object.values(S.alloc).reduce((a,b)=>a+b,0),left=me.energy-used;
-  b.innerHTML=`<div class="ptitle"><h2>⚙️ 에너지 나누기</h2><span class="chip">⏱ <span id="sTm"></span></span></div>
-  <div class="card" style="padding:12px 14px;display:flex;align-items:center;gap:12px"><b>남은 에너지 ${left}/${me.energy}</b><div class="energy">${Array.from({length:me.energy},(_,i)=>`<i class="${i<left?'':'off'}"></i>`).join('')}</div></div>
-  <div class="alloc">${ACTS.map(a=>`<div class="card arow"><span class="ic">${a.ic}</span><div><b>${a.name}</b><p>${a.d}</p></div><div class="step"><button data-k="${a.k}" data-d="-1" ${S.alloc[a.k]<=0?'disabled':''}>−</button><span>${S.alloc[a.k]}</span><button data-k="${a.k}" data-d="1" ${left<=0?'disabled':''}>+</button></div></div>`).join('')}</div>
-  <p class="muted" style="font-size:13px">남은 에너지는 제출할 때 자동으로 이동에 들어가요. 지금 문까지 ${ROOM-me.steps}걸음.</p>
-  <button class="btn big" id="sub">작전 제출</button>`;
-  b.querySelectorAll('.step button').forEach(x=>x.onclick=()=>{const k=x.dataset.k,dd=+x.dataset.d;const u=Object.values(S.alloc).reduce((a,b)=>a+b,0);if(dd>0&&u>=me.energy)return;S.alloc[k]=Math.max(0,S.alloc[k]+dd);tone(dd>0?660:440,.05,.03);renderS()});
-  $('sub').onclick=()=>{try{S.conn.send({t:'alloc',sid:S.sid,a:S.alloc})}catch(e){}tone(784,.1)};timer();return}
- if(d.phase==='quiz'){
-  if(me.answered||S.pick!==null){b.innerHTML=`<div class="wait"><div class="e">🔐</div><h2>답 제출!</h2><p class="muted">결과를 기다려요</p></div>`;return}
-  const q=me.quiz;if(!q){b.innerHTML='<div class="wait"><h2>잠시만요…</h2></div>';return}
-  b.innerHTML=`<div class="ptitle"><h2>${me.steps>=ROOM?'🚪 맞히면 문이 열려요!':'❓ 맞히면 1걸음 보너스'}</h2><span class="chip">⏱ <span id="sTm"></span></span></div>
-  <div class="card qcard">${esc(q.q)}</div><div class="opts">${q.o.map((o,i)=>`<button class="opt ${q.gone.includes(i)?'gone':''}" data-i="${i}"><span class="k">${'ABCD'[i]}</span><span>${esc(o)}</span></button>`).join('')}</div>
-  ${q.gone.length?`<p class="muted" style="font-size:13px">🧠 데이터 분석으로 오답 ${q.gone.length}개를 지웠어요</p>`:''}`;
-  b.querySelectorAll('.opt').forEach(x=>x.onclick=()=>{if(S.pick!==null)return;S.pick=+x.dataset.i;try{S.conn.send({t:'ans',sid:S.sid,c:S.pick})}catch(e){}tone(700,.08);renderS()});timer();return}
- if(d.phase==='result'||d.phase==='event'){
-  b.innerHTML=`<div class="wait">${d.ev?`<div class="e">${d.ev.ic}</div><h2>${esc(d.ev.t)}</h2><p class="muted">${esc(d.ev.d)}</p>`:`<div class="e">📋</div><h2>턴 ${d.turn} 결과</h2>`}
-  <div class="log">${(me.log||[]).map(l=>`<div class="${l.c}">${esc(l.t)}</div>`).join('')}</div><p class="muted">다음 턴을 기다려요</p></div>`;return}
- if(d.phase==='end'){b.innerHTML=`<div class="wait"><div class="e">${me.rank<=3?['🥇','🥈','🥉'][me.rank-1]:esc(S.av)}</div><h2>작전 종료 · ${me.rank}등</h2><p class="muted">${me.escaped?'탈출 성공!':'아쉽게 탈출하지 못했어요'} · 모은 글자 ${me.letters.join('')||'없음'}</p><p class="muted">출구 암호는 HUMAN!</p></div>`;return}
+ const d=S.st,b=$('sBody');
+ if(!d||d.phase==='lobby'){b.innerHTML=`<div class="res"><div class="e">${esc(S.av)}</div><h2>입장 완료!</h2><p class="muted">선생님 화면에 내 히어로가 보이나요?<br>전투 시작을 기다려요</p><p class="muted" style="font-size:15px">⚔️ 맞히면 공격 · 🔥 연속이면 크리티컬 · 💫 틀리면 3초 기절</p></div>`;return}
+ if(d.phase==='end'){const me=d.me||{};b.innerHTML=`<div class="res"><div class="e">${d.win?'🎉':'💨'}</div><h2>${d.win?'ALGO 격파!':'ALGO가 도망쳤어요'}</h2><p class="big">${me.dmg||0}</p><p class="muted">내 공격력 · 공격 ${me.rank||'-'}위 · 최고 ${me.best||0}연속</p><p class="ans">출구 암호: HUMAN</p></div>`;return}
+ if(S.res){const r=S.res;
+  if(r.ok){b.innerHTML=`<div class="res"><div class="e">${r.crit>2?'💥':r.crit>1?'🔥':'⚔️'}</div><h2>${r.crit>2?'3배 크리티컬!':r.crit>1?'크리티컬!':'정답! 공격 성공'}</h2><p class="big ${r.crit>1?'crit':''}">-${r.dmg}</p></div>`}
+  else{const q=S.q;b.innerHTML=`<div class="res"><div class="e">💫</div><h2>ALGO의 반격! 기절</h2><p class="stun" id="sStun">3</p>${q?`<p class="ans">정답: ${esc(q.o[r.correct])}</p>`:''}</div>`}
+  return}
+ if(!S.q){b.innerHTML='<div class="res"><div class="e">⏳</div><h2>문제 불러오는 중…</h2></div>';return}
+ const q=S.q;
+ b.innerHTML=`<span class="chip qtag">${esc(q.zone)}</span><div class="card qcard">${esc(q.q)}</div><div class="opts">${q.o.map((o,i)=>`<button class="opt" data-i="${i}"><span class="k">${'ABCD'[i]}</span><span>${esc(o)}</span></button>`).join('')}</div>`;
+ b.querySelectorAll('.opt').forEach(x=>x.onclick=()=>{if(S.lock)return;S.lock=true;x.classList.add('pick');b.querySelectorAll('.opt').forEach(y=>y.disabled=true);sendS({t:'ans',id:q.id,c:+x.dataset.i})});
 }
 
 /* ================= 시작 ================= */
