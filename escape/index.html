@@ -3,392 +3,365 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>AI 연구소 탈출</title>
+<title>AI 연구소 탈출 레이스</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Gothic+A1:wght@400;600;800&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Gothic+A1:wght@400;700;800&family=IBM+Plex+Mono:wght@600&display=swap">
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="https://unpkg.com/qrcode-generator@1.4.4/qrcode.js"></script>
 <style>
-:root{--bg:#0f1624;--panel:#18233a;--panel2:#20304d;--line:#2e4166;--fg:#eaf0fa;--muted:#9aaccc;--hz:#f4b43a;--algo:#ff5f7a;--ok:#4fd1a5;--blue:#5aa2ff;
---fd:"Black Han Sans","Gothic A1",sans-serif;--fb:"Gothic A1","Apple SD Gothic Neo","Malgun Gothic",sans-serif;--fm:"IBM Plex Mono",ui-monospace,monospace}
-*{box-sizing:border-box}
-html,body{margin:0;min-height:100%}
-body{background:var(--bg);color:var(--fg);font-family:var(--fb);font-size:18px;line-height:1.55;
- background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:48px 48px;background-attachment:fixed}
-body::after{content:"";position:fixed;inset:0;background:radial-gradient(ellipse at 50% 25%,transparent 25%,var(--bg) 85%);pointer-events:none}
+:root{--bg:#120d2b;--bg2:#1c1442;--panel:#241a55;--line:#3b2f7a;--fg:#f4f1ff;--muted:#b7aee6;--y:#ffd23f;--r:#ff4d6d;--g:#2ee6a6;--b:#4cc9f0;--p:#9b5cff;
+--A:#e21b3c;--B:#1368ce;--C:#d89e00;--D:#26890c;--fd:"Black Han Sans","Gothic A1",sans-serif;--fb:"Gothic A1","Malgun Gothic",sans-serif;--fm:"IBM Plex Mono",monospace}
+*{box-sizing:border-box}html,body{margin:0;height:100%}
+body{background:radial-gradient(ellipse at 50% -10%,#3a2690 0%,var(--bg) 60%);color:var(--fg);font-family:var(--fb);overflow-x:hidden}
 .hidden{display:none!important}
-button{font:inherit;color:inherit;cursor:pointer}
-button:focus-visible,input:focus-visible{outline:3px solid var(--hz);outline-offset:2px}
-.wrap{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:18px 16px 40px;display:flex;flex-direction:column;gap:16px}
-h1,h2{font-family:var(--fd);font-weight:400;margin:0;letter-spacing:.01em}
-h1{font-size:clamp(40px,8vw,68px);line-height:1.08}
-h2{font-size:clamp(24px,4.6vw,34px);line-height:1.25}
-.eyebrow{font-family:var(--fm);font-size:13px;letter-spacing:.14em;color:var(--hz);text-transform:uppercase}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:22px clamp(16px,4vw,30px) 24px;position:relative}
-.panel::before{content:"";position:absolute;inset:0 0 auto;height:6px;border-radius:10px 10px 0 0;background:repeating-linear-gradient(-45deg,var(--hz) 0 12px,var(--bg) 12px 24px);opacity:.85}
-.lead{color:var(--muted);margin:8px 0 0}
-.btn{background:var(--hz);color:#111;border:0;border-radius:10px;padding:14px 26px;font-weight:800;font-size:19px}
-.btn:disabled{opacity:.4;cursor:not-allowed}
-.btn.ghost{background:transparent;color:var(--muted);border:2px solid var(--line)}
-.btn.blue{background:var(--blue);color:#0b1220}
-.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px}
-.field{display:flex;flex-direction:column;gap:6px;margin-top:14px}
-.field label{font-size:15px;color:var(--muted)}
-.field input{font:inherit;font-size:22px;background:var(--bg);color:var(--fg);border:2px solid var(--line);border-radius:10px;padding:10px 14px;max-width:420px}
-.avs{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
-.av{width:52px;height:52px;font-size:28px;border-radius:12px;border:2px solid var(--line);background:var(--panel2);display:grid;place-items:center}
-.av.on{border-color:var(--hz);background:#3a3115}
-/* HUD */
-.hud{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between}
-.zones{display:flex;gap:6px}
-.zn{width:44px;height:50px;border:2px solid var(--line);border-radius:6px 6px 0 0;background:var(--panel);display:grid;place-items:center;font-family:var(--fm);font-weight:600;color:var(--muted);position:relative}
-.zn.now{border-color:var(--hz);color:var(--hz)}
-.zn.open{background:var(--ok);border-color:var(--ok);color:#0b1220}
-.stats{display:flex;gap:14px;font-family:var(--fm);font-size:16px;color:var(--muted);flex-wrap:wrap;align-items:center}
-.stats b{color:var(--fg);font-variant-numeric:tabular-nums;font-size:20px}
-.hearts{font-size:22px;letter-spacing:2px}
-.combo{color:var(--hz)!important}
-.net{font-size:13px;padding:3px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
-.net.on{border-color:var(--ok);color:var(--ok)}
-/* ALGO */
-.algo{display:flex;gap:14px;align-items:flex-start}
-.bot{flex:none;width:72px;height:62px;border:3px solid var(--algo);border-radius:12px;background:var(--panel);display:grid;place-items:center;position:relative}
-.bot::after{content:"";position:absolute;bottom:-11px;left:50%;width:22px;height:8px;transform:translateX(-50%);background:var(--line);border-radius:0 0 4px 4px}
-.eye{width:28px;height:28px;border-radius:50%;background:var(--algo);box-shadow:0 0 18px var(--algo);animation:blink 4s infinite}
-.bot.calm{border-color:var(--ok)} .bot.calm .eye{background:var(--ok);box-shadow:0 0 18px var(--ok)}
-.bot.shake{animation:shake .4s}
-@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
-@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
-.bubble{flex:1;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:4px 14px 14px 14px;padding:10px 16px}
-.bubble .who{font-family:var(--fm);font-size:12px;letter-spacing:.12em;color:var(--algo)}
-.bot.calm+.bubble .who{color:var(--ok)}
-.bubble p{margin:0}
+button{font:inherit;color:inherit;cursor:pointer;border:0}
+h1,h2,h3{font-family:var(--fd);font-weight:400;margin:0}
+.btn{background:var(--y);color:#1a1333;border-radius:14px;padding:14px 28px;font-weight:800;font-size:22px;box-shadow:0 6px 0 #b8901a}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 #b8901a}
+.btn.ghost{background:transparent;color:var(--muted);border:2px solid var(--line);box-shadow:none}
+.btn.big{font-size:30px;padding:18px 42px}
+/* ===== landing ===== */
+.center{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:20px;text-align:center}
+.logo{font-family:var(--fd);font-size:clamp(46px,9vw,96px);line-height:1;background:linear-gradient(90deg,var(--y),#ff8a3d,var(--r));-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 6px 18px #0008)}
+.sub{color:var(--muted);font-size:20px}
+.card{background:var(--panel);border:2px solid var(--line);border-radius:22px;padding:24px;width:min(560px,100%)}
+.card input{width:100%;font:inherit;font-size:30px;text-align:center;background:#130e30;color:var(--fg);border:3px solid var(--line);border-radius:14px;padding:12px;margin:8px 0}
+.avs{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin:10px 0}
+.av{font-size:30px;aspect-ratio:1;border-radius:12px;background:#130e30;border:2px solid var(--line)}
+.av.on{border-color:var(--y);background:#3d3210;transform:scale(1.08)}
+/* ===== host ===== */
+#host{min-height:100vh;display:flex;flex-direction:column}
+.top{display:flex;align-items:center;gap:16px;padding:14px 24px}
+.top .code{font-family:var(--fm);font-size:30px;background:#fff;color:#1a1333;border-radius:12px;padding:4px 16px}
+.top .info{color:var(--muted);font-size:18px}
+.top .sp{flex:1}
+.stage{flex:1;display:flex;flex-direction:column;padding:0 24px 20px;gap:16px}
+.lobby{display:grid;grid-template-columns:340px 1fr;gap:24px;align-items:start}
+.qrbox{background:#fff;border-radius:18px;padding:14px;color:#1a1333;text-align:center}
+.qrbox svg{width:100%;height:auto}
+.qrbox .c{font-family:var(--fm);font-size:52px;letter-spacing:.1em}
+.qrbox .u{font-size:14px;word-break:break-all}
+.crowd{display:flex;flex-wrap:wrap;gap:12px;align-content:flex-start;min-height:300px}
+.kid{display:flex;flex-direction:column;align-items:center;animation:pop .4s}
+.kid .e{font-size:54px;animation:bob 1.2s ease-in-out infinite}
+.kid .n{font-weight:800;font-size:16px;background:#0006;border-radius:999px;padding:2px 10px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
 /* question */
-.timer{height:10px;border-radius:999px;background:var(--panel2);overflow:hidden;margin:10px 0 4px}
-.timer i{display:block;height:100%;background:linear-gradient(90deg,var(--ok),var(--hz),var(--algo));transform-origin:left;transition:transform .2s linear}
-.q{font-size:21px;font-weight:700;margin:12px 0 14px}
-.choices{display:grid;gap:10px}
-.ch{text-align:left;background:var(--panel2);border:2px solid var(--line);border-radius:10px;padding:14px 16px;font-size:18px;display:flex;gap:12px;align-items:flex-start;transition:border-color .12s,transform .08s}
-.ch:hover{border-color:var(--hz)} .ch:active{transform:scale(.99)}
-.ch .k{font-family:var(--fm);font-weight:600;color:var(--hz);flex:none}
-.ch.wrong{border-color:var(--algo);opacity:.5} .ch.right{border-color:var(--ok);background:#1d4a3f}
-.ch.gone{visibility:hidden}
-.ox{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.ox .ch{justify-content:center;font-family:var(--fd);font-size:56px;padding:18px}
-.picked{display:flex;flex-wrap:wrap;gap:8px;min-height:48px;padding:8px;border:2px dashed var(--line);border-radius:10px;margin-bottom:10px}
-.chip{background:var(--hz);color:#111;font-weight:800;border-radius:6px;padding:6px 10px;font-size:16px}
-.kp{display:flex;flex-wrap:wrap;gap:20px}
-.legend{flex:1 1 260px;display:grid;gap:8px}
-.legend div{display:flex;justify-content:space-between;background:var(--panel2);border-radius:6px;padding:8px 12px}
-.legend span:last-child{font-family:var(--fm);color:var(--hz)}
-.keys{flex:0 1 250px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.screen{grid-column:1/-1;font-family:var(--fm);font-size:30px;letter-spacing:.4em;text-align:center;background:var(--bg);border:2px solid var(--line);border-radius:8px;padding:8px 0;min-height:56px}
-.key{background:var(--panel2);border:2px solid var(--line);border-radius:8px;padding:12px 0;font-family:var(--fm);font-size:22px;font-weight:600}
-.key.fn{font-family:var(--fb);font-size:15px}
-.mock{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;background:#e9f9ee;border-radius:12px;padding:14px}
-.mock .ch{background:#fff;color:#14331f;border-color:#c9e8d3;flex-direction:column;align-items:center;text-align:center}
-.mock .ch small{color:#16804a;font-weight:700}
-.tools{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
-.feedback{margin-top:12px;padding:10px 14px;border-left:4px solid var(--ok);background:var(--panel2);border-radius:0 8px 8px 0}
-.feedback.bad{border-color:var(--algo)}
-.pop{position:fixed;left:50%;top:38%;transform:translate(-50%,-50%);font-family:var(--fd);font-size:44px;color:var(--hz);text-shadow:0 4px 18px #000;pointer-events:none;z-index:9;animation:pop .9s forwards}
-@keyframes pop{0%{opacity:0;transform:translate(-50%,-30%) scale(.6)}20%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}100%{opacity:0;transform:translate(-50%,-90%) scale(1)}}
-.fx{position:fixed;inset:0;pointer-events:none;z-index:8;opacity:0}
-.fx.bad{background:var(--algo);animation:flash .35s}.fx.good{background:var(--ok);animation:flash .45s}
-@keyframes flash{0%{opacity:.25}100%{opacity:0}}
-.letters{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
-.letter{width:56px;height:64px;display:grid;place-items:center;font-family:var(--fm);font-size:32px;font-weight:600;border:2px solid var(--ok);border-radius:6px;color:var(--ok)}
-.letter.empty{border-style:dashed;border-color:var(--line);color:var(--line)}
-.lesson{margin-top:12px;padding:12px 16px;border:1px solid var(--ok);border-radius:8px}
-.lesson b{color:var(--ok)}
-.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:16px 0}
-.stat{background:var(--panel2);border-radius:8px;padding:12px 16px}
-.stat span{display:block;font-size:14px;color:var(--muted)}
-.stat b{font-family:var(--fm);font-size:30px}
-.small{font-size:14px;color:var(--muted)}
-.rank{font-family:var(--fd);font-size:40px;color:var(--hz)}
-/* TEACHER */
-.tgrid{display:grid;grid-template-columns:300px 1fr;gap:18px;align-items:start}
-@media(max-width:820px){.tgrid{grid-template-columns:1fr}}
-.code{font-family:var(--fm);font-size:56px;font-weight:600;letter-spacing:.12em;color:var(--hz)}
-.qr svg{width:100%;height:auto;background:#fff;border-radius:10px}
-.url{font-family:var(--fm);font-size:14px;word-break:break-all;color:var(--muted)}
-.board{display:flex;flex-direction:column;gap:8px}
-.lane{display:grid;grid-template-columns:44px 140px 1fr 90px;gap:10px;align-items:center;background:var(--panel2);border-radius:10px;padding:8px 12px}
-.lane .nm{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.lane .ic{font-size:28px;text-align:center}
-.track{position:relative;height:30px;border-radius:999px;background:var(--bg);overflow:hidden}
-.track i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#2c5b9c,var(--ok));border-radius:999px;transition:width .4s}
-.track span{position:absolute;inset:0;display:flex;align-items:center;padding-left:10px;font-size:13px;font-family:var(--fm)}
-.lane .sc{font-family:var(--fm);font-size:20px;text-align:right}
-.lane.done{outline:2px solid var(--ok)}
-.lane.off{opacity:.5}
-.podium{display:flex;gap:14px;justify-content:center;align-items:flex-end;margin:10px 0 4px}
-.pd{background:var(--panel2);border-radius:12px 12px 0 0;padding:12px;text-align:center;width:170px}
-.pd .ic{font-size:44px}.pd b{display:block;font-size:20px}
+.qhead{display:flex;align-items:center;gap:18px}
+.zone-tag{font-family:var(--fd);font-size:22px;background:var(--p);border-radius:999px;padding:6px 18px}
+.qtext{font-family:var(--fd);font-size:clamp(30px,3.4vw,52px);line-height:1.25;background:#fff;color:#1a1333;border-radius:20px;padding:22px 30px;text-align:center}
+.qmid{display:flex;align-items:center;gap:24px}
+.timer{width:120px;height:120px;border-radius:50%;background:var(--p);display:grid;place-items:center;font-family:var(--fd);font-size:56px;flex:none;box-shadow:0 0 0 8px #9b5cff44}
+.timer.low{background:var(--r);animation:shake .5s infinite}
+.answered{font-family:var(--fd);font-size:28px;text-align:center;flex:none;width:150px}
+.answered b{display:block;font-size:64px}
+.algoq{flex:1;display:flex;align-items:center;justify-content:center;gap:14px;font-size:22px;color:var(--muted)}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.opt{display:flex;align-items:center;gap:16px;border-radius:16px;padding:22px 24px;font-size:clamp(22px,2.2vw,34px);font-weight:800;color:#fff;min-height:96px;position:relative;transition:opacity .3s,transform .3s}
+.opt .sh{font-size:40px;flex:none}
+.opt .cnt{margin-left:auto;font-family:var(--fd);font-size:36px}
+.oA{background:var(--A)}.oB{background:var(--B)}.oC{background:var(--C)}.oD{background:var(--D)}
+.opt.dim{opacity:.25;transform:scale(.97)}
+.opt.win{outline:6px solid #fff;transform:scale(1.02)}
+.opt.win::after{content:"✔";position:absolute;right:-12px;top:-14px;background:#fff;color:var(--D);border-radius:50%;width:44px;height:44px;display:grid;place-items:center;font-size:28px}
+/* race track */
+.trackwrap{position:relative;flex:1;min-height:420px;border-radius:22px;overflow:hidden;background:linear-gradient(#1b1440,#120d2b)}
+.zones{position:absolute;inset:0;display:flex}
+.zseg{flex:1;border-right:3px dashed #ffffff22;position:relative}
+.zseg:nth-child(odd){background:#ffffff06}
+.zseg .lab{position:absolute;top:10px;left:12px;font-family:var(--fd);font-size:20px;color:#ffffff88}
+.zseg .lt{position:absolute;top:8px;right:10px;font-family:var(--fm);font-size:24px;width:40px;height:44px;border:2px dashed #ffffff44;border-radius:6px;display:grid;place-items:center;color:#ffffff44}
+.zseg .lt.on{border:2px solid var(--g);color:var(--g);background:#2ee6a622}
+.exit{position:absolute;right:0;top:0;bottom:0;width:70px;background:repeating-linear-gradient(0deg,#fff 0 22px,#1a1333 22px 44px);opacity:.9}
+.exit span{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(90deg);font-family:var(--fd);font-size:30px;color:var(--r);background:#fff;padding:2px 12px;border-radius:8px;white-space:nowrap}
+.runner{position:absolute;transition:left 2.4s cubic-bezier(.3,.9,.4,1),top .6s;display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-50%)}
+.runner .e{font-size:44px;line-height:1}
+.runner.run .e{animation:run .25s linear infinite}
+.runner .n{font-size:13px;font-weight:800;background:#000a;border-radius:999px;padding:1px 8px;white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis}
+.runner.top3 .n{background:var(--y);color:#1a1333}
+.runner.trip .e{animation:trip .6s}
+@keyframes run{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-10px) rotate(6deg)}}
+@keyframes trip{0%{transform:rotate(0)}40%{transform:rotate(80deg) translateY(10px)}100%{transform:rotate(0)}}
+.algo{position:absolute;top:0;bottom:0;transition:left 2.4s ease-in-out;width:0}
+.algo .beam{position:absolute;top:0;bottom:0;right:0;width:60vw;background:linear-gradient(90deg,transparent,#ff4d6d33);}
+.algo .bot{position:absolute;top:50%;right:-46px;transform:translateY(-50%);width:92px;height:80px;border:4px solid var(--r);border-radius:16px;background:#2a1030;display:grid;place-items:center;box-shadow:0 0 30px #ff4d6d88}
+.algo .eye{width:36px;height:36px;border-radius:50%;background:var(--r);box-shadow:0 0 22px var(--r);animation:blink 3s infinite}
+.algo .say{position:absolute;top:calc(50% - 90px);right:-60px;background:var(--r);color:#fff;font-weight:800;border-radius:12px;padding:6px 12px;white-space:nowrap;font-size:16px}
+@keyframes blink{0%,90%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.bar{display:flex;gap:14px;align-items:center}
+.bar .msg{flex:1;font-family:var(--fd);font-size:30px}
+.lead5{display:flex;gap:10px}
+.lead5 div{background:var(--panel);border-radius:12px;padding:6px 14px;font-weight:800;font-size:18px}
+/* zone clear / podium */
+.bigmsg{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center}
+.bigmsg .t{font-family:var(--fd);font-size:clamp(50px,7vw,110px);line-height:1.05}
+.letters{display:flex;gap:14px}
+.letter{width:96px;height:110px;border-radius:14px;border:4px solid var(--g);display:grid;place-items:center;font-family:var(--fm);font-size:64px;color:var(--g);background:#2ee6a611;animation:pop .5s}
+.letter.empty{border-style:dashed;border-color:var(--line);color:var(--line);background:none}
+.podium{display:flex;align-items:flex-end;gap:20px;justify-content:center}
+.pd{width:220px;border-radius:18px 18px 0 0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:16px;gap:6px;animation:rise 1s}
+.pd .e{font-size:80px}.pd b{font-size:26px}.pd .rk{font-family:var(--fd);font-size:60px}
+@keyframes rise{from{transform:translateY(200px);opacity:0}}
+.confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.confetti i{position:absolute;top:-20px;width:12px;height:18px;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+/* ===== student ===== */
+#student{min-height:100vh;display:flex;flex-direction:column}
+.shead{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#0005}
+.shead .me{font-size:30px}.shead .nm{font-weight:800;flex:1}.shead .sc{font-family:var(--fm);background:#fff;color:#1a1333;border-radius:8px;padding:2px 10px}
+.sbody{flex:1;display:flex;flex-direction:column;padding:14px;gap:12px}
+.sq{background:#fff;color:#1a1333;border-radius:14px;padding:14px 16px;font-weight:800;font-size:20px;text-align:center}
+.sopts{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.sopt{border-radius:16px;color:#fff;font-weight:800;font-size:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:12px;min-height:120px;box-shadow:0 6px 0 #0006}
+.sopt .sh{font-size:48px}
+.sopt:active{transform:translateY(4px);box-shadow:0 2px 0 #0006}
+.swait{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center}
+.swait .e{font-size:110px;animation:bob 1.2s infinite}
+.swait .t{font-family:var(--fd);font-size:40px}
+.swait.ok{background:radial-gradient(circle,#2ee6a644,transparent 70%)}
+.swait.no{background:radial-gradient(circle,#ff4d6d44,transparent 70%)}
+.status{font-size:13px;color:var(--muted);text-align:center;padding:6px}
+@media (max-width:700px){.lobby{grid-template-columns:1fr}.opts{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
-<div class="wrap" id="app"></div>
-<div class="fx" id="fx"></div>
+<div id="landing" class="center">
+  <div class="logo">AI 연구소 탈출 레이스</div>
+  <div class="sub">ALGO 로봇에게 잡히기 전에 연구소를 빠져나가라!</div>
+  <div class="card">
+    <input id="codeIn" inputmode="numeric" maxlength="5" placeholder="방 코드 5자리" autocomplete="off">
+    <button class="btn big" id="toJoin" style="width:100%">입장하기</button>
+  </div>
+  <button class="btn ghost" id="toHost">선생님: 방 만들기</button>
+</div>
+
+<div id="prof" class="center hidden">
+  <div class="logo" style="font-size:48px">내 캐릭터 고르기</div>
+  <div class="card">
+    <div class="avs" id="avs"></div>
+    <input id="nameIn" maxlength="8" placeholder="별명 (실명 X)" autocomplete="off">
+    <button class="btn big" id="joinGo" style="width:100%">레이스 참가!</button>
+    <p class="status" id="pmsg"></p>
+  </div>
+</div>
+
+<div id="host" class="hidden">
+  <div class="top"><b style="font-family:var(--fd);font-size:26px">AI 연구소 탈출 레이스</b><span class="code" id="hCode">-----</span><span class="info" id="hInfo"></span><span class="sp"></span><button class="btn ghost" id="mute">🔊</button></div>
+  <div class="stage" id="stage"></div>
+</div>
+
+<div id="student" class="hidden">
+  <div class="shead"><span class="me" id="sAv"></span><span class="nm" id="sNm"></span><span class="sc" id="sSc">0</span></div>
+  <div class="sbody" id="sBody"></div>
+  <div class="status" id="sStatus">연결 중…</div>
+</div>
+<div class="confetti" id="conf"></div>
+
 <script>
 "use strict";
-/* ============ 문제 은행 (인공지능 히어로 1~5교시) ============ */
+/* ===== 문제 15개 (구역당 3개 · 인공지능 히어로 1~6교시) ===== */
 const ZONES=[
- {name:"정체 확인실",letter:"H",topic:"1교시 · 왜, 인공지능?",
-  intro:"후후, 정체 확인실이다. AI랑 AI 아닌 것도 구별 못 하면 여기서 못 나가!",
-  lesson:"<b>1교시 정리</b> 데이터로 배워서 판단하는 게 AI. 챗GPT·알파고는 한 가지 일을 잘하는 약한 AI. AI 실력을 정하는 건 데이터!",
-  pool:[
-  {t:"choice",q:"다음 중 AI가 아닌 것은?",o:["넷플릭스 영화 추천","유튜브 자동 자막","계산기 앱의 3×7=21","얼굴 인식 잠금 해제"],a:2,hint:"사람이 정한 규칙대로만 계산하는 건?"},
-  {t:"choice",q:"챗GPT와 알파고는 어떤 AI일까요?",o:["강한 AI","약한 AI (한 분야를 잘하는 AI)","초지능 AI","AI가 아닌 프로그램"],a:1,hint:"알파고는 바둑 최강이지만 라면은 못 끓여요."},
-  {t:"choice",q:"AI의 실력을 결정하는 가장 중요한 것은?",o:["화면 크기","데이터","프로그램 이름","전기 요금"],a:1,hint:"AI는 무엇을 보고 배울까요?"},
-  {t:"ox",q:"AI는 모르는 질문을 받으면 항상 '모른다'고 답한다.",a:false,hint:"그럴듯하게 지어낼 때도 있었죠?"},
-  {t:"ox",q:"로봇은 모두 AI다.",a:false,hint:"정해진 동작만 반복하는 로봇도 있어요."},
-  {t:"choice",q:"AI가 사실이 아닌 내용을 그럴듯하게 지어내는 것을 무엇이라고 할까요?",o:["할루시네이션(환각)","업데이트","로그인","다운로드"],a:0,hint:"AI가 꿈꾸듯 헛것을 본다는 뜻!"},
-  {t:"choice",q:"'컴퓨터(computer)'는 원래 무엇을 부르는 말이었을까요?",o:["계산하는 사람","전자 기계","게임기","전화기"],a:0,hint:"1교시: NASA의 '인간 컴퓨터'"}
- ]},
- {name:"얼굴 학습실",letter:"U",topic:"2교시 · AI 닮은꼴과 디지털 윤리",
-  intro:"얼굴 학습실이다. 나는 연예인 사진 세 장 보고 배워서 모두를 같은 배우라고 하지. 크크.",
-  lesson:"<b>2교시 정리</b> 컴퓨터에게 사진은 숫자 바둑판. 데이터 모으기 → 학습 → 테스트. 얼굴은 주인의 것!",
-  pool:[
-  {t:"choice",q:"컴퓨터에게 사진은 무엇으로 보일까요?",o:["숫자들이 모인 바둑판(픽셀)","사람 눈과 같은 그림","글자 설명","소리 파형"],a:0,hint:"사진을 확대하면 작은 네모 칸!"},
-  {t:"order",q:"티처블 머신으로 닮은꼴 AI를 만드는 순서대로 누르세요.",items:["학습시키기","새 사진으로 테스트","사진(데이터) 모으기"],a:[2,0,1],hint:"공부 재료 → 공부 → 시험"},
-  {t:"choice",q:"인터넷에서 얼굴 사진 수십억 장을 허락 없이 모아 얼굴 인식 AI를 만든 회사가 여러 나라에서 벌금을 받았어요. 가장 큰 문제는?",o:["사진 화질","얼굴 주인의 동의 없이 모았다","AI 이름","컴퓨터 속도"],a:1,hint:"얼굴의 주인은 누구?"},
-  {t:"choice",q:"얼굴 인식 AI가 어떤 사람들의 얼굴을 더 자주 틀리는 이유로 가장 알맞은 것은?",o:["그 사람들이 사진을 싫어해서","학습 데이터에 그런 얼굴이 적어서","카메라가 고장 나서","AI가 일부러 틀려서"],a:1,hint:"AI는 본 만큼만 알아봐요."},
-  {t:"ox",q:"친구 얼굴을 허락 없이 AI로 합성해 단톡방에 올려도 장난이면 괜찮다.",a:false,hint:"내 얼굴이라면?"},
-  {t:"ox",q:"닮은꼴 AI가 '87% 닮음'이라고 하면, 과학적으로 87% 닮았다는 뜻이다.",a:false,hint:"AI는 배운 사진 중 가장 비슷한 쪽을 고를 뿐이에요."}
- ]},
- {name:"미래 직업실",letter:"M",topic:"3교시 · AI와 미래 직업",
-  intro:"미래 직업실이다. 내가 너희 일자리를 몽땅 가져갈 거다! …라고 믿겠지?",
-  lesson:"<b>3교시 정리</b> AI는 직업을 없애기보다 그 안의 '일'을 바꿔요. 새 직업 = 문제 + AI 기술 + 사람의 강점!",
-  pool:[
-  {t:"choice",q:"ATM이 생긴 뒤 은행원은 어떻게 됐을까요?",o:["모두 사라졌다","돈 세는 일은 줄고 상담 같은 일이 늘었다","ATM만 고친다","전혀 안 바뀌었다"],a:1,hint:"직업은 사라지지 않고, ○이 바뀐다."},
-  {t:"choice",q:"3교시 새 직업 발명 공식은?",o:["문제 + AI 기술 + 사람의 강점","돈 + 유행 + 운","AI + AI + AI","연예인 + 게임"],a:0,hint:"사람이 잘하는 것도 들어가요."},
-  {t:"choice",q:"캔바 동영상에서 AI로 장면 이미지를 만드는 앱은?",o:["Magic Media","계산기","메모장","휴지통"],a:0,hint:"마법 같은 미디어!"},
-  {t:"ox",q:"대부분의 직업은 AI 때문에 완전히 사라진다.",a:false,hint:"대부분은 '바뀜'이었어요."},
-  {t:"choice",q:"AI 이미지 프롬프트로 가장 좋은 것은?",o:["멋지게","의사","병원에서 AI 로봇과 환자를 돌보는 간호사, 3D 일러스트","아무거나"],a:2,hint:"누가 + 어디서 + 무엇을 + 어떤 그림체"}
- ]},
- {name:"서비스 기획실",letter:"A",topic:"4교시 · 내 일상에 AI 더하기",
-  intro:"서비스 기획실이다. 불편함? 그딴 거 몰라. 나는 아무거나 만들지!",
-  lesson:"<b>4교시 정리</b> AI 서비스 = 관심 영역 + 불편함 + How?(AI 능력) + 데이터. 디자인씽킹: 공감 → 정의 → 아이디어 → 프로토타입 → 테스트!",
-  pool:[
-  {t:"order",q:"디자인씽킹 5단계를 순서대로 누르세요.",items:["프로토타입","공감","테스트","정의","아이디어"],a:[1,3,4,0,2],hint:"듣기 → 문제 한 문장 → 많이 내기 → 그리기 → 보여 주기"},
-  {t:"code",q:"각 서비스가 쓰는 AI 능력 번호를 위에서부터 입력하세요.",legend:[["시각","1"],["청각","2"],["언어","3"],["예측","4"]],items:["① 번역 앱","② 레고 블록 사진 인식","③ 유튜브 자동 자막(말소리 → 글자)","④ 내일 비 올 확률"],a:"3124",hint:"번역=글·말 / 사진=눈 / 말소리 듣기=귀 / 앞날=예측"},
-  {t:"choice",q:"급식 잔반을 줄이는 AI에게 가장 알맞은 데이터는?",o:["학생 집 주소","메뉴별 남긴 양 사진, 날짜·날씨, 메뉴","전교생 성적표","인기 동영상 목록"],a:1,hint:"문제와 직접 관련된 것만!"},
-  {t:"choice",q:"AI 서비스 탄생 공식은?",o:["관심 영역 + 불편함 + How? + 데이터","돈 + 광고","코딩 + 코딩","유행 + 운"],a:0,hint:"레고 AI를 풀었던 네 칸"},
-  {t:"choice",q:"디자인씽킹 '정의' 단계의 문제 문장으로 가장 좋은 것은?",o:["환경 문제가 심각하다","세상을 바꾸고 싶다","우리 반 친구들은 분리수거할 때 몰라서 일반쓰레기에 버린다","쓰레기가 많다"],a:2,hint:"누가 · 언제 · 무엇 때문에"},
-  {t:"ox",q:"Brickit 앱은 레고 더미 사진을 보고 만들 수 있는 작품을 추천한다.",a:true,hint:"4교시 도입 영상!"}
- ]},
- {name:"앱 통제실",letter:"N",topic:"5~6교시 · AI 앱과 미래",
-  intro:"마지막 앱 통제실! 내가 만든 앱은 완벽해. 테스트? 필요 없어!",
-  lesson:"<b>5~6교시 정리</b> AI가 만든 앱도 틀려요. 사람이 테스트하고, 한 번에 하나씩 구체적으로 고쳐요. 내 앱이 퍼지면 1차·2차 영향까지 생각해요.",
-  pool:[
-  {t:"bug",q:"ALGO가 만든 분리수거 앱이에요. 틀린 버튼 하나를 찾아 누르세요!",cards:[["🥛","우유팩","종이팩"],["🥫","음료 캔","캔류"],["🖊️","다 쓴 볼펜","일반쓰레기"],["🧴","투명 페트병","음식물쓰레기"]],a:3,hint:"페트병이 음식물?"},
-  {t:"choice",q:"앱을 고칠 때 가장 좋은 수정 요청은?",o:["더 좋게 해 줘","이상한 거 다 고쳐 줘","'다' 버튼 이름을 '다 쓴 볼펜'으로 바꿔 줘","알아서 해"],a:2,hint:"한 번에 하나, 어디를·어떻게"},
-  {t:"choice",q:"AI가 만든 앱에 틀린 정보가 있어요. 가장 알맞은 행동은?",o:["AI가 만들었으니 맞겠지","확인하고 고쳐 달라고 요청한다","그냥 퍼뜨린다","모른 척한다"],a:1,hint:"테스트하고 고치는 건 사람!"},
-  {t:"choice",q:"중심 사건 'AI 자율주행 버스', 1차 영향 '버스 기사 일자리 감소'. 이어지는 2차 영향은?",o:["기사 재교육·새 직업 프로그램이 생긴다","버스 색이 바뀐다","걷기를 싫어한다","AI가 운전을 안 한다"],a:0,hint:"1차 영향 '때문에' 생기는 일"},
-  {t:"ox",q:"제미나이 캔버스로 만든 앱 속 'AI 기능'은 항상 진짜 AI가 작동한다.",a:false,hint:"5교시: 흉내일 수도!"},
-  {t:"choice",q:"앱 만들기 프롬프트에 넣으면 안 되는 것은?",o:["앱 이름","누구를 위한 앱인지","내 전화번호와 집 주소","화면 디자인"],a:2,hint:"개인정보!"}
- ]}
+ {name:"정체 확인실",short:"1구역 · 1교시",letter:"H",qs:[
+  {q:"다음 중 AI가 아닌 것은?",o:["넷플릭스 영화 추천","유튜브 자동 자막","계산기의 3×7=21","얼굴 인식 잠금"],a:2},
+  {q:"AI의 실력을 결정하는 가장 중요한 것은?",o:["화면 크기","데이터","프로그램 이름","전기 요금"],a:1},
+  {q:"AI는 모르는 질문에 항상 '모른다'고 답한다.",o:["O","X"],a:1,ox:1}]},
+ {name:"얼굴 학습실",short:"2구역 · 2교시",letter:"U",qs:[
+  {q:"컴퓨터에게 사진은 무엇으로 보일까?",o:["숫자 바둑판(픽셀)","사람 눈과 같은 그림","글자 설명","소리"],a:0},
+  {q:"얼굴 사진 수십억 장을 허락 없이 모아 벌금을 낸 회사. 가장 큰 문제는?",o:["사진 화질","주인의 동의 없이 모았다","AI 이름","컴퓨터 속도"],a:1},
+  {q:"친구 얼굴을 허락 없이 AI로 합성해 단톡방에 올려도 장난이면 괜찮다.",o:["O","X"],a:1,ox:1}]},
+ {name:"미래 직업실",short:"3구역 · 3교시",letter:"M",qs:[
+  {q:"ATM이 생긴 뒤 은행원은?",o:["모두 사라졌다","돈 세는 일↓ 상담 같은 일↑","ATM만 고친다","전혀 안 바뀜"],a:1},
+  {q:"새 직업 발명 공식은?",o:["문제 + AI 기술 + 사람의 강점","돈 + 유행 + 운","AI + AI + AI","연예인 + 게임"],a:0},
+  {q:"캔바 동영상에서 AI로 장면 이미지를 만드는 앱은?",o:["Magic Media","계산기","메모장","휴지통"],a:0}]},
+ {name:"서비스 기획실",short:"4구역 · 4교시",letter:"A",qs:[
+  {q:"디자인씽킹의 첫 단계는?",o:["프로토타입","공감","테스트","아이디어"],a:1},
+  {q:"번역 앱이 주로 쓰는 AI 능력은?",o:["시각","청각","언어","예측"],a:2},
+  {q:"급식 잔반을 줄이는 AI에게 알맞은 데이터는?",o:["학생 집 주소","남긴 양 사진·날씨·메뉴","전교생 성적표","인기 동영상"],a:1}]},
+ {name:"앱 통제실",short:"5구역 · 5~6교시",letter:"N",qs:[
+  {q:"ALGO 앱의 버그는? 🧴투명 페트병 → ?",o:["플라스틱(투명 페트병)","음식물쓰레기","종이류","캔류"],a:1,bug:1},
+  {q:"앱을 고칠 때 가장 좋은 요청은?",o:["더 좋게 해 줘","이상한 거 다 고쳐 줘","'다' 버튼을 '다 쓴 볼펜'으로 바꿔 줘","알아서 해"],a:2},
+  {q:"'AI 자율주행 버스 → 버스 기사 일자리 감소' 다음 2차 영향은?",o:["기사 재교육·새 직업 프로그램","버스 색이 바뀐다","걷기를 싫어한다","AI가 운전 안 함"],a:0}]}
 ];
-const PER_ZONE=3, QTIME=25, HEARTS=3;
-const TAUNT=["삐빅! 틀렸어. 내 연산의 0.0001%도 못 따라오는군.","땡! 하트 하나 압수다.","오답! 나는 심심하지 않아서 좋아.","틀렸지? 크크크."];
-const PRAISE=["…맞혔다고?! 계산에 없었는데.","정답. 흥, 운이 좋았을 뿐.","생각보다 똑똑하네?","보안 레벨이 내려간다… 안 돼!"];
-const AV=['🐶','🐱','🦊','🐼','🐸','🐯','🐰','🐻','🐨','🐵','🐧','🦁','🐙','🦄','🐲','🦖','🐥','🦉','🐳','🦋','🐝','🐹','🤖','👾'];
-const PREFIX='aihero-escape-v1-';
+const QLIST=[];ZONES.forEach((z,zi)=>z.qs.forEach((q,k)=>QLIST.push(Object.assign({zi,k},q))));
+const QT=20; // seconds
+const SH=['▲','◆','●','■'],CL=['oA','oB','oC','oD'],CLS=['var(--A)','var(--B)','var(--C)','var(--D)'];
+const AV=['🐶','🐱','🦊','🐼','🐸','🐯','🐰','🐻','🐨','🐵','🐧','🦁','🐙','🦄','🐲','🦖','🐥','🦉','🐳','🦋','🐝','🐹','🤖','👾','🐢','🦈','🐿️','🦔','🐌','🦀','🐞','🦩'];
+const PREFIX='aihero-race-v1-';
 const PEERCFG={debug:0,config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:['turn:openrelay.metered.ca:80','turn:openrelay.metered.ca:443','turn:openrelay.metered.ca:443?transport=tcp'],username:'openrelayproject',credential:'openrelayproject'}]}};
-const KEY='aihero-escape-play-v1';
 const $=id=>document.getElementById(id);
-const app=$('app');
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const pick=a=>a[Math.floor(Math.random()*a.length)];
-const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
-const fmt=ms=>{let s=Math.max(0,Math.floor(ms/1000));const m=Math.floor(s/60);s%=60;return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')};
+const show=id=>['landing','prof','host','student'].forEach(x=>$(x).classList.toggle('hidden',x!==id));
 const params=new URLSearchParams(location.search);
-
-/* ============ 효과음 (WebAudio, 끌 수 있음) ============ */
 let actx=null,muted=false;
-function beep(f,d,type='square',v=.06){if(muted)return;try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();const o=actx.createOscillator(),g=actx.createGain();o.type=type;o.frequency.value=f;g.gain.value=v;o.connect(g);g.connect(actx.destination);o.start();g.gain.exponentialRampToValueAtTime(.0001,actx.currentTime+d);o.stop(actx.currentTime+d)}catch(e){}}
-const sGood=()=>{beep(660,.12);setTimeout(()=>beep(990,.16),90)},sBad=()=>beep(140,.3,'sawtooth',.08),sWin=()=>[523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,.2,'triangle',.08),i*130));
-function flash(k){const f=$('fx');f.className='fx';void f.offsetWidth;f.className='fx '+k}
-function popText(t){const d=document.createElement('div');d.className='pop';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),950)}
+function tone(f,d,type='square',v=.05,delay=0){if(muted)return;try{actx=actx||new(window.AudioContext||window.webkitAudioContext)();const t=actx.currentTime+delay,o=actx.createOscillator(),g=actx.createGain();o.type=type;o.frequency.setValueAtTime(f,t);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(actx.destination);o.start(t);o.stop(t+d)}catch(e){}}
+const sTick=()=>tone(880,.06,'square',.03),sGo=()=>[523,659,784].forEach((f,i)=>tone(f,.15,'triangle',.07,i*.1)),sWin=()=>[523,659,784,1047,1319].forEach((f,i)=>tone(f,.22,'triangle',.08,i*.12)),sBad=()=>tone(150,.35,'sawtooth',.07),sRun=()=>{for(let i=0;i<10;i++)tone(200+i*40,.05,'square',.025,i*.12)};
+function confetti(n=140){const c=$('conf');for(let i=0;i<n;i++){const e=document.createElement('i');e.style.left=Math.random()*100+'vw';e.style.background=['#ffd23f','#ff4d6d','#2ee6a6','#4cc9f0','#9b5cff'][i%5];e.style.animationDuration=(2+Math.random()*2.5)+'s';e.style.animationDelay=Math.random()*1.2+'s';c.appendChild(e);setTimeout(()=>e.remove(),5500)}}
 
-/* ============ 학생 게임 상태 ============ */
-let S=null;
-function freshS(){return {stage:'start',name:'',av:AV[Math.floor(Math.random()*AV.length)],code:params.get('r')||'',sid:Math.random().toString(36).slice(2,10),
- zone:0,qi:0,qs:[],score:0,combo:0,best:0,hearts:HEARTS,items:2,letters:[],start:0,end:0,correct:0,wrong:0,qStart:0,picked:[],codeIn:'',traps:0}}
-function load(){try{const o=JSON.parse(localStorage.getItem(KEY)||'null');if(o&&o.stage)return Object.assign(freshS(),o)}catch(e){}return freshS()}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
-
-/* ============ 교사 연결(선택) ============ */
-let NET={peer:null,conn:null,on:false};
-function netConnect(){
- if(!S.code||typeof Peer==='undefined')return;
- if(NET.peer&&!NET.peer.destroyed)return dial();
- NET.peer=new Peer(undefined,PEERCFG);
- NET.peer.on('open',dial);
- NET.peer.on('error',()=>{NET.on=false;netChip();setTimeout(dial,4000)});
- NET.peer.on('disconnected',()=>{try{NET.peer.reconnect()}catch(e){}});
+/* ================= HOST ================= */
+let H=null;
+function hostStart(){
+ const code=String(Math.floor(10000+Math.random()*90000));
+ H={code,phase:'lobby',qi:-1,stu:{},conns:{},deadline:0,ans:{},peer:null,letters:0,tick:null,algo:0};
+ show('host');$('hCode').textContent=code;openHost();renderH();
+ $('mute').onclick=()=>{muted=!muted;$('mute').textContent=muted?'🔇':'🔊'};
+ document.addEventListener('keydown',e=>{if(e.code==='Space'&&e.target.tagName!=='INPUT'){e.preventDefault();const b=$('next');if(b)b.click()}});
 }
-function dial(){if(!NET.peer||NET.peer.destroyed||NET.peer.disconnected)return;
- const c=NET.peer.connect(PREFIX+S.code,{reliable:true});NET.conn=c;
- c.on('open',()=>{NET.on=true;netChip();report()});
- c.on('close',()=>{NET.on=false;netChip();setTimeout(dial,3000)});
-}
-function report(){if(NET.conn&&NET.conn.open){try{NET.conn.send({t:'prog',sid:S.sid,name:S.name,av:S.av,zone:S.letters.length,stage:S.stage,score:S.score,hearts:S.hearts,done:S.stage==='done',time:S.end?S.end-S.start:(S.start?Date.now()-S.start:0)})}catch(e){}}}
-function netChip(){const n=$('net');if(!n)return;n.className='net'+(NET.on?' on':'');n.textContent=S.code?(NET.on?'선생님 화면 연결됨':'연결 중…'):'혼자 하기'}
-
-/* ============ 화면 ============ */
-function algo(text,calm){return `<div class="algo"><div class="bot${calm?' calm':''}" id="bot"><div class="eye"></div></div><div class="bubble"><div class="who">ALGO · 연구소 관리 AI</div><p id="say">${esc(text)}</p></div></div>`}
-function say(t,calm){const s=$('say');if(s)s.textContent=t;const b=$('bot');if(b)b.classList.toggle('calm',!!calm)}
-function shake(){const b=$('bot');if(!b)return;b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake')}
-function hud(){
- let z='';for(let i=0;i<ZONES.length;i++){z+=`<div class="zn ${i<S.letters.length?'open':(i===S.zone&&S.stage==='play'?'now':'')}">${i<S.letters.length?S.letters[i]:i+1}</div>`}
- z+=`<div class="zn ${S.stage==='final'?'now':(S.stage==='done'?'open':'')}">${S.stage==='done'?'✓':'?'}</div>`;
- return `<div class="hud"><div class="zones">${z}</div><div class="stats"><span class="hearts" aria-label="하트 ${S.hearts}개">${'❤️'.repeat(S.hearts)}${'🖤'.repeat(Math.max(0,HEARTS-S.hearts))}</span><span>점수 <b id="sc">${S.score}</b></span><span class="combo">콤보 <b>${S.combo}</b></span><span>⏱ <b id="clock">${fmt(Date.now()-S.start)}</b></span><span class="net" id="net"></span></div></div>`;
-}
-function render(){
- if(S.stage==='start')return renderStart();
- if(S.stage==='play')return renderQ();
- if(S.stage==='zone')return renderZone();
- if(S.stage==='final')return renderFinal();
- if(S.stage==='done')return renderDone();
-}
-function renderStart(){
- app.innerHTML=algo("침입자 감지! 나는 이 연구소 관리 AI, ALGO. 잘못된 데이터를 너무 많이 먹어서 문을 전부 잠갔지. 나가고 싶으면 5개 구역을 혼자 힘으로 뚫어 봐!")+
- `<main class="panel"><div class="eyebrow">인공지능 히어로 · 2040년 국립 AI 연구소 지하 3층</div><h1>AI 연구소 탈출</h1>
- <p class="lead">구역마다 문제 3개! 맞히면 점수, 빨리 맞히면 보너스, 연속으로 맞히면 콤보! 틀리면 ❤️가 줄어요. 비밀 글자 5개를 모아 출구 암호를 풀면 탈출!</p>
- <div class="field"><label for="nm">닉네임 (실명 말고 별명!)</label><input id="nm" maxlength="10" autocomplete="off" placeholder="예: 데이터탐정" value="${esc(S.name)}"></div>
- <div class="field"><label>캐릭터</label><div class="avs" id="avs">${AV.map(a=>`<button class="av${a===S.av?' on':''}" data-a="${a}" aria-label="${a}">${a}</button>`).join('')}</div></div>
- <div class="field"><label for="cd">방 코드 (선생님 화면에 순위가 뜨게 하려면 입력 · 없으면 비워 두기)</label><input id="cd" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="예: 48213" value="${esc(S.code)}"></div>
- <div class="row"><button class="btn" id="go">탈출 시작 ▶</button><button class="btn ghost" id="mute">${muted?'🔇 소리 꺼짐':'🔊 소리 켜짐'}</button></div>
- <p class="small" id="msg" aria-live="polite"></p></main>`;
- app.querySelectorAll('.av').forEach(b=>b.onclick=()=>{S.av=b.dataset.a;app.querySelectorAll('.av').forEach(x=>x.classList.toggle('on',x===b))});
- $('mute').onclick=()=>{muted=!muted;$('mute').textContent=muted?'🔇 소리 꺼짐':'🔊 소리 켜짐'};
- $('go').onclick=()=>{const v=$('nm').value.trim();if(!v){$('msg').textContent='닉네임을 먼저 써 주세요.';$('nm').focus();return}
-  S.name=v;S.code=$('cd').value.replace(/\D/g,'');S.stage='play';S.zone=0;S.start=Date.now();setupZone();save();netConnect();beep(440,.1);render()};
- $('nm').onkeydown=e=>{if(e.key==='Enter')$('go').click()};
-}
-function setupZone(){
- const pool=ZONES[S.zone].pool;
- S.qs=shuffle(pool.map((_,i)=>i)).slice(0,PER_ZONE);S.qi=0;S.picked=[];S.codeIn='';S.qStart=Date.now();S.removed=[];
-}
-let tickT=null,locked=false;
-function curQ(){return ZONES[S.zone].pool[S.qs[S.qi]]}
-function renderQ(){
- const Z=ZONES[S.zone],q=curQ();
- let body='';
- if(q.t==='choice'){body='<div class="choices">'+q.o.map((o,i)=>`<button class="ch${(S.removed||[]).includes(i)?' gone':''}" data-i="${i}"><span class="k">${'ABCD'[i]}</span><span>${esc(o)}</span></button>`).join('')+'</div>'}
- else if(q.t==='ox'){body=`<div class="ox"><button class="ch" data-v="1" aria-label="O 맞다">O</button><button class="ch" data-v="0" aria-label="X 틀리다">X</button></div>`}
- else if(q.t==='order'){body=`<div class="picked" id="pk"></div><div class="choices">`+q.items.map((o,i)=>`<button class="ch" data-i="${i}"><span class="k">+</span><span>${esc(o)}</span></button>`).join('')+`</div><div class="row"><button class="btn ghost" id="undo">다시 고르기</button></div>`}
- else if(q.t==='code'){body=`<div class="kp"><div class="legend">${q.legend.map(l=>`<div><span>${esc(l[0])} 지능</span><span>${l[1]}</span></div>`).join('')}<div style="display:block;background:none;padding:4px 0">${q.items.map(x=>`<div style="background:none;padding:2px 0;display:block">${esc(x)}</div>`).join('')}</div></div><div class="keys"><div class="screen" id="scr"></div>${[1,2,3,4,5,6,7,8,9].map(k=>`<button class="key" data-k="${k}">${k}</button>`).join('')}<button class="key fn" data-k="del">지우기</button><button class="key" data-k="0">0</button><button class="key fn" data-k="ok">확인</button></div></div>`}
- else if(q.t==='bug'){body=`<div class="mock">`+q.cards.map((c,i)=>`<button class="ch" data-i="${i}"><span style="font-size:34px">${c[0]}</span><b>${esc(c[1])}</b><small>${esc(c[2])}</small></button>`).join('')+`</div>`}
- app.innerHTML=algo(S.qi===0?Z.intro:pick(["다음 문제다. 이번엔 못 맞힐걸?","아직 안 끝났어!","흠, 이건 어떨까?"]))+hud()+
- `<main class="panel"><div class="eyebrow">${S.zone+1}구역 · ${esc(Z.name)} · ${esc(Z.topic)} · 문제 ${S.qi+1}/${PER_ZONE}</div>
- <div class="timer"><i id="tbar"></i></div><p class="q">${esc(q.q)}</p>${body}
- <div class="tools"><button class="btn ghost" id="item" ${S.items<=0||q.t==='code'||q.t==='order'?'disabled':''}>💡 힌트 아이템 (${S.items})</button></div><div id="fb"></div></main>`;
- netChip();locked=false;
- // bind
- if(q.t==='choice'||q.t==='bug')app.querySelectorAll('.ch[data-i]').forEach(b=>b.onclick=()=>{if(locked||b.classList.contains('wrong'))return;const i=+b.dataset.i;if(i===q.a){b.classList.add('right');ok()}else{b.classList.add('wrong');bad()}});
- if(q.t==='ox')app.querySelectorAll('.ch[data-v]').forEach(b=>b.onclick=()=>{if(locked||b.classList.contains('wrong'))return;const v=b.dataset.v==='1';if(v===q.a){b.classList.add('right');ok()}else{b.classList.add('wrong');bad()}});
- if(q.t==='order'){const draw=()=>{$('pk').innerHTML=S.picked.length?S.picked.map((i,n)=>`<span class="chip">${n+1} ${esc(q.items[i])}</span>`).join(''):'<span class="small">여기에 순서대로 쌓여요</span>';app.querySelectorAll('.ch[data-i]').forEach(b=>{b.disabled=S.picked.includes(+b.dataset.i);b.style.opacity=b.disabled?.35:1})};draw();
-  app.querySelectorAll('.ch[data-i]').forEach(b=>b.onclick=()=>{if(locked)return;const i=+b.dataset.i;if(S.picked.includes(i))return;S.picked.push(i);draw();if(S.picked.length===q.items.length){if(S.picked.every((v,n)=>v===q.a[n]))ok();else{bad();setTimeout(()=>{S.picked=[];draw()},600)}}});
-  $('undo').onclick=()=>{S.picked=[];draw()}}
- if(q.t==='code'){const draw=()=>{$('scr').textContent=S.codeIn||'····'};draw();app.querySelectorAll('.key').forEach(b=>b.onclick=()=>{if(locked)return;const k=b.dataset.k;if(k==='del')S.codeIn=S.codeIn.slice(0,-1);else if(k==='ok'){if(S.codeIn.length<q.a.length){say('네 자리를 다 눌러야지!');return}if(S.codeIn===q.a){ok();return}bad();S.codeIn=''}else if(S.codeIn.length<q.a.length)S.codeIn+=k;draw()})}
- $('item').onclick=()=>{if(S.items<=0)return;S.items--;
-  if(q.t==='choice'){const wrongs=shuffle(q.o.map((_,i)=>i).filter(i=>i!==q.a&&!(S.removed||[]).includes(i))).slice(0,2);S.removed=(S.removed||[]).concat(wrongs);wrongs.forEach(i=>{const b=app.querySelector(`.ch[data-i="${i}"]`);if(b)b.classList.add('gone')})}
-  $('fb').innerHTML=`<div class="feedback">💡 ${esc(q.hint)}</div>`;$('item').disabled=true;$('item').textContent=`💡 힌트 아이템 (${S.items})`;say('아이템을 쓰다니… 치사하다!');save()};
- // timer
- clearInterval(tickT);S.qStart=Date.now();
- tickT=setInterval(()=>{const left=Math.max(0,QTIME-(Date.now()-S.qStart)/1000);const t=$('tbar');if(t)t.style.transform=`scaleX(${left/QTIME})`;const c=$('clock');if(c)c.textContent=fmt(Date.now()-S.start)},200);
-}
-function ok(){
- locked=true;const left=Math.max(0,QTIME-(Date.now()-S.qStart)/1000);
- S.combo++;S.best=Math.max(S.best,S.combo);S.correct++;
- const pts=Math.round((100+Math.round(50*left/QTIME))*(1+0.1*(S.combo-1)));S.score+=pts;
- sGood();flash('good');popText('+'+pts+(S.combo>=2?`  콤보×${S.combo}`:''));say(pick(PRAISE));
- save();report();
- setTimeout(()=>{S.qi++;S.picked=[];S.codeIn='';S.removed=[];if(S.qi>=PER_ZONE){S.letters.push(ZONES[S.zone].letter);S.stage='zone';sWin()}save();report();render()},900);
-}
-function bad(){
- S.combo=0;S.wrong++;S.hearts--;sBad();flash('bad');shake();say(pick(TAUNT));
- if(S.hearts<=0){S.traps++;S.score=Math.max(0,S.score-150);S.hearts=HEARTS;say('하트가 다 떨어졌다! ALGO의 함정에 걸려 150점을 빼앗겼지만… 하트는 다시 채워 줄게. 크크.');popText('함정! -150')}
- const sc=$('sc');if(sc)sc.textContent=S.score;
- const h=app.querySelector('.hearts');if(h)h.textContent='❤️'.repeat(S.hearts)+'🖤'.repeat(Math.max(0,HEARTS-S.hearts));
- const c=app.querySelector('.combo b');if(c)c.textContent=0;
- save();report();
-}
-function renderZone(){
- clearInterval(tickT);const Z=ZONES[S.zone],last=S.zone===ZONES.length-1;
- app.innerHTML=algo(last?"안 돼… 마지막 구역까지! 출구 암호만은 절대 못 풀 거야!":`끄응… ${Z.name} 문이 열렸다. 다음은 쉽지 않을걸?`)+hud()+
- `<main class="panel"><div class="eyebrow">${S.zone+1}구역 통과!</div><h2>${esc(Z.name)} 문이 열렸다!</h2><p class="lead">비밀 글자 획득!</p>
- <div class="letters">${ZONES.map((z,i)=>`<div class="letter${i<S.letters.length?'':' empty'}">${i<S.letters.length?S.letters[i]:'?'}</div>`).join('')}</div>
- <div class="lesson">${Z.lesson}</div><div class="row"><button class="btn" id="nx">${last?'출구로 가기 ▶':'다음 구역으로 ▶'}</button></div></main>`;
- netChip();
- $('nx').onclick=()=>{if(last){S.stage='final'}else{S.zone++;S.stage='play';setupZone()}save();report();render()};
-}
-function renderFinal(){
- app.innerHTML=algo("출구 암호는 영어 다섯 글자. AI를 만들고, 가르치고, 책임지는 진짜 주인이 누군지 안다면… 아니, 몰라야 해!")+hud()+
- `<main class="panel"><div class="eyebrow">출구 · 최종 보안 문</div><h2>출구 암호를 입력하세요</h2>
- <div class="letters">${S.letters.map(l=>`<div class="letter">${l}</div>`).join('')}</div>
- <div class="field"><label for="pw">출구 암호 (영어)</label><input id="pw" maxlength="10" autocomplete="off" autocapitalize="characters" placeholder="다섯 글자"></div>
- <div class="row"><button class="btn" id="op">문 열기</button></div><p class="small" id="pm" aria-live="polite"></p></main>`;
- netChip();
- const go=()=>{const v=$('pw').value.replace(/\s+/g,'').toUpperCase();if(!v)return;
-  if(v==='HUMAN'){S.end=Date.now();S.score+=Math.max(0,300-Math.floor((S.end-S.start)/1000));S.stage='done';save();report();sWin();flash('good');render()}
-  else{bad();$('pm').textContent='틀렸어요. 모은 글자를 순서대로 읽어 보세요.'}};
- $('op').onclick=go;$('pw').onkeydown=e=>{if(e.key==='Enter')go()};
-}
-function renderDone(){
- clearInterval(tickT);const t=S.end-S.start;
- app.innerHTML=algo("시스템 종료 중… 그래, 너희 말이 맞아. AI를 이끄는 건 결국 사람이야.",true)+
- `<main class="panel"><div class="eyebrow">탈출 성공</div><h1>${esc(S.av)} ${esc(S.name)} 탈출!</h1>
- <div class="letters">${'HUMAN'.split('').map(l=>`<div class="letter">${l}</div>`).join('')}</div>
- <div class="grid3"><div class="stat"><span>최종 점수</span><b>${S.score}</b></div><div class="stat"><span>탈출 시간</span><b>${fmt(t)}</b></div><div class="stat"><span>최고 콤보</span><b>${S.best}</b></div><div class="stat"><span>정답 / 오답</span><b>${S.correct} / ${S.wrong}</b></div></div>
- <p class="lead">AI는 데이터로 배우지만, 그 데이터를 고르고 결과를 확인하고 책임지는 건 사람(HUMAN)이에요. 시간 보너스: 300초 안에 탈출하면 남은 초만큼 추가 점수!</p>
- <div class="row"><button class="btn ghost" id="again">다시 도전 (점수 새로 시작)</button></div></main>`;
- $('again').onclick=()=>{if(!confirmAgain){confirmAgain=true;$('again').textContent='정말 처음부터? 한 번 더 누르세요';return}const keep={name:S.name,av:S.av,code:S.code,sid:S.sid};S=Object.assign(freshS(),keep);save();render()};
-}
-let confirmAgain=false;
-
-/* ============ 교사 화면 (?host) ============ */
-let T=null;
-function teacher(){
- T={code:params.get('code')||String(Math.floor(10000+Math.random()*90000)),stu:{},peer:null,showPodium:false};
- try{const sv=JSON.parse(sessionStorage.getItem('aihero_escape_t')||'null');if(sv&&sv.code&&!params.get('code')){T.code=sv.code;T.stu=sv.stu||{};for(const k in T.stu)T.stu[k].online=false}}catch(e){}
- openHost();renderT();setInterval(renderT,1000);
-}
-function saveT(){try{sessionStorage.setItem('aihero_escape_t',JSON.stringify({code:T.code,stu:T.stu}))}catch(e){}}
 function openHost(){
- if(typeof Peer==='undefined'){T.err='연결 라이브러리를 불러오지 못했어요. 인터넷을 확인하세요.';return}
- const p=new Peer(PREFIX+T.code,PEERCFG);T.peer=p;
- p.on('open',()=>{T.err='';T.ready=true});
- p.on('connection',c=>{c.on('data',d=>{if(!d||d.t!=='prog'||!d.sid)return;const name=String(d.name||'').slice(0,10);T.stu[d.sid]=Object.assign(T.stu[d.sid]||{},{name,av:String(d.av||'🙂').slice(0,4),zone:Math.min(5,Math.max(0,+d.zone||0)),score:Math.max(0,+d.score||0),hearts:+d.hearts||0,done:!!d.done,time:+d.time||0,online:true,conn:c});saveT()});
-  c.on('close',()=>{for(const k in T.stu)if(T.stu[k].conn===c)T.stu[k].online=false})});
- p.on('error',e=>{if(e.type==='unavailable-id'){T.code=String(Math.floor(10000+Math.random()*90000));saveT();setTimeout(openHost,300)}else{T.err='연결 문제 · 다시 시도 중';setTimeout(()=>{try{p.reconnect()}catch(_){}},3000)}});
+ if(typeof Peer==='undefined'){$('hInfo').textContent='연결 라이브러리를 못 불러왔어요 (인터넷 확인)';return}
+ const p=new Peer(PREFIX+H.code,PEERCFG);H.peer=p;
+ p.on('open',()=>{$('hInfo').textContent='학생 접속 대기 중';});
+ p.on('connection',c=>{c.on('data',d=>onH(c,d));c.on('close',()=>{for(const k in H.conns)if(H.conns[k]===c){delete H.conns[k];if(H.stu[k])H.stu[k].on=false}if(H.phase==='lobby')renderH()})});
+ p.on('error',e=>{if(e.type==='unavailable-id'){H.code=String(Math.floor(10000+Math.random()*90000));$('hCode').textContent=H.code;setTimeout(openHost,300)}else $('hInfo').textContent='연결 문제 · 다시 시도 중'});
  p.on('disconnected',()=>{try{p.reconnect()}catch(e){}});
 }
-function joinURL(){return location.origin+location.pathname+'?r='+T.code}
-function renderT(){
- const list=Object.entries(T.stu).map(([k,v])=>Object.assign({sid:k},v)).sort((a,b)=>(b.done-a.done)||(b.score-a.score));
- const done=list.filter(s=>s.done).length;
- let qr='';try{const q=qrcode(0,'M');q.addData(joinURL());q.make();qr=q.createSvgTag({cellSize:6,margin:2,scalable:true})}catch(e){}
- const lanes=list.map((s,i)=>`<div class="lane${s.done?' done':''}${s.online?'':' off'}"><div class="ic">${esc(s.av)}</div><div class="nm">${i+1}. ${esc(s.name)}</div><div class="track"><i style="width:${(s.done?6:s.zone)/6*100}%"></i><span>${s.done?'탈출! '+fmt(s.time):(s.zone+1)+'구역'}</span></div><div class="sc">${s.score}</div></div>`).join('')||'<p class="lead">아직 들어온 학생이 없어요. 학생들이 방 코드를 넣고 시작하면 여기에 나타나요.</p>';
- const top=list.slice(0,3);
- const pod=T.showPodium&&top.length?`<div class="podium">${[top[1],top[0],top[2]].map((s,i)=>s?`<div class="pd" style="height:${[150,200,120][i]}px"><div class="ic">${esc(s.av)}</div><b>${esc(s.name)}</b><span class="rank">${[2,1,3][i]}</span></div>`:'').join('')}</div>`:'';
- app.innerHTML=`<div class="tgrid"><main class="panel"><div class="eyebrow">선생님 화면 · 방 코드</div><div class="code">${T.code}</div><div class="qr">${qr}</div><p class="url">${esc(joinURL())}</p>
- <p class="small">${T.err?esc(T.err):(T.ready?'학생 접속 대기 중':'연결 준비 중…')}</p>
- <div class="row"><button class="btn blue" id="pod">${T.showPodium?'순위표로':'🏆 시상대 보기'}</button><button class="btn ghost" id="clr">명단 비우기</button></div></main>
- <main class="panel"><div class="eyebrow">실시간 순위 · 참가 ${list.length}명 · 탈출 ${done}명</div><h2>AI 연구소 탈출 레이스</h2>${pod}<div class="board" style="margin-top:12px">${lanes}</div></main></div>`;
- $('pod').onclick=()=>{T.showPodium=!T.showPodium;renderT()};
- $('clr').onclick=()=>{if($('clr').dataset.c){T.stu={};saveT();renderT()}else{$('clr').dataset.c=1;$('clr').textContent='정말 비울까요? 한 번 더'}};
+function onH(c,d){
+ if(!d||!d.sid)return;
+ if(d.t==='join'){const name=String(d.name||'').slice(0,8)||'익명';const s=H.stu[d.sid]||{score:0,correct:0,streak:0,last:null,y:Math.random()};s.name=name;s.av=AV.includes(d.av)?d.av:'🙂';s.on=true;H.stu[d.sid]=s;H.conns[d.sid]=c;
+  if(H.phase==='lobby'){tone(660+Math.random()*300,.1,'triangle',.05);renderH()}send(d.sid);return}
+ if(d.t==='ans'&&H.phase==='q'&&d.qi===H.qi&&H.ans[d.sid]===undefined&&H.stu[d.sid]){
+  const left=Math.max(0,H.deadline-Date.now());H.ans[d.sid]={c:+d.c,left};
+  const el=$('acnt');if(el)el.textContent=Object.keys(H.ans).length;
+  const on=Object.values(H.stu).filter(s=>s.on).length;if(Object.keys(H.ans).length>=on)reveal();
+ }
+}
+function stateFor(sid){const s=H.stu[sid];const r=ranked();const q=QLIST[H.qi];
+ return {t:'st',phase:H.phase,qi:H.qi,total:QLIST.length,q:H.phase==='q'&&q?{q:q.q,o:q.o,ox:!!q.ox,zone:ZONES[q.zi].short}:null,left:Math.max(0,H.deadline-Date.now()),
+  me:s?{score:s.score,rank:r.findIndex(x=>x.sid===sid)+1,n:r.length,last:s.last,answered:H.ans[sid]!==undefined}:null,letters:H.letters}}
+function send(sid){const c=H.conns[sid];if(c&&c.open)try{c.send(stateFor(sid))}catch(e){}}
+function sendAll(){for(const k in H.conns)send(k)}
+function ranked(){return Object.entries(H.stu).map(([sid,s])=>Object.assign({sid},s)).sort((a,b)=>b.score-a.score)}
+function nextQ(){
+ H.qi++;if(H.qi>=QLIST.length){H.phase='final';renderH();sendAll();return}
+ H.phase='q';H.ans={};H.deadline=Date.now()+QT*1000;sGo();renderH();sendAll();
+ clearInterval(H.tick);H.tick=setInterval(()=>{const l=Math.ceil((H.deadline-Date.now())/1000);const t=$('tmr');if(t){t.textContent=Math.max(0,l);t.classList.toggle('low',l<=5);if(l<=5&&l>0)sTick()}if(l<=0)reveal()},1000);
+}
+function reveal(){
+ if(H.phase!=='q')return;clearInterval(H.tick);const q=QLIST[H.qi];
+ for(const sid in H.stu){const s=H.stu[sid],a=H.ans[sid];
+  if(a&&a.c===q.a){s.streak++;const pts=Math.round(500+500*a.left/(QT*1000))+(s.streak>=3?100*Math.min(5,s.streak-2):0);s.score+=pts;s.correct++;s.last={ok:true,pts,streak:s.streak}}
+  else{s.streak=0;s.last={ok:false,pts:0,none:!a}}}
+ H.phase='reveal';H.algo=(H.qi+1)/QLIST.length;renderH();sendAll();
+ const ok=Object.values(H.ans).filter(a=>a.c===q.a).length;ok?sWin():sBad();
+}
+function toRace(){H.phase='race';renderH();sendAll();sRun();
+ requestAnimationFrame(()=>requestAnimationFrame(()=>placeRunners(true)));
+}
+function afterRace(){const q=QLIST[H.qi];if(q.k===2){H.letters=q.zi+1;H.phase='zone';renderH();sendAll();sWin();confetti(60)}else nextQ()}
+const MAXPTS=QLIST.length*1000;
+function placeRunners(animate){
+ const tw=$('track');if(!tw)return;const W=tw.clientWidth-90,Hh=tw.clientHeight;
+ const r=ranked();const top=r.slice(0,3).map(s=>s.sid);
+ r.forEach((s,i)=>{let el=document.getElementById('rn-'+s.sid);if(!el)return;
+  const x=40+Math.min(1,s.score/MAXPTS*1.15)*(W-40);const y=60+s.y*(Hh-110);
+  el.style.left=x+'px';el.style.top=y+'px';el.classList.toggle('top3',top.includes(s.sid));
+  if(animate){if(s.last&&s.last.ok){el.classList.add('run');setTimeout(()=>el.classList.remove('run'),2400)}else{el.classList.add('trip');setTimeout(()=>el.classList.remove('trip'),700)}}});
+ const al=$('algo');if(al)al.style.left=(40+H.algo*0.9*(W-40)*0.75)+'px';
+}
+function trackHTML(){
+ const r=ranked();
+ return `<div class="trackwrap" id="track"><div class="zones">${ZONES.map((z,i)=>`<div class="zseg"><span class="lab">${i+1}구역 ${esc(z.name)}</span><span class="lt ${i<H.letters?'on':''}">${i<H.letters?z.letter:'?'}</span></div>`).join('')}</div><div class="exit"><span>EXIT</span></div>
+ <div class="algo" id="algo" style="left:${40}px"><div class="beam"></div><div class="bot"><div class="eye"></div></div><div class="say">${['거기 서라!','잡았다… 아깝네','도망쳐 봐야 소용없어!','크크크'][H.qi%4]}</div></div>
+ ${r.map(s=>`<div class="runner" id="rn-${s.sid}" style="left:40px;top:50%"><span class="e">${esc(s.av)}</span><span class="n">${esc(s.name)}</span></div>`).join('')}</div>`;
+}
+function renderH(){
+ const st=$('stage');const r=ranked();const n=r.length;
+ $('hInfo').textContent=`참가 ${n}명`+(H.phase==='lobby'?' · 학생 접속 대기 중':` · 문제 ${Math.max(0,H.qi+1)}/${QLIST.length}`);
+ if(H.phase==='lobby'){
+  const url=location.origin+location.pathname+'?r='+H.code;let qr='';try{const q=qrcode(0,'M');q.addData(url);q.make();qr=q.createSvgTag({cellSize:6,margin:2,scalable:true})}catch(e){}
+  st.innerHTML=`<div class="lobby"><div class="qrbox">${qr}<div class="c">${H.code}</div><div class="u">${esc(url)}</div></div>
+  <div><h2 style="font-size:44px">ALGO가 연구소를 잠갔다! 🔒</h2><p class="sub">QR을 찍거나 주소로 들어와서 방 코드를 넣고, 캐릭터를 골라요. 맞힐수록 캐릭터가 출구를 향해 달려요. 뒤에서 ALGO가 쫓아와요!</p>
+  <div class="crowd">${r.map(s=>`<div class="kid"><span class="e">${esc(s.av)}</span><span class="n">${esc(s.name)}</span></div>`).join('')||'<p class="sub">아직 아무도 없어요…</p>'}</div>
+  <div style="margin-top:16px"><button class="btn big" id="next" ${n?'':'disabled style="opacity:.5"'}>레이스 시작! ▶</button></div></div></div>`;
+  $('next').onclick=()=>{if(n)nextQ()};return}
+ const q=QLIST[H.qi];
+ if(H.phase==='q'){
+  st.innerHTML=`<div class="qhead"><span class="zone-tag">${esc(ZONES[q.zi].short)} · ${esc(ZONES[q.zi].name)}</span><span class="sub">문제 ${H.qi+1} / ${QLIST.length}</span></div>
+  <div class="qtext">${esc(q.q)}</div>
+  <div class="qmid"><div class="timer" id="tmr">${QT}</div><div class="algoq">🤖 ALGO: "${['이건 절대 못 맞힐걸?','시간이 없다, 서둘러!','틀려라… 틀려라…','크크, 함정이 있지'][H.qi%4]}"</div><div class="answered"><b id="acnt">0</b>명 답함</div></div>
+  <div class="opts">${q.o.map((o,i)=>`<div class="opt ${CL[i]}"><span class="sh">${SH[i]}</span><span>${esc(o)}</span></div>`).join('')}</div>
+  <div class="bar"><span class="msg"></span><button class="btn ghost" id="next">바로 정답 공개</button></div>`;
+  $('next').onclick=reveal;return}
+ if(H.phase==='reveal'){
+  const cnt=q.o.map((_,i)=>Object.values(H.ans).filter(a=>a.c===i).length);const ok=cnt[q.a];
+  st.innerHTML=`<div class="qhead"><span class="zone-tag">${esc(ZONES[q.zi].short)}</span><span class="sub">정답 공개</span></div><div class="qtext">${esc(q.q)}</div>
+  <div class="opts">${q.o.map((o,i)=>`<div class="opt ${CL[i]} ${i===q.a?'win':'dim'}"><span class="sh">${SH[i]}</span><span>${esc(o)}</span><span class="cnt">${cnt[i]}</span></div>`).join('')}</div>
+  <div class="bar"><span class="msg">${ok}명 정답! ${ok>=n/2?'ALGO가 당황한다 😵':'ALGO가 웃는다 😈'}</span><button class="btn big" id="next">달려라! 🏃</button></div>`;
+  $('next').onclick=toRace;return}
+ if(H.phase==='race'){
+  const top=r.slice(0,5);
+  st.innerHTML=`${trackHTML()}<div class="bar"><div class="lead5">${top.map((s,i)=>`<div>${i+1}. ${esc(s.av)} ${esc(s.name)} ${s.score}${s.last&&s.last.streak>=3?' 🔥'+s.last.streak:''}</div>`).join('')}</div><span class="msg"></span><button class="btn big" id="next">${q.k===2?'구역 돌파! ▶':'다음 문제 ▶'}</button></div>`;
+  $('next').onclick=afterRace;placeRunners(false);return}
+ if(H.phase==='zone'){
+  const z=ZONES[q.zi];
+  st.innerHTML=`<div class="bigmsg"><div class="sub" style="font-size:28px">${esc(z.short)}</div><div class="t">${esc(z.name)} 문이 열렸다!</div>
+  <div class="letters">${ZONES.map((zz,i)=>`<div class="letter ${i<H.letters?'':'empty'}">${i<H.letters?zz.letter:'?'}</div>`).join('')}</div>
+  <p class="sub">비밀 글자 획득! ${H.letters<5?'다음 구역으로!':'글자 5개를 모두 모았다… 출구 암호는?'}</p><button class="btn big" id="next">${H.letters<5?'다음 구역 ▶':'출구로! ▶'}</button></div>`;
+  $('next').onclick=()=>nextQ();return}
+ if(H.phase==='final'){
+  st.innerHTML=`<div class="bigmsg"><div class="t">출구 암호는?</div><div class="letters">${'HUMAN'.split('').map(l=>`<div class="letter">${l}</div>`).join('')}</div>
+  <p class="sub" style="font-size:26px;max-width:900px">AI는 데이터로 배우지만, 데이터를 고르고 결과를 확인하고 책임지는 건 <b style="color:var(--y)">사람(HUMAN)</b>!</p><button class="btn big" id="next">🏆 탈출 순위 발표</button></div>`;
+  $('next').onclick=()=>{H.phase='podium';renderH();sendAll();sWin();confetti(220)};return}
+ if(H.phase==='podium'){
+  const t=r.slice(0,3);const order=[t[1],t[0],t[2]],hs=[230,300,180],rk=[2,1,3],bg=['#c0c7d6','#ffd23f','#d08b4c'];
+  st.innerHTML=`<div class="bigmsg"><div class="t" style="font-size:64px">탈출 성공! 🚪✨</div><div class="podium">${order.map((s,i)=>s?`<div class="pd" style="height:${hs[i]}px;background:${bg[i]};color:#1a1333"><span class="e">${esc(s.av)}</span><b>${esc(s.name)}</b><span>${s.score}점</span><span class="rk">${rk[i]}</span></div>`:'').join('')}</div>
+  <div class="lead5" style="flex-wrap:wrap;justify-content:center;max-width:1100px">${r.slice(3,15).map((s,i)=>`<div>${i+4}. ${esc(s.av)} ${esc(s.name)} ${s.score}</div>`).join('')}</div>
+  <button class="btn ghost" id="next">다시 하기</button></div>`;
+  $('next').onclick=()=>{for(const k in H.stu){Object.assign(H.stu[k],{score:0,correct:0,streak:0,last:null})}H.qi=-1;H.letters=0;H.algo=0;H.phase='lobby';renderH();sendAll()};return}
 }
 
-/* ============ 시작 ============ */
-if(params.has('host')){document.body.style.fontSize='19px';app.style.maxWidth='1280px';teacher()}
-else{S=load();if(params.get('r')&&S.stage==='start')S.code=params.get('r');render();if(S.stage!=='start'&&S.stage!=='done'){netConnect()}
- setInterval(()=>{if(S&&S.stage!=='start'&&S.stage!=='done')report()},5000)}
+/* ================= STUDENT ================= */
+let S={code:'',sid:'',name:'',av:'',peer:null,conn:null,st:null,picked:null,deadline:0};
+function studentProfile(code){
+ S.code=code;try{S.sid=localStorage.getItem('aihero_race_sid')||Math.random().toString(36).slice(2,10);localStorage.setItem('aihero_race_sid',S.sid);const p=JSON.parse(localStorage.getItem('aihero_race_prof')||'null');if(p){S.name=p.name;S.av=p.av}}catch(e){S.sid=S.sid||Math.random().toString(36).slice(2,10)}
+ S.av=S.av||AV[Math.floor(Math.random()*AV.length)];
+ show('prof');$('avs').innerHTML=AV.map(a=>`<button class="av${a===S.av?' on':''}" data-a="${a}">${a}</button>`).join('');
+ $('avs').querySelectorAll('.av').forEach(b=>b.onclick=()=>{S.av=b.dataset.a;$('avs').querySelectorAll('.av').forEach(x=>x.classList.toggle('on',x===b))});
+ $('nameIn').value=S.name||'';
+ $('joinGo').onclick=()=>{const v=$('nameIn').value.trim();if(!v){$('pmsg').textContent='별명을 써 주세요';return}S.name=v;try{localStorage.setItem('aihero_race_prof',JSON.stringify({name:S.name,av:S.av}))}catch(e){}
+  show('student');$('sAv').textContent=S.av;$('sNm').textContent=S.name;renderS();connectS()};
+}
+function connectS(){
+ if(typeof Peer==='undefined'){$('sStatus').textContent='연결 라이브러리를 못 불러왔어요';return}
+ if(!S.peer||S.peer.destroyed){S.peer=new Peer(undefined,PEERCFG);S.peer.on('open',dial);
+  S.peer.on('error',e=>{$('sStatus').textContent=e.type==='peer-unavailable'?'방을 찾을 수 없어요 · 코드 확인 후 다시 연결 중':'연결 문제 · 다시 시도 중';setTimeout(dial,3000)});
+  S.peer.on('disconnected',()=>{try{S.peer.reconnect()}catch(e){}})}else dial();
+}
+function dial(){if(!S.peer||S.peer.destroyed||S.peer.disconnected)return;const c=S.peer.connect(PREFIX+S.code,{reliable:true});S.conn=c;
+ c.on('open',()=>{$('sStatus').textContent='연결됨 · 방 '+S.code;c.send({t:'join',sid:S.sid,name:S.name,av:S.av})});
+ c.on('data',d=>{if(d&&d.t==='st'){const prevQ=S.st&&S.st.qi;S.st=d;if(d.qi!==prevQ)S.picked=null;S.deadline=Date.now()+(d.left||0);renderS()}});
+ c.on('close',()=>{$('sStatus').textContent='연결 끊김 · 다시 연결 중';setTimeout(dial,2000)});
+}
+let sTimer=null;
+function renderS(){
+ const b=$('sBody'),d=S.st;if(d&&d.me)$('sSc').textContent=d.me.score;
+ clearInterval(sTimer);
+ if(!d||d.phase==='lobby'){b.innerHTML=`<div class="swait"><span class="e">${esc(S.av)}</span><div class="t">입장 완료!</div><p class="sub">선생님 화면에 내 캐릭터가 보이나요?<br>레이스 시작을 기다려요</p></div>`;return}
+ if(d.phase==='q'){
+  if(S.picked!==null||(d.me&&d.me.answered)){b.innerHTML=`<div class="swait"><span class="e">🏃</span><div class="t">제출 완료!</div><p class="sub">다른 친구들을 기다려요…</p></div>`;return}
+  b.innerHTML=`<div class="sq"><small style="color:#7a6fb0">${esc(d.q.zone)} · ⏱ <span id="sT">${Math.ceil(d.left/1000)}</span>초</small><br>${esc(d.q.q)}</div>
+  <div class="sopts" style="${d.q.o.length===2?'grid-template-columns:1fr 1fr':''}">${d.q.o.map((o,i)=>`<button class="sopt" data-i="${i}" style="background:${CLS[i]}"><span class="sh">${SH[i]}</span><span>${esc(o)}</span></button>`).join('')}</div>`;
+  b.querySelectorAll('.sopt').forEach(x=>x.onclick=()=>{if(S.picked!==null)return;S.picked=+x.dataset.i;try{S.conn.send({t:'ans',sid:S.sid,qi:d.qi,c:S.picked})}catch(e){}tone(700,.08,'triangle');renderS()});
+  sTimer=setInterval(()=>{const t=$('sT');if(t)t.textContent=Math.max(0,Math.ceil((S.deadline-Date.now())/1000))},500);return}
+ const me=d.me||{};const l=me.last;
+ if(d.phase==='reveal'||d.phase==='race'){
+  if(l&&l.ok)b.innerHTML=`<div class="swait ok"><span class="e">${esc(S.av)}</span><div class="t">정답! +${l.pts}</div><p class="sub">${l.streak>=3?'🔥 '+l.streak+'연속 정답 콤보!<br>':''}내 캐릭터가 출구로 달려요! · 지금 ${me.rank}등 / ${me.n}명</p></div>`;
+  else b.innerHTML=`<div class="swait no"><span class="e">😵</span><div class="t">${l&&l.none?'시간 초과!':'아쉽다!'}</div><p class="sub">ALGO가 따라온다… 다음 문제에서 만회!<br>지금 ${me.rank}등 / ${me.n}명</p></div>`;
+  return}
+ if(d.phase==='zone'){b.innerHTML=`<div class="swait ok"><span class="e">🚪</span><div class="t">${d.letters}구역 돌파!</div><p class="sub">비밀 글자를 모으는 중 · 지금 ${me.rank}등</p></div>`;return}
+ if(d.phase==='final'){b.innerHTML=`<div class="swait"><span class="e">🔐</span><div class="t">출구 암호는?</div><p class="sub">선생님 화면을 보세요!</p></div>`;return}
+ if(d.phase==='podium'){b.innerHTML=`<div class="swait ok"><span class="e">${me.rank<=3?['🥇','🥈','🥉'][me.rank-1]:esc(S.av)}</span><div class="t">탈출 성공!</div><p class="sub">최종 ${me.rank}등 / ${me.n}명 · ${me.score}점</p></div>`;if(me.rank<=3)confetti(80);return}
+}
+
+/* ================= 시작 ================= */
+$('toHost').onclick=hostStart;
+$('toJoin').onclick=()=>{const c=$('codeIn').value.replace(/\D/g,'');if(c.length!==5){$('codeIn').focus();return}studentProfile(c)};
+$('codeIn').onkeydown=e=>{if(e.key==='Enter')$('toJoin').click()};
+if(params.has('host'))hostStart();
+else if(params.get('r'))studentProfile(params.get('r').replace(/\D/g,'').slice(0,5));
+window.addEventListener('resize',()=>{if(H&&H.phase==='race')placeRunners(false)});
 </script>
 </body>
 </html>
