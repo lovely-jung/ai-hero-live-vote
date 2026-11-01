@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI 탐지 미션 라이브</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://unpkg.com/qrcode-generator@1.4.4/qrcode.js"></script>
+<style>
+:root{--p:#6C2BD9;--pd:#4B1FA0;--lt:#F3EEFD;--y:#FFE45C;--or:#FF6B1A;--tl:#14B8A6;--ink:#1F1A2E;--g:#5A5470;--ok:#16A34A;--bad:#DC2626}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'Noto Sans KR',sans-serif;color:var(--ink);background:#F7F4FF;overflow-x:hidden}
+button{font-family:inherit;cursor:pointer;border:none}
+.hidden{display:none!important}
+/* landing */
+.center{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:24px;text-align:center}
+.logo{font-size:44px;font-weight:900;color:var(--p)}
+.sub{font-size:18px;color:var(--g)}
+.big{font-size:22px;font-weight:900;padding:20px 36px;border-radius:20px;background:var(--p);color:#fff;min-width:280px}
+.big.alt{background:#fff;color:var(--p);border:3px solid var(--p)}
+.card{background:#fff;border-radius:24px;padding:28px;box-shadow:0 8px 28px rgba(76,31,160,.12);width:min(520px,100%);display:flex;flex-direction:column;gap:16px;text-align:left}
+label{font-weight:700;font-size:15px;color:var(--g)}
+select,input{font-family:inherit;font-size:20px;padding:12px 14px;border-radius:12px;border:2px solid #DDD3F7;width:100%;background:#fff}
+.row{display:flex;gap:10px}
+/* teacher */
+#teacher{height:100vh;display:flex;flex-direction:column}
+.tbar{display:flex;align-items:center;gap:16px;padding:12px 24px;background:var(--p);color:#fff}
+.tbar .cls{font-size:22px;font-weight:900}
+.tbar .code{margin-left:auto;font-size:18px;background:rgba(255,255,255,.18);padding:6px 14px;border-radius:999px}
+.tbar .code b{font-size:24px;letter-spacing:3px;color:var(--y)}
+.tbar .cnt{font-size:18px;font-weight:700}
+.tmain{flex:1;display:flex;gap:20px;padding:18px 24px;min-height:0}
+.qside{width:34%;display:flex;flex-direction:column;gap:14px;min-height:0}
+.qnum{font-size:18px;font-weight:700;color:var(--p)}
+.qtitle{font-size:30px;font-weight:900;line-height:1.3}
+.qmedia{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;background:#fff;border-radius:20px;overflow:hidden}
+.qmedia img{max-width:100%;max-height:100%;object-fit:contain}
+.poems{display:flex;flex-direction:column;gap:10px;width:100%;padding:14px}
+.poem{background:var(--lt);border-radius:14px;padding:12px 16px;font-family:serif;font-size:19px;line-height:1.6}
+.poem b{font-family:'Noto Sans KR';color:var(--p);margin-right:6px}
+.news{background:var(--p);color:#fff;width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;gap:12px;padding:28px}
+.news .tag{color:var(--y);font-weight:700}
+.news .h{font-size:28px;font-weight:900;line-height:1.4}
+.exp{background:var(--y);border-radius:16px;padding:14px 18px;font-size:17px;line-height:1.55;font-weight:700}
+.arena{flex:1;position:relative;background:#fff;border-radius:24px;min-height:0;overflow:hidden}
+.zone{position:absolute;border-radius:20px;display:flex;flex-direction:column;align-items:center;padding-top:10px;transition:background .4s,opacity .4s,box-shadow .4s}
+.zone .zl{font-size:22px;font-weight:900;padding:6px 16px;border-radius:999px;color:#fff;max-width:92%;text-align:center}
+.zone .zc{font-size:40px;font-weight:900;margin-top:2px}
+.zone.win{box-shadow:0 0 0 6px var(--ok) inset;background:#ECFDF3!important}
+.zone.lose{opacity:.45}
+.zone.pool{background:#F6F4FA}
+.zone.pool .zl{background:#B8B2C9}
+.av{position:absolute;width:64px;display:flex;flex-direction:column;align-items:center;transition:left .9s cubic-bezier(.3,1.3,.5,1),top .9s cubic-bezier(.3,1.3,.5,1);z-index:2}
+.av .e{width:52px;height:52px;border-radius:50%;background:#fff;box-shadow:0 3px 8px rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center;font-size:32px}
+.av .n{font-size:12px;font-weight:700;margin-top:2px;max-width:70px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:rgba(255,255,255,.85);padding:0 4px;border-radius:6px}
+.av.off{opacity:.35}
+.av.hop .e{animation:hop .6s ease-in-out 3}
+@keyframes hop{50%{transform:translateY(-16px)}}
+.tctl{display:flex;gap:12px;padding:12px 24px 18px;justify-content:center;align-items:center}
+.tctl button{font-size:20px;font-weight:900;padding:14px 28px;border-radius:16px;background:var(--lt);color:var(--p)}
+.tctl button.main{background:var(--p);color:#fff;min-width:200px}
+.tctl .hint{font-size:14px;color:var(--g)}
+.lobby{position:absolute;inset:0;display:flex;align-items:center;gap:28px;padding:24px;pointer-events:none}
+.lobby .qr{background:#fff;border:4px solid var(--p);border-radius:20px;padding:12px;pointer-events:auto}
+.lobby .qr svg{display:block;width:240px;height:240px}
+.lobby .how{display:flex;flex-direction:column;gap:10px;font-size:20px;font-weight:700}
+.lobby .how .url{font-size:16px;color:var(--g);word-break:break-all;font-weight:400}
+.lobby .how .c{font-size:56px;font-weight:900;letter-spacing:8px;color:var(--p)}
+.podium{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;gap:16px;padding:24px 24px 0}
+.pod{display:flex;flex-direction:column;align-items:center;gap:6px;width:180px}
+.pod .e{font-size:64px}
+.pod .n{font-size:20px;font-weight:900}
+.pod .s{font-size:16px;color:var(--g)}
+.pod .b{width:100%;border-radius:16px 16px 0 0;display:flex;justify-content:center;padding-top:8px;font-size:36px;font-weight:900;color:#fff}
+.allright{position:absolute;top:16px;left:0;right:0;text-align:center;font-size:20px;font-weight:700}
+.msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--g);text-align:center;padding:24px}
+/* student */
+#student{min-height:100%;display:flex;flex-direction:column}
+.shead{background:var(--p);color:#fff;padding:14px 18px;display:flex;align-items:center;gap:10px;font-weight:700}
+.shead .me{margin-left:auto;display:flex;align-items:center;gap:6px}
+.sbody{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:20px}
+.avgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.avbtn{font-size:30px;width:52px;height:52px;border-radius:14px;background:var(--lt);border:3px solid transparent}
+.avbtn.sel{border-color:var(--p);background:#fff}
+.choice{width:min(560px,100%);font-size:26px;font-weight:900;padding:26px 20px;border-radius:22px;color:#fff;box-shadow:0 6px 0 rgba(0,0,0,.15);transition:transform .1s}
+.choice:active{transform:translateY(3px)}
+.choice.sel{outline:6px solid var(--y);outline-offset:3px}
+.choice.dim{opacity:.4}
+.c0{background:var(--p)}.c1{background:var(--or)}.c2{background:var(--tl)}
+.stitle{font-size:22px;font-weight:900;text-align:center;line-height:1.4}
+.result{font-size:40px;font-weight:900}
+.status{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);font-size:13px;background:#fff;padding:6px 12px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.12);color:var(--g)}
+.credit{font-size:11px;color:#9B95AD;text-align:center;padding:4px}
+</style>
+</head>
+<body>
+
+<!-- LANDING -->
+<div id="landing" class="center">
+  <div class="logo">AI 탐지 미션 라이브</div>
+  <div class="sub">인공지능 히어로 1교시 · 진짜일까, AI일까?</div>
+  <button class="big" id="goTeacher">선생님: 반 만들기</button>
+  <button class="big alt" id="goStudent">학생: 방 코드로 입장</button>
+</div>
+
+<!-- TEACHER SETUP -->
+<div id="tsetup" class="center hidden">
+  <div class="card">
+    <div class="logo" style="font-size:28px">반 만들기</div>
+    <label>학교 (선택)</label>
+    <input id="school" placeholder="예: 한빛중" maxlength="12">
+    <label>학년 · 반</label>
+    <div class="row">
+      <select id="grade"><option>1학년</option><option>2학년</option><option>3학년</option></select>
+      <select id="klass"></select>
+    </div>
+    <button class="big" id="createRoom">방 열기</button>
+    <div class="sub" style="font-size:14px">반마다 새 방 코드가 만들어져요. 여러 반, 여러 강사가 동시에 써도 섞이지 않아요.</div>
+  </div>
+</div>
+
+<!-- STUDENT CODE -->
+<div id="scode" class="center hidden">
+  <div class="card">
+    <div class="logo" style="font-size:28px">방 코드 입력</div>
+    <input id="codeIn" inputmode="numeric" maxlength="5" placeholder="5자리 숫자" style="font-size:32px;text-align:center;letter-spacing:8px">
+    <button class="big" id="codeGo">입장</button>
+  </div>
+</div>
+
+<!-- TEACHER -->
+<div id="teacher" class="hidden">
+  <div class="tbar"><div class="cls" id="tCls"></div><div class="cnt" id="tCnt">0명 입장</div><div class="code">방 코드 <b id="tCode">-----</b></div></div>
+  <div class="tmain">
+    <div class="qside" id="qside">
+      <div class="qnum" id="qNum"></div>
+      <div class="qtitle" id="qTitle"></div>
+      <div class="qmedia" id="qMedia"></div>
+      <div class="exp hidden" id="qExp"></div>
+    </div>
+    <div class="arena" id="arena"></div>
+  </div>
+  <div class="tctl">
+    <button id="bPrev">◀ 이전</button>
+    <button id="bReveal">정답 공개</button>
+    <button class="main" id="bNext">시작하기 ▶</button>
+    <span class="hint">스페이스바: 다음 단계</span>
+  </div>
+  <div class="credit">이미지: Wikimedia Commons (This Person Does Not Exist example · PD / Danxia-landform-1562852 · CC0 / Pope Francis in puffy winter jacket · PD) · 시 ②: 김소월 「산유화」(1925)</div>
+</div>
+
+<!-- STUDENT -->
+<div id="student" class="hidden">
+  <div class="shead"><span>AI 탐지 미션</span><span class="me" id="sMe"></span></div>
+  <div class="sbody" id="sBody"></div>
+  <div class="status" id="sStatus">연결 중…</div>
+</div>
+
+<script>
+const PREFIX='aihero-live-v1-';
+const AV=['🐶','🐱','🦊','🐼','🐸','🐯','🐰','🐻','🐨','🐵','🐧','🦁','🐷','🐮','🐙','🦄','🐲','🦖','🐥','🦉','🐳','🦋','🐝','🐹'];
+const COLORS=['#6C2BD9','#FF6B1A','#14B8A6'];
+const Q=[
+ {title:'이 사람, 실제로 있는 사람일까?',type:'img',img:'img/ai-face.jpg',choices:['실제 사람이다','AI가 만든 사람이다'],ans:1,
+  exp:'정답: AI가 만든 가상 인물! 얼굴 사진 수만 장을 배운 AI가 새로 그린, 세상에 없는 얼굴이에요.'},
+ {title:'무지개 줄무늬 산! 이 풍경은 진짜일까?',type:'img',img:'img/danxia.jpg',choices:['진짜 있는 곳','AI가 만든 풍경'],ans:0,
+  exp:'정답: 진짜! 중국 장예의 단샤 지형이에요. 진짜도 가짜처럼 보일 수 있어요.'},
+ {title:'세 편 중 사람(시인)이 쓴 시는?',type:'poem',choices:['① 번','② 번','③ 번'],ans:1,
+  poems:['바람이 머문 자리 / 들꽃 하나 피었네 / 아무도 몰래 피고 / 아무도 몰래 지네','산에는 꽃 피네 / 꽃이 피네 / 갈 봄 여름 없이 / 꽃이 피네','강물은 흘러가네 / 노을빛 싣고 가네 / 어제도 오늘도 / 말없이 흘러가네'],
+  exp:'정답: ②번, 김소월 「산유화」(1925)! ①③은 AI가 김소월 말투를 흉내 내서 쓴 시예요.'},
+ {title:"2023년 SNS를 뒤집은 '패딩 입은 교황', 진짜일까?",type:'img',img:'img/pope.jpg',choices:['진짜 사진','AI가 만든 가짜'],ans:1,
+  exp:'정답: AI가 만든 가짜! 미드저니로 만든 이미지가 진짜처럼 퍼져 전 세계 뉴스가 됐어요.'},
+ {title:'뉴스 O/X: 세계적인 사진 대회 1등 작품이 사실 AI가 만든 것이었다?',type:'news',choices:['O (AI가 만들었다)','X (진짜 사진이다)'],ans:0,
+  exp:'정답: O! 2023년 소니 월드 포토그래피 어워드 1등 작품이 AI 이미지였어요. 작가는 스스로 상을 거부했어요.'}
+];
+const $=id=>document.getElementById(id);
+const show=id=>{['landing','tsetup','scode','teacher','student'].forEach(x=>$(x).classList.toggle('hidden',x!==id))};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const PEERCFG={debug:0,config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]}};
+for(let i=1;i<=15;i++){const o=document.createElement('option');o.textContent=i+'반';$('klass').appendChild(o)}
+
+/* ================= TEACHER ================= */
+let T=null;
+function teacherInit(cls,codeWanted){
+  T={cls,code:codeWanted||String(Math.floor(10000+Math.random()*90000)),phase:'lobby',qi:-1,stu:{},conns:{},peer:null,tries:0};
+  try{const saved=JSON.parse(sessionStorage.getItem('aihero_t')||'null');if(saved&&saved.code===T.code){Object.assign(T,{phase:saved.phase,qi:saved.qi});for(const k in saved.stu){T.stu[k]=Object.assign(saved.stu[k],{online:false})}}}catch(e){}
+  show('teacher');$('tCls').textContent=cls;$('tCode').textContent=T.code;
+  openPeer();renderT();
+  window.addEventListener('resize',()=>layout());
+  document.addEventListener('keydown',e=>{if(e.code==='Space'&&e.target.tagName!=='INPUT'){e.preventDefault();nextStep()}});
+}
+function openPeer(){
+  if(T.peer){try{T.peer.destroy()}catch(e){}}
+  const peer=new Peer(PREFIX+T.code,PEERCFG);T.peer=peer;
+  peer.on('open',()=>{T.tries=0;saveT();renderT()});
+  peer.on('connection',conn=>{
+    conn.on('data',d=>onTData(conn,d));
+    conn.on('close',()=>{for(const k in T.stu){if(T.conns[k]===conn){T.stu[k].online=false;delete T.conns[k]}}renderT()});
+  });
+  peer.on('error',err=>{
+    if(err.type==='unavailable-id'){ if(T.tries++<12){setTimeout(openPeer,2500)} else {T.code=String(Math.floor(10000+Math.random()*90000));T.stu={};$('tCode').textContent=T.code;T.tries=0;openPeer()} }
+    else if(['network','server-error','socket-error','socket-closed'].includes(err.type)){setTimeout(openPeer,3000)}
+  });
+  peer.on('disconnected',()=>{try{peer.reconnect()}catch(e){}});
+}
+function saveT(){try{const stu={};for(const k in T.stu){const s=T.stu[k];stu[k]={name:s.name,av:s.av,votes:s.votes}}sessionStorage.setItem('aihero_t',JSON.stringify({code:T.code,cls:T.cls,phase:T.phase,qi:T.qi,stu}))}catch(e){}}
+function onTData(conn,d){
+  if(!d||typeof d!=='object')return;
+  const sid=String(d.sid||'').slice(0,40);if(!sid)return;
+  if(d.t==='join'){
+    const name=String(d.name||'').trim().slice(0,8)||'익명';const av=AV.includes(d.av)?d.av:AV[0];
+    T.stu[sid]=Object.assign(T.stu[sid]||{votes:{}},{name,av,online:true});T.conns[sid]=conn;
+    saveT();renderT();sendTo(sid);
+  } else if(d.t==='vote'){
+    const s=T.stu[sid];if(!s)return;
+    if(T.phase!=='q'||d.q!==T.qi)return;
+    const c=Number(d.c);if(!(c>=0&&c<Q[T.qi].choices.length))return;
+    s.votes[T.qi]=c;saveT();renderT();sendTo(sid);
+  }
+}
+function score(s){let n=0;Q.forEach((q,i)=>{if(s.votes[i]===q.ans)n++});return n}
+function stateFor(sid){
+  const s=T.stu[sid];const q=Q[T.qi];
+  return {t:'state',phase:T.phase,qi:T.qi,total:Q.length,title:q?q.title:'',choices:q?q.choices:[],myVote:s&&q?(s.votes[T.qi]??null):null,
+    ans:(T.phase==='reveal'&&q)?q.ans:null,score:s?score(s):0,cls:T.cls,name:s?s.name:'',av:s?s.av:''};
+}
+function sendTo(sid){const c=T.conns[sid];if(c&&c.open){try{c.send(stateFor(sid))}catch(e){}}}
+function broadcast(){for(const k in T.conns)sendTo(k)}
+function nextStep(){
+  if(T.phase==='lobby'||T.phase==='reveal'){ if(T.qi<Q.length-1){T.qi++;T.phase='q'} else {T.phase='end'} }
+  else if(T.phase==='q'){T.phase='reveal'}
+  else if(T.phase==='end'){return}
+  saveT();renderT();broadcast();
+}
+function prevStep(){
+  if(T.phase==='end'){T.phase='reveal';T.qi=Q.length-1}
+  else if(T.phase==='reveal'){T.phase='q'}
+  else if(T.phase==='q'){ if(T.qi>0){T.qi--;T.phase='reveal'} else {T.phase='lobby';T.qi=-1} }
+  saveT();renderT();broadcast();
+}
+$('bNext').onclick=nextStep;$('bPrev').onclick=prevStep;
+$('bReveal').onclick=()=>{if(T.phase==='q'){T.phase='reveal';saveT();renderT();broadcast()}};
+
+function joinURL(){return location.origin+location.pathname+'?r='+T.code}
+function renderT(){
+  const ids=Object.keys(T.stu);const on=ids.filter(k=>T.stu[k].online).length;
+  $('tCnt').textContent=`${ids.length}명 입장`+(on<ids.length?` (접속 ${on})`:'');
+  const q=Q[T.qi];
+  $('bPrev').disabled=T.phase==='lobby';$('bReveal').classList.toggle('hidden',T.phase!=='q');
+  $('bNext').textContent=T.phase==='lobby'?'시작하기 ▶':T.phase==='q'?'정답 공개 ▶':T.phase==='reveal'?(T.qi<Q.length-1?'다음 문제 ▶':'최종 결과 ▶'):'끝!';
+  $('qside').classList.toggle('hidden',!q||T.phase==='end');
+  if(q&&T.phase!=='end'){
+    $('qNum').textContent=`문제 ${T.qi+1} / ${Q.length}`;$('qTitle').textContent=q.title;
+    let m='';
+    if(q.type==='img')m=`<img src="${q.img}" alt="">`;
+    else if(q.type==='poem')m='<div class="poems">'+q.poems.map((p,i)=>`<div class="poem"><b>${['①','②','③'][i]}</b>${esc(p).replace(/ \/ /g,'<br>')}</div>`).join('')+'</div>';
+    else m='<div class="news"><div class="tag">2023년 4월 · 실제 뉴스</div><div class="h">세계적인 사진 대회<br>크리에이티브 부문 1등,<br>그런데…?</div></div>';
+    if($('qMedia').dataset.k!==String(T.qi)){$('qMedia').innerHTML=m;$('qMedia').dataset.k=String(T.qi)}
+    $('qExp').classList.toggle('hidden',T.phase!=='reveal');$('qExp').textContent=q.exp;
+  }
+  layout();
+}
+function slots(rect,n,size){
+  const cols=Math.max(1,Math.floor((rect.w-10)/size));const out=[];
+  for(let i=0;i<n;i++){const c=i%cols,r=Math.floor(i/cols);const rowCount=Math.min(cols,n-r*cols);const off=(rect.w-rowCount*size)/2;
+    out.push({x:rect.x+off+c*size,y:rect.y+r*(size+4)})}
+  return out;
+}
+function layout(){
+  const A=$('arena');if(!T)return;const W=A.clientWidth,H=A.clientHeight;const q=Q[T.qi];
+  A.querySelectorAll('.zone,.lobby,.podium,.allright,.msg').forEach(e=>e.remove());
+  const ids=Object.keys(T.stu);
+  let groups={};const zones=[];
+  if(T.phase==='lobby'||!q||T.phase==='end'){
+    if(T.phase==='lobby'){
+      const lb=document.createElement('div');lb.className='lobby';
+      let qrsvg='';try{const qr=qrcode(0,'M');qr.addData(joinURL());qr.make();qrsvg=qr.createSvgTag({cellSize:6,margin:2,scalable:true})}catch(e){}
+      lb.innerHTML=`<div class="qr">${qrsvg}</div><div class="how"><div>① QR을 찍거나 아래 주소로 접속</div><div class="url">${esc(joinURL())}</div><div>② 방 코드 입력</div><div class="c">${T.code}</div><div>③ 캐릭터와 이름 고르기</div></div>`;
+      A.appendChild(lb);
+      groups.pool={rect:{x:W*0.5,y:H*0.08,w:W*0.48,h:H*0.88},ids};
+      if(!ids.length){const m=document.createElement('div');m.className='msg';m.style.left='50%';m.textContent=T.peer&&T.peer.open?'학생들을 기다리는 중…':'방 여는 중… (잠시만요)';A.appendChild(m)}
+    } else {
+      const sorted=ids.slice().sort((a,b)=>score(T.stu[b])-score(T.stu[a]));
+      const pod=document.createElement('div');pod.className='podium';
+      const top=sorted.slice(0,3);const order=[1,0,2].filter(i=>top[i]);const hh=[180,240,140];const cols=['#9CA3AF','#F59E0B','#B45309'];
+      pod.innerHTML=order.map(i=>{const s=T.stu[top[i]];return `<div class="pod"><div class="e">${s.av}</div><div class="n">${esc(s.name)}</div><div class="s">${score(s)} / ${Q.length}</div><div class="b" style="height:${hh[i]}px;background:${cols[i]}">${i+1}</div></div>`}).join('');
+      A.appendChild(pod);
+      const perfect=ids.filter(k=>score(T.stu[k])===Q.length).map(k=>T.stu[k].name);
+      const ar=document.createElement('div');ar.className='allright';ar.textContent=perfect.length?`5개 다 맞힌 AI 탐지왕: ${perfect.join(', ')}`:'5개 다 맞힌 사람은 없어요. AI가 그만큼 감쪽같아요!';A.appendChild(ar);
+      A.querySelectorAll('.av').forEach(e=>e.classList.add('hidden'));return;
+    }
+  } else {
+    const n=q.choices.length;const pad=14;
+    if(n===2){
+      const zw=(W-pad*4)*0.38,pw=(W-pad*4)*0.24;
+      zones.push({key:0,x:pad,w:zw},{key:'pool',x:pad*2+zw,w:pw},{key:1,x:pad*3+zw+pw,w:zw});
+      zones.forEach(z=>{z.y=pad;z.h=H-pad*2});
+    } else {
+      const ph=Math.min(150,H*0.24);zones.push({key:'pool',x:pad,y:pad,w:W-pad*2,h:ph});
+      const zw=(W-pad*(n+1))/n;for(let i=0;i<n;i++)zones.push({key:i,x:pad+i*(zw+pad),y:pad*2+ph,w:zw,h:H-ph-pad*3});
+    }
+    zones.forEach(z=>{
+      const el=document.createElement('div');el.className='zone'+(z.key==='pool'?' pool':'');
+      Object.assign(el.style,{left:z.x+'px',top:z.y+'px',width:z.w+'px',height:z.h+'px'});
+      const members=ids.filter(k=>{const v=T.stu[k].votes[T.qi];return z.key==='pool'?(v===undefined||v===null):v===z.key});
+      if(z.key!=='pool'){el.style.background=COLORS[z.key]+'14';if(T.phase==='reveal'){el.classList.add(z.key===q.ans?'win':'lose')}}
+      el.innerHTML=`<div class="zl" style="background:${z.key==='pool'?'#B8B2C9':COLORS[z.key]}">${z.key==='pool'?'고민 중':esc(q.choices[z.key])}</div><div class="zc" style="color:${z.key==='pool'?'#B8B2C9':COLORS[z.key]}">${members.length}</div>`;
+      A.appendChild(el);
+      groups[z.key]={rect:{x:z.x,y:z.y+96,w:z.w,h:z.h-96},ids:members,win:T.phase==='reveal'&&z.key===q.ans};
+      if(z.key==='pool'&&n===3)groups[z.key].rect={x:z.x+120,y:z.y+14,w:z.w-140,h:z.h-20};
+    });
+  }
+  // avatars
+  const live=new Set();
+  for(const g in groups){const G=groups[g];const sl=slots(G.rect,G.ids.length,70);
+    G.ids.forEach((k,i)=>{live.add(k);let el=A.querySelector(`.av[data-k="${CSS.escape(k)}"]`);const s=T.stu[k];
+      if(!el){el=document.createElement('div');el.className='av';el.dataset.k=k;el.style.left=(W*0.5)+'px';el.style.top=(H*0.5)+'px';A.appendChild(el);el.offsetWidth}
+      el.innerHTML=`<div class="e">${s.av}</div><div class="n">${esc(s.name)}</div>`;
+      el.classList.remove('hidden');el.classList.toggle('off',!s.online);
+      el.style.left=sl[i].x+'px';el.style.top=sl[i].y+'px';
+      if(G.win){if(!el.classList.contains('hop')){el.classList.add('hop')}}else el.classList.remove('hop');
+    })}
+  A.querySelectorAll('.av').forEach(e=>{if(!live.has(e.dataset.k))e.remove()});
+}
+
+/* ================= STUDENT ================= */
+let S=null;
+function studentInit(code){
+  let sid=null;try{sid=localStorage.getItem('aihero_sid')}catch(e){}
+  if(!sid){sid='s'+Math.random().toString(36).slice(2,10)+Date.now().toString(36);try{localStorage.setItem('aihero_sid',sid)}catch(e){}}
+  let prof=null;try{prof=JSON.parse(localStorage.getItem('aihero_prof_'+code)||'null')}catch(e){}
+  S={code,sid,conn:null,peer:null,state:null,prof,av:AV[Math.floor(Math.random()*AV.length)]};
+  show('student');
+  if(prof)connectS();else renderPick();
+}
+function renderPick(){
+  $('sMe').textContent='';
+  $('sBody').innerHTML=`<div class="stitle">내 캐릭터를 골라요</div><div class="avgrid">${AV.map(a=>`<button class="avbtn${a===S.av?' sel':''}" data-a="${a}">${a}</button>`).join('')}</div>
+  <input id="nm" maxlength="8" placeholder="이름 또는 별명 (8자까지)" style="max-width:360px;text-align:center"><button class="big" id="joinBtn">입장하기</button>`;
+  $('sBody').querySelectorAll('.avbtn').forEach(b=>b.onclick=()=>{S.av=b.dataset.a;$('sBody').querySelectorAll('.avbtn').forEach(x=>x.classList.toggle('sel',x===b))});
+  $('joinBtn').onclick=()=>{const nm=$('nm').value.trim();if(!nm){$('nm').focus();return}
+    S.prof={name:nm.slice(0,8),av:S.av};try{localStorage.setItem('aihero_prof_'+S.code,JSON.stringify(S.prof))}catch(e){}connectS()};
+  $('sStatus').textContent='방 코드 '+S.code;
+}
+function connectS(){
+  $('sMe').innerHTML=`${S.prof.av} ${esc(S.prof.name)}`;
+  if(!S.state)$('sBody').innerHTML='<div class="stitle">선생님 방에 연결하는 중…</div>';
+  $('sStatus').textContent='연결 중…';
+  if(!S.peer||S.peer.destroyed){S.peer=new Peer(undefined,PEERCFG);
+    S.peer.on('open',()=>dial());S.peer.on('error',e=>{if(e.type==='peer-unavailable'){$('sStatus').textContent='방을 찾을 수 없어요. 코드를 확인하거나 잠시 후 다시 연결해요';setTimeout(dial,3000)}else{$('sStatus').textContent='연결 문제 · 다시 시도 중';setTimeout(()=>{if(S.peer.disconnected)try{S.peer.reconnect()}catch(_){};dial()},3000)}});
+    S.peer.on('disconnected',()=>{try{S.peer.reconnect()}catch(e){}});
+  } else dial();
+}
+function dial(){
+  if(S.conn&&S.conn.open)return;
+  if(!S.peer||!S.peer.open)return;
+  const c=S.peer.connect(PREFIX+S.code,{reliable:true});S.conn=c;
+  c.on('open',()=>{$('sStatus').textContent='연결됨 · '+'방 '+S.code;c.send({t:'join',sid:S.sid,name:S.prof.name,av:S.prof.av})});
+  c.on('data',d=>{if(d&&d.t==='state'){S.state=d;renderS()}});
+  c.on('close',()=>{$('sStatus').textContent='연결 끊김 · 다시 연결 중';setTimeout(dial,2000)});
+  c.on('error',()=>setTimeout(dial,2500));
+}
+function vote(c){if(!S.conn||!S.conn.open)return;S.conn.send({t:'vote',sid:S.sid,q:S.state.qi,c});
+  $('sBody').querySelectorAll('.choice').forEach((b,i)=>{b.classList.toggle('sel',i===c);b.classList.toggle('dim',i!==c)})}
+function renderS(){
+  const s=S.state;const B=$('sBody');
+  if(s.phase==='lobby'){B.innerHTML=`<div style="font-size:72px">${S.prof.av}</div><div class="stitle">입장 완료!<br>선생님 화면에 내 캐릭터가 보이나요?</div><div class="sub">${esc(s.cls)} · 곧 시작해요</div>`}
+  else if(s.phase==='q'){
+    B.innerHTML=`<div class="sub">문제 ${s.qi+1} / ${s.total}</div><div class="stitle">${esc(s.title)}</div>`+s.choices.map((c,i)=>`<button class="choice c${i}${s.myVote===i?' sel':''}${s.myVote!==null&&s.myVote!==i?' dim':''}" data-i="${i}">${esc(c)}</button>`).join('')+`<div class="sub">화면을 보고 골라요 · 정답 공개 전까지 바꿀 수 있어요</div>`;
+    B.querySelectorAll('.choice').forEach(b=>b.onclick=()=>vote(Number(b.dataset.i)));
+  }
+  else if(s.phase==='reveal'){
+    const ok=s.myVote===s.ans;
+    B.innerHTML=`<div class="result" style="color:${s.myVote===null?'#5A5470':ok?'#16A34A':'#DC2626'}">${s.myVote===null?'선택 안 함':ok?'정답!':'아쉬워요!'}</div><div class="stitle">정답: ${esc(s.choices[s.ans])}</div><div class="sub">지금까지 ${s.score}개 맞혔어요</div>`;
+  }
+  else if(s.phase==='end'){B.innerHTML=`<div style="font-size:72px">${S.prof.av}</div><div class="result">${s.score} / ${s.total}</div><div class="stitle">${s.score===s.total?'AI 탐지왕!':'AI는 정말 감쪽같죠?'}</div><div class="sub">선생님 화면에서 순위를 확인해요</div>`}
+}
+
+/* ================= ROUTING ================= */
+$('goTeacher').onclick=()=>show('tsetup');
+$('goStudent').onclick=()=>show('scode');
+$('createRoom').onclick=()=>{const sc=$('school').value.trim();const cls=(sc?sc+' ':'')+$('grade').value+' '+$('klass').value;
+  try{sessionStorage.removeItem('aihero_t')}catch(e){}history.replaceState(null,'','?t=1');teacherInit(cls)};
+$('codeGo').onclick=()=>{const c=$('codeIn').value.replace(/\D/g,'');if(c.length!==5)return;history.replaceState(null,'','?r='+c);studentInit(c)};
+(function(){const p=new URLSearchParams(location.search);const r=(p.get('r')||'').replace(/\D/g,'');
+  if(r.length===5)return studentInit(r);
+  if(p.get('t')){try{const saved=JSON.parse(sessionStorage.getItem('aihero_t')||'null');if(saved&&saved.code){return teacherInit(saved.cls,saved.code)}}catch(e){} }
+})();
+</script>
+</body>
+</html>
