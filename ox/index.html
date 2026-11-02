@@ -1,0 +1,699 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>AI일까, 아닐까?</title>
+<meta name="description" content="노을 지는 교실에서 O와 X로 갈라서는 실시간 OX 퀴즈">
+<meta name="theme-color" content="#1a1220">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600;700&family=Gaegu:wght@400;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/MaskPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{
+  --night:#1a1220; --glass:rgba(22,16,28,.58); --glass2:rgba(255,255,255,.08); --edge:rgba(255,255,255,.14);
+  --text:#fff6ec; --dim:rgba(255,246,236,.66); --sun:#f7a531; --sun2:#ffcf7a;
+  --o:#5aa2ff; --x:#ff6a5c; --good:#4fd18b;
+  --ui:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --chalk:"Gaegu","IBM Plex Sans KR",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--night);color:var(--text);font-family:var(--ui);-webkit-tap-highlight-color:transparent}
+button{font:inherit;cursor:pointer;border:0;color:inherit}
+:focus-visible{outline:2px solid var(--sun2);outline-offset:3px}
+#cv{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+[hidden]{display:none!important}
+.glass{background:var(--glass);-webkit-backdrop-filter:blur(16px) saturate(1.2);backdrop-filter:blur(16px) saturate(1.2);border:1px solid var(--edge);box-shadow:0 18px 50px rgba(0,0,0,.35)}
+.pill{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;padding:13px 26px;font-weight:700;font-size:17px;transition:transform .15s,background .2s}
+.pill:hover:not(:disabled){transform:translateY(-1px)}
+.pill.sun{background:var(--sun);color:#2a1606;box-shadow:0 0 0 1px rgba(255,255,255,.2) inset,0 8px 30px rgba(247,165,49,.45)}
+.pill.ghost{background:var(--glass2);border:1px solid var(--edge)}
+.pill.small{padding:9px 16px;font-size:15px;font-weight:600}
+.pill:disabled{opacity:.5;cursor:default}
+
+/* 시작 */
+.screen{position:fixed;inset:0;display:grid;place-items:center;padding:24px max(16px,env(safe-area-inset-right)) 24px max(16px,env(safe-area-inset-left));overflow:auto;background:radial-gradient(ellipse at 50% 50%,rgba(20,12,24,.62) 0,rgba(20,12,24,.35) 45%,rgba(20,12,24,.7) 100%)}
+.hero{text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px;max-width:440px}
+.sunDot{width:14px;height:14px;border-radius:50%;background:var(--sun);box-shadow:0 0 24px 8px rgba(247,165,49,.6)}
+.hero h1{margin:0;font-size:clamp(38px,9vw,56px);font-weight:700;letter-spacing:-.02em;line-height:1.1;text-shadow:0 4px 30px rgba(0,0,0,.5)}
+.hero h1 b{color:var(--o)} .hero h1 i{font-style:normal;color:var(--x)}
+.hero p{margin:0;color:var(--dim);font-size:16px;line-height:1.6;text-shadow:0 2px 12px rgba(0,0,0,.6)}
+.hero .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:8px}
+.hero small{color:var(--dim);font-size:13px}
+.linkbtn{background:none;color:var(--dim);text-decoration:underline;text-underline-offset:3px;font-size:14px;padding:6px}
+
+.card{border-radius:24px;padding:26px clamp(18px,5vw,30px);width:min(420px,100%);display:flex;flex-direction:column;gap:14px}
+.card h2{margin:0;font-size:26px}
+label{font-size:13px;color:var(--dim);display:block;margin-bottom:6px}
+input[type=text],input[type=tel]{width:100%;font:inherit;font-size:19px;padding:12px 16px;border:1px solid var(--edge);border-radius:14px;background:rgba(0,0,0,.25);color:var(--text)}
+input::placeholder{color:rgba(255,246,236,.35)}
+#code{letter-spacing:.3em;text-align:center;font-size:30px;font-weight:700}
+.swatches{display:flex;gap:10px;flex-wrap:wrap}
+.sw{width:38px;height:38px;border-radius:50%;border:2px solid transparent;box-shadow:0 0 0 2px rgba(0,0,0,.25) inset}
+.sw[aria-pressed=true]{border-color:#fff;transform:scale(1.08)}
+.err{color:#ffb0a8;font-size:14px;min-height:1.2em}
+
+/* HUD */
+.hud{position:fixed;z-index:5}
+#tbar{left:50%;transform:translateX(-50%);bottom:max(14px,env(safe-area-inset-bottom));display:flex;gap:8px;flex-wrap:wrap;justify-content:center;padding:8px;border-radius:999px;max-width:calc(100% - 24px)}
+#codeTag{right:max(14px,env(safe-area-inset-right));bottom:max(14px,env(safe-area-inset-bottom));border-radius:999px;padding:8px 18px;display:flex;gap:12px;align-items:baseline;font-size:14px;color:var(--dim)}
+#codeTag b{font-size:24px;letter-spacing:.14em;color:var(--sun2)}
+#codeTag span{color:var(--text);font-weight:600}
+#lobby{right:max(16px,env(safe-area-inset-right));top:66px;border-radius:24px;padding:20px;width:min(320px,calc(100% - 32px));display:flex;flex-direction:column;gap:10px;align-items:center;text-align:center}
+#lobby h3{margin:0;font-size:18px}
+#qr{background:#fff;padding:10px;border-radius:14px;line-height:0}
+#qr img,#qr canvas{width:184px!important;height:184px!important}
+#bigCode{font-size:50px;font-weight:700;letter-spacing:.16em;color:var(--sun2);line-height:1;text-shadow:0 0 30px rgba(247,165,49,.4)}
+#joinUrl{font-size:12px;color:var(--dim);word-break:break-all}
+#editor{left:max(16px,env(safe-area-inset-left));top:66px;border-radius:24px;padding:18px;width:min(540px,calc(100% - 32px));max-height:calc(100% - 170px);display:flex;flex-direction:column;gap:8px}
+#editor h3{margin:0;font-size:18px}
+#editor small{color:var(--dim);font-size:13px}
+#editor textarea{width:100%;min-height:200px;flex:1;font:inherit;font-size:14px;line-height:1.65;padding:12px;border:1px solid var(--edge);border-radius:14px;background:rgba(0,0,0,.28);color:var(--text);resize:vertical}
+#status{left:50%;transform:translateX(-50%);top:max(10px,env(safe-area-inset-top));border-radius:999px;padding:9px 20px;font-weight:700;font-size:clamp(14px,3.8vw,18px);white-space:nowrap;max-width:calc(100% - 24px);overflow:hidden;text-overflow:ellipsis}
+#status.good{background:rgba(40,150,90,.75)} #status.bad{background:rgba(190,60,50,.75)}
+#qcard{left:50%;transform:translateX(-50%);top:56px;border-radius:18px;padding:10px 18px;font-size:clamp(17px,4.4vw,24px);font-weight:700;line-height:1.4;text-align:center;width:min(640px,calc(100% - 24px))}
+#qcard em{font-style:normal;color:var(--sun2);font-weight:700;margin-right:6px}
+#help{left:50%;transform:translateX(-50%);bottom:max(12px,env(safe-area-inset-bottom));border-radius:999px;padding:7px 16px;font-size:13px;color:var(--dim);white-space:nowrap}
+#rank{inset:0;display:grid;place-items:center;background:rgba(10,6,14,.5);padding:20px}
+#rank .card{width:min(500px,100%);max-height:100%;overflow:auto}
+#rank ol{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+#rank li{display:grid;grid-template-columns:40px 22px 1fr auto;align-items:center;gap:10px;padding:9px 12px;border-radius:14px;background:rgba(255,255,255,.06);font-size:17px}
+#rank li.me{box-shadow:0 0 0 2px var(--sun) inset}
+#rank .pos{font-weight:700;font-size:20px;text-align:center;color:var(--sun2)}
+#rank .dot{width:18px;height:18px;border-radius:50%}
+#rank .sc{font-weight:700;font-variant-numeric:tabular-nums}
+#toast{left:50%;top:50%;transform:translate(-50%,-50%);border-radius:22px;padding:22px 26px;text-align:center;max-width:min(420px,90%)}
+#toast b{display:block;font-size:20px;margin-bottom:6px}
+.vignette{position:fixed;inset:0;pointer-events:none;z-index:1;background:radial-gradient(ellipse at 50% 45%,rgba(0,0,0,0) 55%,rgba(12,6,14,.55) 100%)}
+#qbig{left:50%;transform:translateX(-50%);top:max(16px,env(safe-area-inset-top));width:min(1100px,calc(100% - 32px));border-radius:26px;padding:18px 28px 20px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+#qbig .meta{display:flex;gap:12px;align-items:center;font-size:clamp(14px,1.4vw,20px);color:var(--dim);font-weight:600}
+#qbig .meta b{color:var(--sun2)}
+#qbig .timer{font-variant-numeric:tabular-nums;background:rgba(255,255,255,.1);border-radius:999px;padding:2px 14px;color:var(--text)}
+#qbig .timer.hot{background:rgba(255,106,92,.85)}
+#qbig .q{font-size:clamp(24px,3.3vw,54px);font-weight:700;line-height:1.3;text-wrap:balance;text-shadow:0 2px 20px rgba(0,0,0,.4)}
+#qbig .ans{font-size:clamp(20px,2.4vw,38px);font-weight:700}
+#qbig .ans.o{color:var(--o)} #qbig .ans.x{color:var(--x)}
+#qbig .exp{font-size:clamp(15px,1.6vw,24px);color:#d8f3dc}
+#zoneTag{right:max(12px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));border-radius:18px;padding:8px 16px;font-weight:700;font-size:18px}
+#zoneTag.o{background:rgba(60,120,230,.8)} #zoneTag.x{background:rgba(220,80,70,.8)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div class="vignette"></div>
+
+<section class="screen" id="home">
+  <div class="hero">
+    <div class="sunDot"></div>
+    <h1>AI일까, 아닐까?</h1>
+    <p>노을 지는 교실, 칠판에 문제가 떠요.<br>내 아바타를 <b style="color:var(--o)">O</b> 쪽이나 <b style="color:var(--x)">X</b> 쪽으로 데려가세요.</p>
+    <div class="row">
+      <button class="pill sun" id="goStudent">학생으로 입장</button>
+      <button class="pill ghost" id="goTeacher">선생님: 교실 열기</button>
+    </div>
+    <button class="linkbtn" id="goDemo">가상 학생 25명으로 미리보기</button>
+    <small>소리가 나와요 · 선생님 화면에서 음악을 켤 수 있어요</small>
+  </div>
+</section>
+
+<section class="screen" id="join" hidden>
+  <form class="card glass" id="joinForm" autocomplete="off">
+    <h2>교실 입장</h2>
+    <div><label for="code">입장 코드 (칠판 화면의 숫자 4자리)</label>
+      <input type="tel" id="code" inputmode="numeric" maxlength="4" placeholder="0000"></div>
+    <div><label for="nick">이름</label>
+      <input type="text" id="nick" maxlength="8" placeholder="예: 김민준"></div>
+    <div><label>내 아바타 색</label><div class="swatches" id="sws"></div></div>
+    <div class="err" id="joinErr"></div>
+    <button class="pill sun" id="joinBtn" type="submit">입장하기</button>
+  </form>
+</section>
+
+<div class="hud glass" id="codeTag" hidden>입장 코드 <b id="codeSmall">----</b><span id="cnt">0명</span></div>
+<div class="hud glass" id="lobby" hidden>
+  <h3>폰으로 QR을 찍고 들어오세요</h3>
+  <div id="qr"></div>
+  <div style="color:var(--dim);font-size:13px">또는 입장 코드</div>
+  <div id="bigCode">----</div>
+  <div id="joinUrl"></div>
+</div>
+<div class="hud glass" id="editor" hidden>
+  <h3>문제 편집</h3>
+  <small>한 줄에 한 문제 · <b>문장 | O 또는 X | 해설(선택)</b></small>
+  <textarea id="qtext" spellcheck="false" aria-label="문제 목록"></textarea>
+  <small id="qcount"></small>
+</div>
+<div class="hud glass" id="tbar" hidden></div>
+<div class="hud glass" id="qbig" hidden></div>
+<div class="hud glass" id="zoneTag" hidden></div>
+
+<div class="hud glass" id="status" hidden></div>
+<div class="hud glass" id="qcard" hidden></div>
+<div class="hud glass" id="help" hidden>화면을 누르거나 방향키로 이동</div>
+
+<div class="hud" id="rank" hidden><div class="card glass"><h2>최종 순위</h2><ol id="rankList"></ol><div id="rankBtns"></div></div></div>
+<div class="hud glass" id="toast" hidden></div>
+
+<script>
+/* ================= 설정 ================= */
+const DEFAULT_Q = `넷플릭스가 내가 본 영상을 보고 콘텐츠를 추천해 주는 것은 AI다. | O | 시청 기록 데이터를 배워 취향을 예측해요. (예측)
+사람이 다가가면 저절로 열리는 자동문은 AI다. | X | 센서에 감지되면 연다는 정해진 규칙대로만 움직여요.
+스마트폰이 내 얼굴을 알아보고 잠금을 푸는 얼굴 인식은 AI다. | O | 얼굴 데이터를 배워 각도·조명이 달라도 알아봐요. (시각)
+정해진 시간마다 색이 바뀌는 시간제 신호등은 AI다. | X | 미리 입력된 시간표대로만 바뀌어요.
+한국어 문장을 영어로 바꿔 주는 번역기는 AI다. | O | 엄청난 양의 번역 문장을 배웠어요. (언어)
+정한 시간이 지나면 멈추는 전자레인지 타이머는 AI다. | X | 맞춰 둔 시간대로만 작동해요.
+"오늘 날씨 알려 줘"를 알아듣는 AI 스피커는 AI다. | O | 여러 사람의 목소리를 배워 말을 알아듣고 답해요. (청각 + 언어)
+내비게이션이 알려 주는 도착 예상 시간은 AI다. | O | 수많은 차들의 이동 기록을 배워 걸릴 시간을 예측해요. (예측)
+스팸 메일을 자동으로 걸러 주는 메일 분류는 AI다. | O | 스팸과 정상 메일 예시를 배워 새 메일을 판단해요. (언어)
+영상 속 말소리를 자막으로 바꿔 주는 유튜브 자동 자막은 AI다. | O | 음성 데이터를 배워 소리를 글자로 바꿔요. (청각)`;
+const COLORS=["#ff6b6b","#ffa94d","#ffd43b","#69db7c","#38d9a9","#4dabf7","#9775fa","#f783ac","#c08457","#adb5bd"];
+const PREFIX="aiox-class-v1-";
+const TOP="aiox-classroom-v2/";
+const BROKERS=(()=>{ const b=new URLSearchParams(location.search).get("broker"); if(b) return [{url:b}];
+  return [{url:"wss://broker.emqx.io:8084/mqtt"},{url:"wss://broker.hivemq.com:8884/mqtt"},{url:"wss://public.cloud.shiftr.io",username:"public",password:"public"}]; })();
+const rid=()=>Math.random().toString(36).slice(2,10);
+// 여러 중계 서버에 동시에 연결: 학교망이 일부를 막아도 하나만 통하면 됨
+function relayConnect(topics,onMsg,onUp){
+  return BROKERS.map(b=>{ let c; try{ c=mqtt.connect(b.url,{username:b.username,password:b.password,clientId:"ox_"+rid(),reconnectPeriod:2500,connectTimeout:9000,keepalive:30,clean:true}); }catch(e){ return null; }
+    c.on("connect",()=>{ topics().forEach(t=>c.subscribe(t,{qos:0})); onUp&&onUp(c); });
+    c.on("message",(t,m)=>{ let d; try{ d=JSON.parse(m.toString()); }catch(e){ return; } onMsg(t,d,c); });
+    c.on("error",()=>{}); return c; }).filter(Boolean);
+}
+function relayPub(clients,topic,obj){ const m=JSON.stringify(obj); for(const c of clients){ if(c&&c.connected){ try{ c.publish(topic,m,{qos:0}); }catch(e){} } } }
+
+/* 게임 좌표 (2D, 서버 기준) */
+const BX={x0:30,x1:970,y0:212,y1:622};
+const ZO={x:36,y:236,w:404,h:380}, ZX={x:560,y:236,w:404,h:380};
+const SPEED=280;
+function zoneOf(x,y){ if(y<ZO.y-6) return null; if(x<=ZO.x+ZO.w) return "O"; if(x>=ZX.x) return "X"; return null; }
+function clamp(v,a,b){return v<a?a:v>b?b:v}
+const KX=70, KZ=410/8.6, toX=x=>(x-500)/KX, toZ=y=>-5+(y-212)/KZ, fromX=X=>X*KX+500, fromZ=Z=>(Z+5)*KZ+212;
+
+const $=id=>document.getElementById(id);
+const cv=$("cv");
+function show(id){["home","join"].forEach(s=>$(s).hidden=s!==id)}
+function toast(title,msg){const t=$("toast");t.innerHTML="";const b=document.createElement("b");b.textContent=title;const p=document.createElement("div");p.textContent=msg;p.style.color="var(--dim)";t.append(b,p);t.hidden=false}
+function parseQ(text){
+  return text.split("\n").map(l=>l.trim()).filter(Boolean).map(l=>{
+    const p=l.split("|").map(s=>s.trim()); const a=(p[1]||"").toUpperCase();
+    return {q:p[0],a:a==="X"?"X":a==="O"?"O":null,e:p[2]||""};
+  }).filter(x=>x.q&&x.a);
+}
+
+/* ================= 소리 ================= */
+let AC=null;
+function ensureAC(){ try{AC=AC||new (window.AudioContext||window.webkitAudioContext)(); if(AC.state==="suspended")AC.resume();}catch(e){} return AC; }
+function beep(f,d=.12,type="sine",v=.15){ if(!ensureAC())return;
+  const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;
+  g.gain.setValueAtTime(v,AC.currentTime);g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);
+  o.connect(g).connect(AC.destination);o.start();o.stop(AC.currentTime+d); }
+function chime(){[523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,.3,"triangle"),i*110))}
+const Music={on:false,step:0,mode:"calm",next:0,gain:null,noise:null,timer:null};
+const CH=[[48,"M"],[45,"m"],[41,"M"],[43,"M"]];
+const ARP=[0,null,1,null,2,null,1,2, 3,null,2,null,1,null,0,null];
+const mtof=m=>440*Math.pow(2,(m-69)/12);
+function mnote(f,t,d,type,v){const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.01);g.gain.exponentialRampToValueAtTime(.0008,t+d);o.connect(g).connect(Music.gain);o.start(t);o.stop(t+d+.05);}
+function mhat(t,v){ if(!Music.noise){const b=AC.createBuffer(1,AC.sampleRate*.05,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;Music.noise=b;}
+  const s=AC.createBufferSource(),f=AC.createBiquadFilter(),g=AC.createGain();s.buffer=Music.noise;f.type="highpass";f.frequency.value=7000;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+.04);s.connect(f).connect(g).connect(Music.gain);s.start(t);}
+function mstep(i,t,spb){
+  const [root,q]=CH[Math.floor(i/16)%4], k=i%16, iv=q==="M"?[0,4,7,12]:[0,3,7,12], fast=Music.mode==="q";
+  if(k%4===0) mnote(mtof(root-12),t,spb*3.5,"triangle",.22);
+  const a=ARP[k]; if(a!==null) mnote(mtof(root+12+iv[a]),t,spb*1.6,fast?"square":"triangle",fast?.045:.08);
+  if(k===0) [0,1,2].forEach(j=>mnote(mtof(root+iv[j]),t,spb*14,"sine",.035));
+  if(fast){ mhat(t,k%2?.05:.1); if(k%8===4) mhat(t,.16); } else if(k%4===2) mhat(t,.04);
+}
+function msched(){ if(!Music.on) return; const spb=60/(Music.mode==="q"?150:108)/2;
+  while(Music.next<AC.currentTime+.25){ mstep(Music.step,Music.next,spb); Music.next+=spb; Music.step=(Music.step+1)%64; }
+  Music.timer=setTimeout(msched,60); }
+function musicToggle(){ if(!ensureAC()) return;
+  if(!Music.gain){ Music.gain=AC.createGain(); Music.gain.gain.value=.7; Music.gain.connect(AC.destination); }
+  Music.on=!Music.on; if(Music.on){ Music.next=AC.currentTime+.08; msched(); } else clearTimeout(Music.timer);
+  buildTbar(); }
+function musicMode(ph){ Music.mode=ph==="q"?"q":"calm"; if(Music.gain&&AC) Music.gain.gain.setTargetAtTime(ph==="reveal"||ph==="end"?.35:.7,AC.currentTime,.2); }
+
+/* ================= 3D 교실 ================= */
+const G={};
+function texFrom(w,h,draw,srgb=true){ const c=document.createElement("canvas"); c.width=w;c.height=h; draw(c.getContext("2d"),w,h); const t=new THREE.CanvasTexture(c); if(srgb) t.encoding=THREE.sRGBEncoding; t.anisotropy=4; return t; }
+function rrect(x,c,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+function initThree(){
+  const lowEnd=/Android|iPhone|iPad|CrOS/.test(navigator.userAgent);
+  const r=new THREE.WebGLRenderer({canvas:cv,antialias:!lowEnd,powerPreference:"high-performance"});
+  r.setPixelRatio(Math.min(devicePixelRatio||1,lowEnd?1.5:2));
+  r.shadowMap.enabled=true; r.shadowMap.type=THREE.PCFSoftShadowMap;
+  r.outputEncoding=THREE.sRGBEncoding; r.toneMapping=THREE.ACESFilmicToneMapping; r.toneMappingExposure=.8;
+  const scene=new THREE.Scene(); scene.background=new THREE.Color("#1a1220"); scene.fog=new THREE.Fog("#3a2230",22,46);
+  const cam=new THREE.PerspectiveCamera(40,1,.1,100);
+  Object.assign(G,{r,scene,cam,av:new Map(),conf:[],lowEnd});
+
+  // 조명: 노을
+  scene.add(new THREE.HemisphereLight("#ffc79a","#3a2430",.34));
+  const amb=new THREE.AmbientLight("#ffb6a0",.18); scene.add(amb);
+  const sun=new THREE.DirectionalLight("#ff944a",2.0); sun.position.set(-16,9.5,3); sun.target.position.set(3,0,-1);
+  sun.castShadow=true; sun.shadow.mapSize.set(lowEnd?1024:2048,lowEnd?1024:2048);
+  Object.assign(sun.shadow.camera,{left:-14,right:14,top:10,bottom:-10,near:1,far:40}); sun.shadow.bias=-.0008; sun.shadow.radius=4;
+  scene.add(sun,sun.target); G.sun=sun;
+  const fill=new THREE.PointLight("#ff8fa3",.35,30); fill.position.set(8,5,6); scene.add(fill);
+
+  // 바닥
+  const wood=texFrom(1024,1024,(c,w,h)=>{
+    const rows=8; for(let i=0;i<rows;i++){ for(let j=0;j<3;j++){ const x=((i%2)*0.5+j)*w/2.5 - (i%2)*w/5;
+      const l=55+Math.random()*10; c.fillStyle=`hsl(${26+Math.random()*6},${48+Math.random()*10}%,${l}%)`; c.fillRect(x,i*h/rows,w/2.5,h/rows);
+      c.strokeStyle="rgba(80,45,20,.35)"; c.lineWidth=3; c.strokeRect(x,i*h/rows,w/2.5,h/rows);
+      c.strokeStyle="rgba(90,50,20,.08)"; c.lineWidth=2; for(let k=0;k<6;k++){c.beginPath();const yy=i*h/rows+Math.random()*h/rows;c.moveTo(x,yy);c.bezierCurveTo(x+80,yy+6,x+200,yy-6,x+w/2.5,yy);c.stroke();} } } });
+  wood.wrapS=wood.wrapT=THREE.RepeatWrapping; wood.repeat.set(3,2);
+  const floor=new THREE.Mesh(new THREE.PlaneGeometry(26,15),new THREE.MeshStandardMaterial({map:wood,roughness:.72,metalness:0}));
+  floor.rotation.x=-Math.PI/2; floor.position.z=.3; floor.receiveShadow=true; scene.add(floor); G.floor=floor;
+
+  // 벽
+  const wallM=new THREE.MeshStandardMaterial({color:"#efd9bd",roughness:.95});
+  const lowM=new THREE.MeshStandardMaterial({color:"#9c6a43",roughness:.8});
+  const back=new THREE.Mesh(new THREE.PlaneGeometry(26,9),wallM); back.position.set(0,4.5,-7); back.receiveShadow=true; scene.add(back);
+  const backLow=new THREE.Mesh(new THREE.BoxGeometry(26,1.3,.12),lowM); backLow.position.set(0,.65,-6.94); backLow.receiveShadow=true; scene.add(backLow);
+  const left=new THREE.Mesh(new THREE.PlaneGeometry(15,9),wallM); left.rotation.y=Math.PI/2; left.position.set(-13,4.5,.3); scene.add(left);
+  const right=new THREE.Mesh(new THREE.PlaneGeometry(15,9),wallM); right.rotation.y=-Math.PI/2; right.position.set(13,4.5,.3); right.receiveShadow=true; scene.add(right);
+
+  // 창문 (왼쪽 벽) + 빛줄기
+  const sky=texFrom(256,256,(c,w,h)=>{const g=c.createLinearGradient(0,0,0,h);g.addColorStop(0,"#5b4a8a");g.addColorStop(.45,"#f08a6a");g.addColorStop(.75,"#ffc06a");g.addColorStop(1,"#ffe0a0");c.fillStyle=g;c.fillRect(0,0,w,h);
+    c.fillStyle="rgba(255,240,200,.9)";c.beginPath();c.arc(w*.6,h*.72,22,0,7);c.fill(); c.fillStyle="rgba(60,40,70,.55)";for(let i=0;i<9;i++){c.beginPath();c.arc(i*34,h+10,40+Math.random()*20,0,7);c.fill();}});
+  const shaft=texFrom(64,256,(c,w,h)=>{const g=c.createLinearGradient(0,0,0,h);g.addColorStop(0,"rgba(255,190,120,.0)");g.addColorStop(.25,"rgba(255,190,120,.55)");g.addColorStop(1,"rgba(255,170,100,0)");c.fillStyle=g;c.fillRect(0,0,w,h);});
+  const frameM=new THREE.MeshStandardMaterial({color:"#fff7ee",roughness:.6});
+  for(const z of [-4.2,-.2,3.8]){
+    const win=new THREE.Mesh(new THREE.PlaneGeometry(3.2,3),new THREE.MeshBasicMaterial({map:sky})); win.rotation.y=Math.PI/2; win.position.set(-12.97,4.6,z); scene.add(win);
+    for(const [w,h,dy,dz] of [[.14,3.2,0,-1.65],[.14,3.2,0,1.65],[.14,3.2,0,0],[3.4,.14,1.55,0],[3.4,.14,-1.55,0],[3.4,.14,0,0]]){
+      const b=new THREE.Mesh(new THREE.BoxGeometry(.12,h,w===.14?.14:w),frameM); b.position.set(-12.9,4.6+dy,z+dz); scene.add(b); }
+    const sh=new THREE.Mesh(new THREE.PlaneGeometry(3,13),new THREE.MeshBasicMaterial({map:shaft,transparent:true,opacity:.28,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
+    sh.position.set(-7.5,2.4,z+.6); sh.rotation.set(0,Math.PI/2,1.0); scene.add(sh);
+  }
+  // 바닥 햇살 자국
+  const patch=texFrom(256,256,(c,w,h)=>{const g=c.createRadialGradient(w/2,h/2,0,w/2,h/2,w/2);g.addColorStop(0,"rgba(255,170,90,.55)");g.addColorStop(1,"rgba(255,170,90,0)");c.fillStyle=g;c.fillRect(0,0,w,h);});
+  for(const z of [-3.4,.6,4.4]){ const p=new THREE.Mesh(new THREE.PlaneGeometry(9,3.6),new THREE.MeshBasicMaterial({map:patch,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false})); p.rotation.x=-Math.PI/2; p.position.set(-6.5,.02,z); scene.add(p); }
+
+  // 칠판
+  const bt=texFrom(1600,520,()=>{}); G.boardTex=bt;
+  const board=new THREE.Mesh(new THREE.PlaneGeometry(11.4,3.7),new THREE.MeshBasicMaterial({map:bt,toneMapped:false})); board.position.set(0,4.15,-6.86); scene.add(board);
+  const woodM=new THREE.MeshStandardMaterial({color:"#8a5a32",roughness:.7});
+  for(const [w,h,x,y] of [[11.9,.25,0,6.08],[11.9,.25,0,2.22],[.25,4.1,-5.82,4.15],[.25,4.1,5.82,4.15]]){ const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,.18),woodM); b.position.set(x,y,-6.82); b.castShadow=true; scene.add(b); }
+  const tray=new THREE.Mesh(new THREE.BoxGeometry(11,.1,.35),woodM); tray.position.set(0,2.1,-6.7); scene.add(tray);
+  // 시계
+  const clockT=texFrom(256,256,(c,w,h)=>{c.fillStyle="#fffaf2";c.beginPath();c.arc(128,128,120,0,7);c.fill();c.lineWidth=12;c.strokeStyle="#5a3a22";c.stroke();c.fillStyle="#333";for(let i=0;i<12;i++){const a=i/12*Math.PI*2;c.fillRect(128+Math.sin(a)*96-4,128-Math.cos(a)*96-4,8,8);}c.lineWidth=8;c.lineCap="round";c.beginPath();c.moveTo(128,128);c.lineTo(128+60,128+20);c.moveTo(128,128);c.lineTo(128-20,128-80);c.stroke();});
+  const clock=new THREE.Mesh(new THREE.CircleGeometry(.55,40),new THREE.MeshStandardMaterial({map:clockT})); clock.position.set(0,7.1,-6.95); scene.add(clock);
+  // 게시판 (오른쪽 벽)
+  const corkT=texFrom(512,256,(c,w,h)=>{c.fillStyle="#c79a62";c.fillRect(0,0,w,h);const cols=["#ffe08a","#9ad1ff","#ffb3c1","#c3f0ca","#fff"];for(let i=0;i<9;i++){c.save();c.translate(30+i*55,40+(i%3)*65);c.rotate((Math.random()-.5)*.3);c.fillStyle=cols[i%5];c.fillRect(0,0,46,52);c.fillStyle="rgba(0,0,0,.25)";for(let k=0;k<4;k++)c.fillRect(6,10+k*9,30,3);c.restore();}});
+  const cork=new THREE.Mesh(new THREE.PlaneGeometry(6,3),new THREE.MeshStandardMaterial({map:corkT,roughness:1})); cork.rotation.y=-Math.PI/2; cork.position.set(12.96,4.4,0); scene.add(cork);
+  // 교탁, 책상 (가장자리)
+  const deskM=new THREE.MeshStandardMaterial({color:"#b07a48",roughness:.6}), legM=new THREE.MeshStandardMaterial({color:"#55606b",roughness:.5,metalness:.4});
+  const desk=(x,z,s=1)=>{const g=new THREE.Group();const top=new THREE.Mesh(new THREE.BoxGeometry(1.3*s,.08,.85*s),deskM);top.position.y=.95;top.castShadow=top.receiveShadow=true;g.add(top);
+    for(const [dx,dz] of [[-.55,-.35],[.55,-.35],[-.55,.35],[.55,.35]]){const l=new THREE.Mesh(new THREE.BoxGeometry(.06,.95,.06),legM);l.position.set(dx*s,.47,dz*s);l.castShadow=true;g.add(l);} g.position.set(x,0,z); scene.add(g); return g;};
+  const pod=new THREE.Mesh(new THREE.BoxGeometry(2.2,1.2,1),new THREE.MeshStandardMaterial({color:"#8f5f38",roughness:.6})); pod.position.set(8.6,.6,-6); pod.castShadow=true; scene.add(pod);
+  [[11.8,-3],[11.8,-1],[11.8,1],[11.8,3],[-11.9,5.8],[11.8,5.6]].forEach(([x,z])=>desk(x,z));
+  // 화분
+  const pot=new THREE.Mesh(new THREE.CylinderGeometry(.35,.28,.6,16),new THREE.MeshStandardMaterial({color:"#c56b4a"})); pot.position.set(-11.6,.3,-6.2); pot.castShadow=true; scene.add(pot);
+  const leafM=new THREE.MeshStandardMaterial({color:"#4f8a4c",roughness:.8}); for(let i=0;i<5;i++){const l=new THREE.Mesh(new THREE.SphereGeometry(.45,10,8),leafM);l.position.set(-11.6+(Math.random()-.5)*.5,.95+i*.18,-6.2+(Math.random()-.5)*.5);l.scale.y=1.2;l.castShadow=true;scene.add(l);}
+
+  // O / X 구역
+  const zoneTex=(z)=>texFrom(512,480,(c,w,h)=>{const col=z==="O"?"90,162,255":"255,106,92";
+    rrect(14,c,14,w-28,h-28,46); c.fillStyle=`rgba(${col},.22)`; c.fill(); c.setLineDash([26,18]); c.lineWidth=10; c.strokeStyle=`rgba(${col},.9)`; c.stroke(); c.setLineDash([]);
+    c.strokeStyle=`rgba(${col},.55)`; c.lineWidth=46; c.lineCap="round"; c.beginPath();
+    if(z==="O") c.arc(w/2,h/2,130,0,7); else {c.moveTo(w/2-115,h/2-115);c.lineTo(w/2+115,h/2+115);c.moveTo(w/2+115,h/2-115);c.lineTo(w/2-115,h/2+115);} c.stroke();});
+  const glowT=texFrom(256,256,(c,w,h)=>{const g=c.createRadialGradient(w/2,h/2,10,w/2,h/2,w/2);g.addColorStop(0,"rgba(255,255,255,.9)");g.addColorStop(1,"rgba(255,255,255,0)");c.fillStyle=g;c.fillRect(0,0,w,h);});
+  G.zone={}; const glowTex0=()=>glowT;
+  for(const z of ["O","X"]){ const R=z==="O"?ZO:ZX; const w=R.w/KX, d=R.h/KZ, cx=toX(R.x+R.w/2), cz=toZ(R.y+R.h/2);
+    const m=new THREE.Mesh(new THREE.PlaneGeometry(w,d),new THREE.MeshBasicMaterial({map:zoneTex(z),transparent:true,depthWrite:false,toneMapped:false}));
+    m.rotation.x=-Math.PI/2; m.position.set(cx,.03,cz); scene.add(m);
+    const glow=new THREE.Mesh(new THREE.PlaneGeometry(w*1.25,d*1.25),new THREE.MeshBasicMaterial({map:glowT,color:"#5dffa0",transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false}));
+    glow.rotation.x=-Math.PI/2; glow.position.set(cx,.05,cz); scene.add(glow);
+    const light=new THREE.PointLight(z==="O"?"#5aa2ff":"#ff6a5c",.9,10); light.position.set(cx,2.4,cz-1.5); scene.add(light);
+    // 공중 표지판
+    const sign=new THREE.Sprite(new THREE.SpriteMaterial({map:texFrom(256,256,(c,w,h)=>{c.fillStyle=z==="O"?"#5aa2ff":"#ff6a5c";c.shadowColor=c.fillStyle;c.shadowBlur=30;c.font="bold 200px 'IBM Plex Sans KR'";c.textAlign="center";c.textBaseline="middle";c.fillText(z,w/2,h/2+10);}),transparent:true,depthWrite:false}));
+    sign.scale.set(2.3,2.3,1); sign.position.set(cx,1.5,toZ(R.y)-.6); scene.add(sign);
+    const halo=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex0(),color:z==="O"?"#5aa2ff":"#ff6a5c",transparent:true,opacity:.55,blending:THREE.AdditiveBlending,depthWrite:false})); halo.scale.set(5,5,1); halo.position.copy(sign.position); halo.position.z-=.05; scene.add(halo);
+    G.zone[z]={m,glow,light,sign,cx,cz};
+  }
+  // 먼지 (빛 속에 떠다니는 입자)
+  const n=lowEnd?90:180, pos=new Float32Array(n*3); for(let i=0;i<n;i++){pos[i*3]=-12+Math.random()*16;pos[i*3+1]=Math.random()*6;pos[i*3+2]=-6+Math.random()*12;}
+  const pg=new THREE.BufferGeometry(); pg.setAttribute("position",new THREE.BufferAttribute(pos,3));
+  const dust=new THREE.Points(pg,new THREE.PointsMaterial({color:"#ffd2a0",size:.06,transparent:true,opacity:.7,blending:THREE.AdditiveBlending,depthWrite:false})); scene.add(dust); G.dust=dust;
+  G.glowT=glowT;
+  G.bloom=!lowEnd&&!!(THREE.EffectComposer&&THREE.UnrealBloomPass);
+  if(G.bloom){ try{
+    const comp=new THREE.EffectComposer(r); comp.addPass(new THREE.RenderPass(scene,cam));
+    const bp=new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),.55,.5,.86); comp.addPass(bp);
+    const grade=new THREE.ShaderPass({uniforms:{tDiffuse:{value:null},exposure:{value:.7}},vertexShader:"varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}",
+      fragmentShader:"uniform sampler2D tDiffuse;uniform float exposure;varying vec2 vUv;vec3 aces(vec3 x){return clamp((x*(2.51*x+.03))/(x*(2.43*x+.59)+.14),0.,1.);}void main(){vec3 c=texture2D(tDiffuse,vUv).rgb*exposure;c=aces(c);c*=vec3(1.04,.99,.93);c=pow(c,vec3(1./2.2));gl_FragColor=vec4(c,1.);}"});
+    comp.addPass(grade); G.comp=comp; G.bp=bp;
+    r.toneMapping=THREE.NoToneMapping; r.outputEncoding=THREE.LinearEncoding;
+  }catch(e){ G.bloom=false; } }
+  G.fps={n:0,t:0,checked:false};
+  addEventListener("resize",resize3D); resize3D();
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{G.boardKey="";});
+}
+function resize3D(){
+  const w=innerWidth,h=innerHeight; G.r.setSize(w,h,false); G.cam.aspect=w/h;
+  G.camDist=clamp(1.78/(w/h),1,2.2); G.cam.fov=w/h<1?64:52; G.cam.updateProjectionMatrix();
+  if(G.comp){ G.comp.setSize(w,h); G.comp.setPixelRatio&&G.comp.setPixelRatio(G.r.getPixelRatio()); }
+}
+function placeCam(t,home){
+  const f=G.camDist||1;
+  if(mode==="student"){ // 내 아바타 뒤 눈높이
+    const tx=toX(stu.me.x), tz=toZ(stu.me.y); G.cx=(G.cx??tx)+(tx*.75-(G.cx??tx))*.08; G.cz=(G.cz??tz)+(tz-(G.cz??tz))*.08;
+    G.cam.position.set(G.cx,2.9+(f-1)*1.2,Math.min(G.cz+6.2*f,12)); G.cam.lookAt(G.cx*.85,2.1,G.cz-7); return; }
+  const sway=home?Math.sin(t/5000)*1.6:Math.sin(t/9000)*.35, bob=Math.sin(t/3100)*.08;
+  G.cam.position.set(sway,(home?2.6:3.15)+bob+(f-1)*1.5,(home?10.5:10.4)+(f-1)*4); G.cam.lookAt(sway*.4,home?3.4:1.9,-4.5);
+}
+/* 칠판 그림 */
+function wrapLines(c,text,maxW){ const out=[]; let line=""; for(const ch of text){ const t=line+ch; if(c.measureText(t).width>maxW&&line){out.push(line);line=ch.trimStart();} else line=t; } if(line) out.push(line); return out; }
+function drawBoard(st){
+  const sec=st.ph==="q"?Math.ceil(st.t/1000):0;
+  const key=[st.ph,st.qi,sec,st.ph==="lobby"?st.P.length:0,st.a].join("|");
+  if(key===G.boardKey) return; G.boardKey=key;
+  const c=G.boardTex.image.getContext("2d"), W=1600, H=520;
+  const g=c.createLinearGradient(0,0,W,H); g.addColorStop(0,"#2f4a3c"); g.addColorStop(1,"#26392f"); c.fillStyle=g; c.fillRect(0,0,W,H);
+  c.fillStyle="rgba(255,255,255,.035)"; for(let i=0;i<30;i++){ c.beginPath(); c.ellipse(Math.random()*W,Math.random()*H,120+Math.random()*200,20+Math.random()*30,Math.random(),0,7); c.fill(); }
+  c.textAlign="center"; c.textBaseline="middle"; c.fillStyle="#f8f4ea"; c.shadowColor="rgba(255,255,255,.25)"; c.shadowBlur=6;
+  if(st.ph==="lobby"){
+    c.font="700 130px Gaegu"; c.fillText("AI일까, 아닐까?",W/2,200);
+    c.font="400 62px Gaegu"; c.fillStyle="#ffe6a8"; c.fillText(`친구들이 들어오고 있어요 · ${st.P.length}명`,W/2,360);
+  } else if(st.ph==="end"){
+    c.font="700 120px Gaegu"; c.fillText("퀴즈 끝! 모두 수고했어요",W/2,H/2);
+  } else {
+    c.textAlign="left"; c.font="700 60px Gaegu"; c.fillStyle="#ffd56b"; c.fillText(`${st.qi+1}번 문제`,60,70); c.textAlign="center";
+    if(st.ph==="q"){
+      c.font="700 300px Gaegu"; c.fillStyle=sec<=3?"#ff8a7e":"#f8f4ea"; c.fillText(sec,W/2,H/2+10);
+      c.font="700 64px Gaegu"; c.fillStyle="#8cc4ff"; c.fillText("O",W/2-420,H/2); c.fillStyle="#ff9a8f"; c.fillText("X",W/2+420,H/2);
+      c.font="400 54px Gaegu"; c.fillStyle="#ffe6a8"; c.fillText("O 또는 X 쪽으로 이동!",W/2,H-60);
+    } else {
+      c.font="700 120px Gaegu"; c.fillStyle="#f8f4ea"; c.fillText("정답",W/2-170,H/2);
+      c.font="700 300px Gaegu"; c.fillStyle=st.a==="O"?"#8cc4ff":"#ff9a8f"; c.fillText(st.a,W/2+150,H/2+10);
+    }
+  }
+  c.shadowBlur=0; G.boardTex.needsUpdate=true;
+}
+/* 아바타 */
+const SKIN=new THREE.MeshStandardMaterial({color:"#ffd9b3",roughness:.7}), HAIR=new THREE.MeshStandardMaterial({color:"#3b2a20",roughness:.8}), EYE=new THREE.MeshBasicMaterial({color:"#1b1b1b"}), SHOE=new THREE.MeshStandardMaterial({color:"#3b3f52",roughness:.6});
+function labelTex(name,me){ return texFrom(320,80,(c,w,h)=>{ c.font="700 40px 'IBM Plex Sans KR'"; const tw=Math.min(w-8,c.measureText(name).width+40);
+  rrect((w-tw)/2,c,8,tw,h-16,32); c.fillStyle=me?"rgba(247,165,49,.95)":"rgba(20,14,26,.62)"; c.fill(); c.fillStyle=me?"#2a1606":"#fff"; c.textAlign="center"; c.textBaseline="middle"; c.fillText(name,w/2,h/2+2); }); }
+function makeAvatar(p,me){
+  const g=new THREE.Group(), rig=new THREE.Group(); g.add(rig);
+  const body=new THREE.MeshStandardMaterial({color:p.c,roughness:.5});
+  const torso=new THREE.Mesh(new THREE.SphereGeometry(.36,24,18),body); torso.scale.set(1,1.12,.88); torso.position.y=.58; torso.castShadow=true; rig.add(torso);
+  const arms=[]; for(const sd of [-1,1]){ const piv=new THREE.Group(); piv.position.set(sd*.36,.78,0); rig.add(piv);
+    const a=new THREE.Mesh(new THREE.SphereGeometry(.1,12,10),body); a.scale.set(1,1.9,1); a.position.y=-.17; a.castShadow=true; piv.add(a); arms.push(piv); }
+  const head=new THREE.Group(); head.position.y=1.2; rig.add(head);
+  const skull=new THREE.Mesh(new THREE.SphereGeometry(.34,24,20),SKIN); skull.castShadow=true; head.add(skull);
+  const hair=new THREE.Mesh(new THREE.SphereGeometry(.355,24,16,0,Math.PI*2,0,Math.PI*.52),HAIR); hair.rotation.x=-.3; hair.castShadow=true; head.add(hair);
+  const tuft=new THREE.Mesh(new THREE.SphereGeometry(.09,10,8),HAIR); tuft.position.set(.06,.36,.05); head.add(tuft);
+  for(const sd of [-1,1]){ const e=new THREE.Mesh(new THREE.SphereGeometry(.05,10,10),EYE); e.scale.z=.6; e.position.set(sd*.12,-.01,.31); head.add(e);
+    const hl=new THREE.Mesh(new THREE.SphereGeometry(.016,6,6),new THREE.MeshBasicMaterial({color:"#fff"})); hl.position.set(sd*.12+.015,.015,.335); head.add(hl);
+    const ch=new THREE.Mesh(new THREE.CircleGeometry(.055,12),new THREE.MeshBasicMaterial({color:"#ff8f8f",transparent:true,opacity:.55})); ch.position.set(sd*.19,-.1,.29); ch.rotation.y=sd*.4; head.add(ch); }
+  const feet=[]; for(const sd of [-1,1]){ const f=new THREE.Mesh(new THREE.SphereGeometry(.1,10,8),SHOE); f.scale.set(1,.7,1.4); f.position.set(sd*.14,.07,.03); f.castShadow=true; g.add(f); feet.push(f); }
+  const lab=new THREE.Sprite(new THREE.SpriteMaterial({map:labelTex(p.n,me),transparent:true,depthWrite:false,depthTest:false})); lab.scale.set(1.5,.375,1); lab.position.y=1.95; lab.renderOrder=10; g.add(lab);
+  let ring=null,arrow=null;
+  if(me){ ring=new THREE.Mesh(new THREE.RingGeometry(.44,.58,40),new THREE.MeshBasicMaterial({color:"#f7a531",transparent:true,opacity:.85,depthWrite:false})); ring.rotation.x=-Math.PI/2; ring.position.y=.04; g.add(ring);
+    arrow=new THREE.Mesh(new THREE.ConeGeometry(.13,.26,4),new THREE.MeshBasicMaterial({color:"#f7a531"})); arrow.rotation.x=Math.PI; arrow.position.y=2.35; g.add(arrow); }
+  const mark=new THREE.Sprite(new THREE.SpriteMaterial({transparent:true,depthWrite:false,depthTest:false})); mark.scale.set(.55,.55,1); mark.position.set(.55,1.65,0); mark.visible=false; mark.renderOrder=11; g.add(mark);
+  G.scene.add(g);
+  return {g,rig,body,head,feet,arms,lab,ring,arrow,mark,name:p.n,color:p.c,yaw:0};
+}
+const markTex={};
+function getMark(ok){ const k=ok?"ok":"no"; if(!markTex[k]) markTex[k]=texFrom(128,128,(c,w,h)=>{c.fillStyle=ok?"#4fd18b":"#ff6a5c";c.beginPath();c.arc(64,64,58,0,7);c.fill();c.fillStyle="#fff";c.font="bold 76px sans-serif";c.textAlign="center";c.textBaseline="middle";c.fillText(ok?"★":"✕",64,68);}); return markTex[k]; }
+function burst3D(){ const cols=COLORS.slice(0,8); for(let i=0;i<(G.lowEnd?70:140);i++){ const m=new THREE.Mesh(new THREE.PlaneGeometry(.12,.2),new THREE.MeshBasicMaterial({color:cols[i%8],side:THREE.DoubleSide}));
+  m.position.set((Math.random()-.5)*6,5+Math.random()*2,-3+Math.random()*3); G.scene.add(m); G.conf.push({m,v:new THREE.Vector3((Math.random()-.5)*7,Math.random()*4,(Math.random()-.5)*5),r:new THREE.Vector3(Math.random()*8,Math.random()*8,0),l:2.6}); } }
+const grey=new THREE.Color("#7b7b84");
+function frame3D(st,players,meId,t,dt,home){
+  placeCam(t,home);
+  drawBoard(st);
+  const rev=st.ph==="reveal";
+  // 구역 연출
+  for(const z of ["O","X"]){ const Z=G.zone[z], right=rev&&st.a===z;
+    Z.glow.material.opacity += ((right?.32+Math.sin(t/180)*.08:0)-Z.glow.material.opacity)*Math.min(1,dt*6);
+    Z.m.material.opacity += ((rev&&!right?.25:1)-Z.m.material.opacity)*Math.min(1,dt*6);
+    Z.light.intensity += ((right?1.6:rev?.15:.6)-Z.light.intensity)*Math.min(1,dt*5);
+    Z.sign.position.y=1.5+Math.sin(t/700+(z==="O"?0:1.5))*.1; }
+  // 아바타
+  const seen=new Set();
+  for(const p of players){
+    seen.add(p.id); let a=G.av.get(p.id);
+    if(a&&(a.name!==p.n||a.color!==p.c)){ G.scene.remove(a.g); a=null; }
+    if(!a){ a=makeAvatar(p,p.id===meId); G.av.set(p.id,a); }
+    const X=toX(p.x), Z=toZ(p.y), dx=X-a.g.position.x, dz=Z-a.g.position.z, moving=Math.hypot(dx,dz)>.004;
+    a.g.position.x=X; a.g.position.z=Z;
+    if(moving){ const target=Math.atan2(dx,dz); let d=target-a.yaw; while(d>Math.PI)d-=Math.PI*2; while(d<-Math.PI)d+=Math.PI*2; a.yaw+=d*Math.min(1,dt*12); }
+    a.g.rotation.y=a.yaw;
+    const ph=t/90+(p.ph||0), ok=rev&&zoneOf(p.x,p.y)===st.a;
+    let bob=moving?Math.abs(Math.sin(ph))*.09:Math.sin(t/600+(p.ph||0))*.015;
+    if(ok) bob+=Math.max(0,Math.sin(t/150+(p.ph||0)))*.32;
+    a.rig.position.y=bob; a.rig.rotation.x=rev&&!ok?.18:0;
+    const sw=moving?Math.sin(ph)*.7:0;
+    a.arms[0].rotation.set(sw,0,ok?-2.6:.12); a.arms[1].rotation.set(-sw,0,ok?2.6:-.12);
+    a.head.rotation.x=rev&&!ok?.25:0;
+    a.feet[0].position.z=.03+(moving?Math.sin(ph)*.12:0); a.feet[1].position.z=.03-(moving?Math.sin(ph)*.12:0);
+    if(a.arrow){ a.arrow.position.y=2.35+Math.sin(t/220)*.1; a.ring.material.opacity=.6+Math.sin(t/300)*.25; }
+    if(rev){ const ok=zoneOf(p.x,p.y)===st.a; a.mark.visible=true; if(a.mark.material.map!==getMark(ok)){a.mark.material.map=getMark(ok);a.mark.material.needsUpdate=true;}
+      a.body.color.set(ok?p.c:grey); }
+    else { if(a.mark.visible){a.mark.visible=false; a.body.color.set(p.c);} }
+  }
+  for(const [id,a] of G.av) if(!seen.has(id)){ G.scene.remove(a.g); G.av.delete(id); }
+  // 먼지
+  const pa=G.dust.geometry.attributes.position; for(let i=0;i<pa.count;i++){ let y=pa.getY(i)+dt*.12; if(y>6) y=0; pa.setY(i,y); pa.setX(i,pa.getX(i)+Math.sin(t/2000+i)*dt*.05); } pa.needsUpdate=true;
+  // 꽃가루
+  G.conf=G.conf.filter(c=>{ c.l-=dt; c.v.y-=9*dt; c.m.position.addScaledVector(c.v,dt); c.m.rotation.x+=c.r.x*dt; c.m.rotation.y+=c.r.y*dt; if(c.l<=0||c.m.position.y<0){G.scene.remove(c.m); c.m.geometry.dispose(); c.m.material.dispose(); return false;} return true; });
+  if(!G.fps.checked&&!home&&!/[?&]hq/.test(location.search)){ G.fps.n++; G.fps.t+=dt; if(G.fps.t>4){ G.fps.checked=true; const fps=G.fps.n/G.fps.t;
+      if(fps<34&&G.bloom){ G.bloom=false; G.r.toneMapping=THREE.ACESFilmicToneMapping; G.r.outputEncoding=THREE.sRGBEncoding; G.scene.traverse(o=>{if(o.material)o.material.needsUpdate=true;}); }
+      if(fps<24){ G.r.setPixelRatio(1); G.r.shadowMap.enabled=false; resize3D(); } } }
+  if(G.bloom) G.comp.render(); else G.r.render(G.scene,G.cam);
+}
+function pickFloor(ev){
+  const rect=cv.getBoundingClientRect(); const v=new THREE.Vector2(((ev.clientX-rect.left)/rect.width)*2-1,-((ev.clientY-rect.top)/rect.height)*2+1);
+  const ray=new THREE.Raycaster(); ray.setFromCamera(v,G.cam); const hit=new THREE.Vector3();
+  if(!ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),0),hit)) return null;
+  return {x:clamp(fromX(hit.x),BX.x0,BX.x1),y:clamp(fromZ(hit.z),BX.y0,BX.y1)};
+}
+
+/* ================= 선생님(방장) ================= */
+const host={clients:null,players:new Map(),ghost:new Map(),Q:[],st:{ph:"lobby",qi:0,qn:0,q:"",a:null,e:"",t:0,T:15000,P:[]},deadline:0,T:15000,code:""};
+let mode="home";
+function startHost(demo){
+  mode="host"; show(null); $("home").hidden=true;
+  $("qtext").value=DEFAULT_Q; updQCount(); $("qtext").oninput=updQCount;
+  ["codeTag","lobby","editor","tbar"].forEach(i=>$(i).hidden=false);
+  buildTbar(); openRoom(); if(demo) addBots(25);
+  setInterval(hostTick,100);
+  let last=performance.now();
+  (function loop(now){ const dt=Math.min(.05,(now-last)/1000); last=now;
+    for(const p of host.players.values()) if(p.bot) botStep(p,dt);
+    host.st.P=[...host.players.values()];
+    frame3D(host.st,host.st.P,null,now,dt,false);
+    requestAnimationFrame(loop); })(last);
+}
+function updQCount(){ $("qcount").textContent=`문제 ${parseQ($("qtext").value).length}개 인식됨`; }
+function openRoom(){
+  const code=String(Math.floor(1000+Math.random()*9000)); host.code=code;
+  let shown=false;
+  host.clients=relayConnect(()=>[TOP+code+"/c"],(t,d)=>onStudentData(d),()=>{
+    if(shown) return; shown=true;
+    $("codeSmall").textContent=code; $("bigCode").textContent=code;
+    const br=new URLSearchParams(location.search).get("broker");
+    const url=location.origin+location.pathname+"?room="+code+(br?"&broker="+encodeURIComponent(br):"");
+    $("joinUrl").textContent=url; $("qr").innerHTML="";
+    try{ new QRCode($("qr"),{text:url,width:400,height:400,correctLevel:QRCode.CorrectLevel.M}); }catch(e){ $("qr").textContent="QR을 만들 수 없어요"; }
+  });
+  setTimeout(()=>{ if(!shown){ $("bigCode").textContent="연결 실패"; $("joinUrl").textContent="인터넷 연결을 확인하고 새로고침하세요. 학교망이 막고 있을 수도 있어요."; } },12000);
+}
+function onStudentData(d){
+  if(!d||typeof d!=="object"||typeof d.id!=="string") return; const id=d.id.slice(0,20);
+  if(d.t==="join"){
+    const n=String(d.n||"학생").slice(0,8), c=COLORS.includes(d.c)?d.c:COLORS[0], g=host.ghost.get(n), ex=host.players.get(id);
+    if(ex){ ex.n=n; ex.c=c; ex.seen=Date.now(); } else { host.players.set(id,{id,n,c,x:470+Math.random()*60,y:430+Math.random()*170,s:g?g.s:0,ph:Math.random()*6,seen:Date.now()}); host.ghost.delete(n); }
+  } else if(d.t==="pos"||d.t==="hb"){
+    const p=host.players.get(id); if(!p) return; p.seen=Date.now();
+    if(d.t!=="pos"||host.st.ph==="reveal") return;
+    if(typeof d.x!=="number"||typeof d.y!=="number") return;
+    p.x=clamp(d.x,BX.x0,BX.x1); p.y=clamp(d.y,BX.y0,BX.y1);
+  }
+}
+function dropPlayer(id){ const p=host.players.get(id); if(p) host.ghost.set(p.n,{s:p.s}); host.players.delete(id); }
+function packState(){ const st=host.st;
+  return {type:"s",rs:host.rs||0,ph:st.ph,qi:st.qi,qn:st.qn,q:st.q,a:st.ph==="reveal"?st.a:null,e:st.ph==="reveal"?st.e:"",t:Math.max(0,st.t),T:st.T,cnt:st.cnt||null,
+    P:[...host.players.values()].map(p=>[p.id,p.n,p.c,Math.round(p.x),Math.round(p.y),p.s])}; }
+let lastTick=0;
+function hostTick(){ const st=host.st;
+  if(st.ph==="q"){ st.t=host.deadline-Date.now(); const sec=Math.ceil(st.t/1000);
+    if(sec!==lastTick){ lastTick=sec; if(sec<=3&&sec>0) beep(880,.1,"square",.08); } if(st.t<=0) reveal(); }
+  $("cnt").textContent=`${host.players.size}명`; updQBig(st);
+  const now=Date.now(); for(const p of [...host.players.values()]) if(!p.bot&&now-(p.seen||now)>15000) dropPlayer(p.id);
+  if(host.clients) relayPub(host.clients,TOP+host.code+"/s",packState()); }
+let qbigKey="";
+function updQBig(st){
+  const el=$("qbig"); if(st.ph!=="q"&&st.ph!=="reveal"){ el.hidden=true; qbigKey=""; return; }
+  const sec=Math.ceil(Math.max(0,st.t)/1000), key=st.ph+st.qi+"|"+sec; if(key===qbigKey) return; qbigKey=key;
+  el.hidden=false; el.innerHTML="";
+  const meta=document.createElement("div"); meta.className="meta"; const n=document.createElement("b"); n.textContent=`${st.qi+1} / ${st.qn}`; meta.append(n);
+  if(st.ph==="q"){ const tm=document.createElement("span"); tm.className="timer"+(sec<=3?" hot":""); tm.textContent=`${sec}초`; meta.append(tm); }
+  const q=document.createElement("div"); q.className="q"; q.textContent=st.q; el.append(meta,q);
+  if(st.ph==="reveal"){ const a=document.createElement("div"); a.className="ans "+(st.a==="O"?"o":"x"); a.textContent=`정답 ${st.a}  ·  O ${st.cnt?st.cnt.O:0}명 / X ${st.cnt?st.cnt.X:0}명`; el.append(a);
+    if(st.e){ const e=document.createElement("div"); e.className="exp"; e.textContent=st.e; el.append(e); } }
+}
+function setPhase(ph){ host.st.ph=ph; musicMode(ph); buildTbar(); }
+function startQuiz(){ const Q=parseQ($("qtext").value);
+  if(!Q.length){ toast("알림","문제를 한 개 이상 입력해 주세요."); setTimeout(()=>$("toast").hidden=true,2200); return; }
+  host.Q=Q; for(const p of host.players.values()) p.s=0; host.ghost.clear();
+  $("editor").hidden=true; $("lobby").hidden=true; $("rank").hidden=true; ask(0); }
+function ask(i){ const st=host.st, q=host.Q[i];
+  Object.assign(st,{qi:i,qn:host.Q.length,q:q.q,a:q.a,e:q.e,T:host.T,cnt:null}); host.deadline=Date.now()+host.T; st.t=host.T;
+  setPhase("q"); beep(660,.15,"triangle");
+  host.rs=(host.rs||0)+1;
+  for(const p of host.players.values()){ p.x=470+Math.random()*60; p.y=430+Math.random()*170; if(p.bot){p.tgt=null;p.wait=Math.random()*3+.5;} } }
+function reveal(){ const st=host.st; if(st.ph!=="q") return; st.t=0; const cnt={O:0,X:0};
+  for(const p of host.players.values()){ const z=zoneOf(p.x,p.y); if(z) cnt[z]++; if(z===st.a) p.s++; }
+  st.cnt=cnt; setPhase("reveal"); chime(); burst3D(); }
+function next(){ if(host.st.qi+1<host.Q.length) ask(host.st.qi+1); else finish(); }
+function finish(){ setPhase("end"); showRank([...host.players.values()].map(p=>({n:p.n,c:p.c,s:p.s})),true); chime(); burst3D(); }
+function backToLobby(){ $("rank").hidden=true; setPhase("lobby"); $("editor").hidden=false; $("lobby").hidden=false; }
+function btn(label,fn,cls="ghost"){ const b=document.createElement("button"); b.className="pill small "+cls; b.textContent=label; b.onclick=fn; return b; }
+function buildTbar(){
+  if(mode!=="host") return;
+  const bar=$("tbar"); bar.innerHTML=""; const ph=host.st.ph;
+  if(ph==="lobby"){
+    bar.append(btn("퀴즈 시작",startQuiz,"sun"));
+    const sel=document.createElement("select"); sel.className="pill small ghost"; sel.setAttribute("aria-label","문제당 시간"); sel.style.appearance="none";
+    [10,15,20,30].forEach(s=>{const o=document.createElement("option");o.value=s*1000;o.textContent=`문제당 ${s}초`;o.style.color="#000";if(s*1000===host.T)o.selected=true;sel.append(o)});
+    sel.onchange=()=>host.T=+sel.value; bar.append(sel,
+      btn("문제 편집",()=>{$("editor").hidden=!$("editor").hidden}), btn("QR",()=>{$("lobby").hidden=!$("lobby").hidden}));
+  } else if(ph==="q"){ bar.append(btn("정답 바로 공개",reveal,"sun"),btn("+5초",()=>{host.deadline+=5000;host.st.T+=5000;}));
+  } else if(ph==="reveal"){ bar.append(btn(host.st.qi+1<host.Q.length?"다음 문제":"최종 순위 보기",next,"sun"),btn("QR",()=>{$("lobby").hidden=!$("lobby").hidden}));
+  } else if(ph==="end"){ bar.append(btn("처음으로",backToLobby,"sun")); }
+  bar.append(btn(Music.on?"♪ 음악 끄기":"♪ 음악 켜기",musicToggle,Music.on?"ghost":"ghost"));
+}
+function showRank(arr,isHost){
+  arr.sort((a,b)=>b.s-a.s); const ol=$("rankList"); ol.innerHTML=""; let prev=null,pos=0;
+  arr.forEach((p,i)=>{ if(p.s!==prev){pos=i+1;prev=p.s}
+    const li=document.createElement("li"); if(p.me) li.className="me";
+    const a=document.createElement("span");a.className="pos";a.textContent=pos;
+    const d=document.createElement("span");d.className="dot";d.style.background=p.c;
+    const n=document.createElement("span");n.textContent=p.n;
+    const s=document.createElement("span");s.className="sc";s.textContent=p.s+"점";
+    li.append(a,d,n,s); ol.append(li); });
+  if(!arr.length){ const li=document.createElement("li"); li.textContent="참가한 학생이 없어요"; ol.append(li); }
+  const rb=$("rankBtns"); rb.innerHTML=""; if(isHost){ const b=btn("처음으로",backToLobby,"sun"); b.style.marginTop="12px"; rb.append(b); }
+  $("rank").hidden=false;
+}
+const BOTN=["민준","서연","도윤","하윤","시우","지우","주원","서아","예준","하은","지호","수아","준우","지유","현우","윤서","건우","채원","우진","지민","선우","다은","연우","예린","유준"];
+function addBots(n){ for(let i=0;i<n;i++){ const id="bot"+i; host.players.set(id,{id,n:BOTN[i%BOTN.length],c:COLORS[i%COLORS.length],x:120+Math.random()*760,y:300+Math.random()*300,s:0,ph:Math.random()*6,bot:true,tgt:null,wait:Math.random()*3}); } }
+function botStep(p,dt){ const st=host.st; if(st.ph==="reveal") return;
+  if(st.ph==="q"){ if(!p.tgt){ p.wait-=dt; if(p.wait>0) return; const go=Math.random()<.7?st.a:(st.a==="O"?"X":"O"), R=go==="O"?ZO:ZX;
+      p.tgt={x:R.x+40+Math.random()*(R.w-80),y:R.y+60+Math.random()*(R.h-100)}; } }
+  else if(!p.tgt||Math.random()<.004){ p.tgt={x:BX.x0+60+Math.random()*(BX.x1-BX.x0-120),y:BX.y0+60+Math.random()*(BX.y1-BX.y0-80)}; }
+  if(p.tgt){ const dx=p.tgt.x-p.x, dy=p.tgt.y-p.y, d=Math.hypot(dx,dy); if(d<4){ if(st.ph!=="q") p.tgt=null; return; }
+    const v=Math.min(d,SPEED*.6*dt); p.x+=dx/d*v; p.y+=dy/d*v; } }
+
+/* ================= 학생 ================= */
+const stu={cli:null,clients:null,id:null,me:{x:500,y:500},tgt:null,keys:{},st:{ph:"lobby",P:[]},ps:new Map(),lastSent:"",color:COLORS[5]};
+function setupJoin(){
+  show("join"); const sws=$("sws"); sws.innerHTML="";
+  COLORS.forEach((c,i)=>{ const b=document.createElement("button"); b.type="button"; b.className="sw"; b.style.background=c; b.setAttribute("aria-label",`색 ${i+1}`); b.setAttribute("aria-pressed",String(c===stu.color));
+    b.onclick=()=>{stu.color=c;[...sws.children].forEach(x=>x.setAttribute("aria-pressed",String(x===b)))}; sws.append(b); });
+  const room=new URLSearchParams(location.search).get("room"); if(room) $("code").value=room.replace(/\D/g,"").slice(0,4);
+  try{ const n=localStorage.getItem("aiox-name"); if(n) $("nick").value=n; }catch(e){}
+  ($("code").value?$("nick"):$("code")).focus();
+  $("joinForm").onsubmit=e=>{ e.preventDefault(); joinRoom(); };
+}
+function joinRoom(){
+  const code=$("code").value.replace(/\D/g,""), n=$("nick").value.trim(), err=$("joinErr"); err.textContent="";
+  if(code.length!==4){ err.textContent="입장 코드 4자리를 입력해 주세요."; return; }
+  if(!n){ err.textContent="이름을 입력해 주세요."; return; }
+  try{ localStorage.setItem("aiox-name",n); }catch(e){}
+  $("joinBtn").disabled=true; $("joinBtn").textContent="교실 찾는 중…";
+  stu.id="s"+rid(); stu.code=code; stu.n=n; stu.lastMsg=0;
+  const hello=c=>c.publish(TOP+code+"/c",JSON.stringify({t:"join",id:stu.id,n,c:stu.color}));
+  let found=false;
+  const clients=relayConnect(()=>[TOP+code+"/s"],(t,d,c)=>{
+    if(!found){ found=true; stu.cli=c; for(const o of clients) if(o!==c){ try{o.end(true)}catch(e){} } clearTimeout(to); enterGame(); }
+    if(c!==stu.cli) return; stu.lastMsg=Date.now(); onHostData(d);
+  },c=>hello(c));
+  stu.clients=clients;
+  const to=setTimeout(()=>{ if(found) return; for(const o of clients){ try{o.end(true)}catch(e){} }
+    err.textContent="교실을 찾지 못했어요. 선생님 화면의 숫자를 확인하고, 선생님 화면이 켜져 있는지 확인하세요."; $("joinBtn").disabled=false; $("joinBtn").textContent="입장하기"; },12000);
+  // 내 이름이 교실에 보일 때까지 입장 신호 반복
+  stu.joinTimer=setInterval(()=>{ const inRoom=stu.ps.has(stu.id); if(inRoom) return; for(const c of (found?[stu.cli]:clients)) if(c.connected) hello(c); },1200);
+  // 연결 끊김 표시
+  setInterval(()=>{ if(!found) return; const lost=Date.now()-stu.lastMsg>6000;
+    if(lost&&!stu.lostShown){ stu.lostShown=true; toast("연결이 잠시 끊겼어요","다시 연결하는 중이에요. 선생님 화면이 켜져 있는지 확인하세요."); }
+    if(!lost&&stu.lostShown){ stu.lostShown=false; $("toast").hidden=true; } },1000);
+}
+function enterGame(){
+  mode="student"; $("join").hidden=true; $("status").hidden=false; $("help").hidden=false;
+  const hint=()=>{$("help").textContent=innerHeight>innerWidth?"폰을 가로로 돌리면 더 크게 보여요 · 바닥을 눌러 이동":"바닥을 누르거나 방향키로 이동"}; hint(); addEventListener("resize",hint);
+  addEventListener("keydown",e=>{ stu.keys[e.key]=true; if(e.key.startsWith("Arrow")) e.preventDefault(); stu.tgt=null; });
+  addEventListener("keyup",e=>{ stu.keys[e.key]=false; });
+  let down=false;
+  cv.addEventListener("pointerdown",e=>{ down=true; const w=pickFloor(e); if(w) stu.tgt=w; });
+  cv.addEventListener("pointermove",e=>{ if(!down) return; const w=pickFloor(e); if(w) stu.tgt=w; });
+  addEventListener("pointerup",()=>down=false);
+  let hb=0; setInterval(()=>{ const c=stu.cli; if(!c||!c.connected) return; const k=Math.round(stu.me.x)+","+Math.round(stu.me.y); hb++;
+    if(k!==stu.lastSent){ stu.lastSent=k; c.publish(TOP+stu.code+"/c",JSON.stringify({t:"pos",id:stu.id,x:Math.round(stu.me.x),y:Math.round(stu.me.y)})); }
+    else if(hb%30===0) c.publish(TOP+stu.code+"/c",JSON.stringify({t:"hb",id:stu.id})); },100);
+  let last=performance.now();
+  (function loop(now){ const dt=Math.min(.05,(now-last)/1000); last=now; stuStep(dt);
+    frame3D(stu.st,[...stu.ps.values()],stu.id,now,dt,false); requestAnimationFrame(loop); })(last);
+}
+function stuStep(dt){
+  const locked=stu.st.ph==="reveal"||stu.st.ph==="end", me=stu.me, k=stu.keys; let vx=0,vy=0;
+  if(!locked){
+    if(k.ArrowLeft||k.a||k.A) vx-=1; if(k.ArrowRight||k.d||k.D) vx+=1; if(k.ArrowUp||k.w||k.W) vy-=1; if(k.ArrowDown||k.s||k.S) vy+=1;
+    if(vx||vy){ const d=Math.hypot(vx,vy); me.x+=vx/d*SPEED*dt; me.y+=vy/d*SPEED*dt; }
+    else if(stu.tgt){ const dx=stu.tgt.x-me.x, dy=stu.tgt.y-me.y, d=Math.hypot(dx,dy); if(d<3) stu.tgt=null; else { const v=Math.min(d,SPEED*dt); me.x+=dx/d*v; me.y+=dy/d*v; } }
+    me.x=clamp(me.x,BX.x0,BX.x1); me.y=clamp(me.y,BX.y0,BX.y1);
+  }
+  const z=zoneOf(me.x,me.y)||"-"; if(z!==stu.zoneShown){ stu.zoneShown=z; const zt=$("zoneTag"); zt.hidden=false; zt.className="hud glass"+(z==="O"?" o":z==="X"?" x":""); zt.textContent=z==="-"?"아직 구역 밖":`지금 ${z} 구역`; }
+  for(const p of stu.ps.values()){ if(p.id===stu.id){ p.x=me.x; p.y=me.y; } else { const f=Math.min(1,dt*12); p.x+=(p.tx-p.x)*f; p.y+=(p.ty-p.y)*f; } }
+}
+function onHostData(d){
+  if(!d||typeof d!=="object") return;
+  if(d.type!=="s") return;
+  if(d.rs!==stu.rs){ stu.rs=d.rs; stu.tgt=null; }
+  const seen=new Set();
+  for(const [id,n,c,x,y,s] of d.P||[]){ seen.add(id); let p=stu.ps.get(id);
+    if(!p){ p={id,x,y,tx:x,ty:y,ph:Math.random()*6}; stu.ps.set(id,p); if(id===stu.id){ stu.me.x=x; stu.me.y=y; } }
+    p.n=String(n).slice(0,8); p.c=COLORS.includes(c)?c:"#adb5bd"; p.s=s; p.tx=x; p.ty=y; }
+  for(const id of [...stu.ps.keys()]) if(!seen.has(id)) stu.ps.delete(id);
+  const prev=stu.st.ph; stu.st=d; const mine=stu.ps.get(stu.id);
+  if(d.ph==="q"&&(prev!=="q"||stu.lastQi!==d.qi)&&mine){ stu.me.x=mine.tx; stu.me.y=mine.ty; stu.tgt=null; stu.lastQi=d.qi; }
+  updStatus(prev,d,mine);
+}
+function updStatus(prev,d,mine){
+  const el=$("status"), qc=$("qcard"); el.className="hud glass"; const score=mine?mine.s:0;
+  const setQ=(label)=>{ qc.hidden=false; qc.innerHTML=""; const em=document.createElement("em"); em.textContent=label; qc.append(em,document.createTextNode(d.q||"")); };
+  if(d.ph==="lobby"){ el.textContent=`${mine?mine.n:""} 입장 완료! 시작할 때까지 돌아다녀 보세요`; qc.hidden=true; $("rank").hidden=true; }
+  else if(d.ph==="q"){ el.textContent=`O 또는 X로 이동! · ${Math.ceil(d.t/1000)}초 · ${score}점`; setQ(`${d.qi+1}/${d.qn}`); $("rank").hidden=true; }
+  else if(d.ph==="reveal"){ const z=zoneOf(stu.me.x,stu.me.y), ok=z===d.a;
+    el.textContent=ok?`정답! +1점 · 지금 ${score}점`:z?`아쉬워요, 정답은 ${d.a} · ${score}점`:`구역 안에 못 들어갔어요 · ${score}점`;
+    el.classList.add(ok?"good":"bad"); setQ(`정답 ${d.a}`); if(prev!=="reveal"&&ok) burst3D(); }
+  else if(d.ph==="end"){ el.textContent=`끝! 내 점수 ${score}점`; qc.hidden=true;
+    if(prev!=="end"){ showRank([...stu.ps.values()].map(p=>({n:p.n,c:p.c,s:p.s,me:p.id===stu.id})),false); burst3D(); } }
+}
+
+/* ================= 시작 ================= */
+if(!window.THREE){ document.body.innerHTML='<p style="padding:24px;color:#fff">3D 화면을 불러오지 못했어요. 인터넷 연결을 확인하고 새로고침해 주세요.</p>'; }
+else {
+  initThree();
+  $("goTeacher").onclick=()=>startHost(false);
+  $("goDemo").onclick=()=>startHost(true);
+  $("goStudent").onclick=setupJoin;
+  if(new URLSearchParams(location.search).get("room")) setupJoin();
+  const homeSt={ph:"lobby",P:[]};
+  let last=performance.now();
+  (function idle(now){ if(mode!=="home") return; const dt=Math.min(.05,(now-last)/1000); last=now; frame3D(homeSt,[],null,now,dt,true); requestAnimationFrame(idle); })(last);
+}
+</script>
+</body>
+</html>
