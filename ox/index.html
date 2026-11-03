@@ -183,6 +183,17 @@ const BROKERS=(()=>{ const b=new URLSearchParams(location.search).get("broker");
   return [{url:"wss://broker.emqx.io:8084/mqtt"},{url:"wss://broker.hivemq.com:8884/mqtt"},{url:"wss://public.cloud.shiftr.io",username:"public",password:"public"}]; })();
 const rid=()=>Math.random().toString(36).slice(2,10);
 // 여러 중계 서버에 동시에 연결: 학교망이 일부를 막아도 하나만 통하면 됨
+/* QR: 1) qrcodejs  2) qrcode-generator 재시도  3) 이미지 서비스 — 어느 하나라도 되면 표시 */
+function loadScript(src){return new Promise((ok,no)=>{const sc=document.createElement("script");sc.src=src;sc.onload=ok;sc.onerror=no;document.head.appendChild(sc);setTimeout(no,6000)})}
+async function makeQR(el,url){
+  el.innerHTML="";
+  try{ if(window.QRCode){ new QRCode(el,{text:url,width:400,height:400,correctLevel:QRCode.CorrectLevel.M}); if(el.firstChild) return; } }catch(e){}
+  try{ if(!window.qrcode) await loadScript("https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js");
+    const q=qrcode(0,"M"); q.addData(url); q.make(); el.innerHTML=q.createSvgTag({cellSize:8,margin:2,scalable:true}); const sv=el.querySelector("svg"); if(sv){sv.style.width="184px";sv.style.height="184px"} return; }catch(e){}
+  const im=new Image(); im.alt="입장 QR"; im.src="https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=8&data="+encodeURIComponent(url);
+  im.onerror=()=>{ el.innerHTML='<div style="color:#333;font-size:14px;line-height:1.4;padding:20px 6px;width:184px">QR을 못 만들었어요.<br>아래 입장 코드로 들어오세요</div>'; };
+  el.appendChild(im);
+}
 function relayConnect(topics,onMsg,onUp){
   return BROKERS.map(b=>{ let c; try{ c=mqtt.connect(b.url,{username:b.username,password:b.password,clientId:"ox_"+rid(),reconnectPeriod:2500,connectTimeout:9000,keepalive:30,clean:true}); }catch(e){ return null; }
     c.on("connect",()=>{ topics().forEach(t=>c.subscribe(t,{qos:0})); onUp&&onUp(c); });
@@ -498,16 +509,16 @@ function startHost(demo){
 function updQCount(){ $("qcount").textContent=`문제 ${parseQ($("qtext").value).length}개 인식됨`; }
 function openRoom(){
   const code=String(Math.floor(1000+Math.random()*9000)); host.code=code;
+  const br=new URLSearchParams(location.search).get("broker");
+  const url=location.origin+location.pathname+"?room="+code+(br?"&broker="+encodeURIComponent(br):"");
+  $("codeSmall").textContent=code; $("bigCode").textContent=code; $("joinUrl").textContent=url+" · 연결 준비 중…";
+  makeQR($("qr"),url);
   let shown=false;
+  if(typeof mqtt==="undefined"){ $("joinUrl").textContent="실시간 연결 도구를 불러오지 못했어요. 인터넷을 확인하고 새로고침하세요."; host.clients=[]; return; }
   host.clients=relayConnect(()=>[TOP+code+"/c"],(t,d)=>onStudentData(d),()=>{
-    if(shown) return; shown=true;
-    $("codeSmall").textContent=code; $("bigCode").textContent=code;
-    const br=new URLSearchParams(location.search).get("broker");
-    const url=location.origin+location.pathname+"?room="+code+(br?"&broker="+encodeURIComponent(br):"");
-    $("joinUrl").textContent=url; $("qr").innerHTML="";
-    try{ new QRCode($("qr"),{text:url,width:400,height:400,correctLevel:QRCode.CorrectLevel.M}); }catch(e){ $("qr").textContent="QR을 만들 수 없어요"; }
+    if(shown) return; shown=true; $("joinUrl").textContent=url;
   });
-  setTimeout(()=>{ if(!shown){ $("bigCode").textContent="연결 실패"; $("joinUrl").textContent="인터넷 연결을 확인하고 새로고침하세요. 학교망이 막고 있을 수도 있어요."; } },12000);
+  setTimeout(()=>{ if(!shown){ $("joinUrl").textContent=url+" · 실시간 연결이 안 돼요. 새로고침하거나, 학교망이 막고 있으면 다른 네트워크로 시도하세요."; } },12000);
 }
 function onStudentData(d){
   if(!d||typeof d!=="object"||typeof d.id!=="string") return; const id=d.id.slice(0,20);
