@@ -103,7 +103,20 @@ input::placeholder{color:rgba(255,246,236,.35)}
 #qbig .ans{font-size:clamp(20px,2.4vw,38px);font-weight:700}
 #qbig .ans.o{color:var(--o)} #qbig .ans.x{color:var(--x)}
 #qbig .exp{font-size:clamp(15px,1.6vw,24px);color:#d8f3dc}
+#chatbar{left:50%;transform:translateX(-50%);bottom:calc(max(12px,env(safe-area-inset-bottom)) + 44px);width:min(480px,calc(100% - 24px));border-radius:18px;padding:8px;display:flex;flex-direction:column;gap:6px}
+#chatbar form{display:flex;gap:6px}
+#chatbar input{flex:1;min-width:0;font:inherit;font-size:16px;padding:9px 12px;border-radius:12px;border:1px solid var(--edge);background:rgba(0,0,0,.3);color:var(--text)}
+#chatbar .quick{display:flex;gap:6px;flex-wrap:wrap}
+#chatbar .quick button{font:inherit;font-size:15px;padding:4px 10px;border-radius:999px;border:1px solid var(--edge);background:rgba(255,255,255,.08);color:var(--text);cursor:pointer}
+#chatbar .send{font:inherit;font-weight:700;padding:0 14px;border-radius:12px;border:0;background:var(--sun);color:#2a1606;cursor:pointer}
+#chatbar .send:disabled{opacity:.5}
+#chatmini{font-size:12px;color:var(--dim);padding:0 4px}
+#chatlog{left:max(14px,env(safe-area-inset-left));bottom:calc(max(14px,env(safe-area-inset-bottom)) + 70px);width:min(320px,40vw);border-radius:16px;padding:10px 14px;display:flex;flex-direction:column;gap:4px;font-size:15px;line-height:1.35;pointer-events:none}
+#chatlog h3{margin:0 0 2px;font-size:13px;color:var(--dim);font-weight:600}
+#chatlog div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#chatlog b{font-weight:700;margin-right:6px}
 #zoneTag{right:max(12px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));border-radius:18px;padding:8px 16px;font-weight:700;font-size:18px}
+body.chaton #zoneTag{bottom:calc(max(12px,env(safe-area-inset-bottom)) + 150px)}
 #zoneTag.o{background:rgba(60,120,230,.8)} #zoneTag.x{background:rgba(220,80,70,.8)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -156,6 +169,12 @@ input::placeholder{color:rgba(255,246,236,.35)}
 <div class="hud glass" id="tbar" hidden></div>
 <div class="hud glass" id="qbig" hidden></div>
 <div class="hud glass" id="zoneTag" hidden></div>
+<div class="hud glass" id="chatbar" hidden>
+  <div class="quick" id="quick"></div>
+  <form id="chatForm" autocomplete="off"><input id="chatIn" maxlength="30" placeholder="한마디 (30자, 바른 말로!)" aria-label="채팅 입력"><button class="send" id="chatSend" type="submit">보내기</button></form>
+  <div id="chatmini"></div>
+</div>
+<div class="hud glass" id="chatlog" hidden><h3>💬 교실 채팅</h3></div>
 
 <div class="hud glass" id="status" hidden></div>
 <div class="hud glass" id="qcard" hidden></div>
@@ -432,8 +451,9 @@ function makeAvatar(p,me){
   if(me){ ring=new THREE.Mesh(new THREE.RingGeometry(.44,.58,40),new THREE.MeshBasicMaterial({color:"#f7a531",transparent:true,opacity:.85,depthWrite:false})); ring.rotation.x=-Math.PI/2; ring.position.y=.04; g.add(ring);
     arrow=new THREE.Mesh(new THREE.ConeGeometry(.13,.26,4),new THREE.MeshBasicMaterial({color:"#f7a531"})); arrow.rotation.x=Math.PI; arrow.position.y=2.35; g.add(arrow); }
   const mark=new THREE.Sprite(new THREE.SpriteMaterial({transparent:true,depthWrite:false,depthTest:false})); mark.scale.set(.55,.55,1); mark.position.set(.55,1.65,0); mark.visible=false; mark.renderOrder=11; g.add(mark);
+  const bub=new THREE.Sprite(new THREE.SpriteMaterial({transparent:true,depthWrite:false,depthTest:false})); bub.scale.set(2.4,.94,1); bub.position.y=me?3.0:2.7; bub.visible=false; bub.renderOrder=12; g.add(bub);
   G.scene.add(g);
-  return {g,rig,body,head,feet,arms,lab,ring,arrow,mark,name:p.n,color:p.c,yaw:0};
+  return {g,rig,body,head,feet,arms,lab,ring,arrow,mark,bub,say:"",name:p.n,color:p.c,yaw:0};
 }
 const markTex={};
 function getMark(ok){ const k=ok?"ok":"no"; if(!markTex[k]) markTex[k]=texFrom(128,128,(c,w,h)=>{c.fillStyle=ok?"#4fd18b":"#ff6a5c";c.beginPath();c.arc(64,64,58,0,7);c.fill();c.fillStyle="#fff";c.font="bold 76px sans-serif";c.textAlign="center";c.textBaseline="middle";c.fillText(ok?"★":"✕",64,68);}); return markTex[k]; }
@@ -468,6 +488,7 @@ function frame3D(st,players,meId,t,dt,home){
     a.arms[0].rotation.set(sw,0,ok?-2.6:.12); a.arms[1].rotation.set(-sw,0,ok?2.6:-.12);
     a.head.rotation.x=rev&&!ok?.25:0;
     a.feet[0].position.z=.03+(moving?Math.sin(ph)*.12:0); a.feet[1].position.z=.03-(moving?Math.sin(ph)*.12:0);
+    const say=p.say||""; if(say!==a.say){ a.say=say; if(say){ a.bub.material.map=bubbleTex(say); a.bub.material.needsUpdate=true; a.bub.visible=true; } else a.bub.visible=false; }
     if(a.arrow){ a.arrow.position.y=2.35+Math.sin(t/220)*.1; a.ring.material.opacity=.6+Math.sin(t/300)*.25; }
     if(rev){ const ok=zoneOf(p.x,p.y)===st.a; a.mark.visible=true; if(a.mark.material.map!==getMark(ok)){a.mark.material.map=getMark(ok);a.mark.material.needsUpdate=true;}
       a.body.color.set(ok?p.c:grey); }
@@ -491,12 +512,12 @@ function pickFloor(ev){
 }
 
 /* ================= 선생님(방장) ================= */
-const host={clients:null,players:new Map(),ghost:new Map(),Q:[],st:{ph:"lobby",qi:0,qn:0,q:"",a:null,e:"",t:0,T:15000,P:[]},deadline:0,T:15000,code:""};
+const host={chatOn:true,chatLog:[],clients:null,players:new Map(),ghost:new Map(),Q:[],st:{ph:"lobby",qi:0,qn:0,q:"",a:null,e:"",t:0,T:15000,P:[]},deadline:0,T:15000,code:""};
 let mode="home";
 function startHost(demo){
   mode="host"; show(null); $("home").hidden=true;
   $("qtext").value=DEFAULT_Q; updQCount(); $("qtext").oninput=updQCount;
-  ["codeTag","lobby","editor","tbar"].forEach(i=>$(i).hidden=false);
+  ["codeTag","lobby","editor","tbar","chatlog"].forEach(i=>$(i).hidden=false);
   buildTbar(); openRoom(); if(demo) addBots(25);
   setInterval(hostTick,100);
   let last=performance.now();
@@ -530,18 +551,24 @@ function onStudentData(d){
     if(d.t!=="pos"||host.st.ph==="reveal") return;
     if(typeof d.x!=="number"||typeof d.y!=="number") return;
     p.x=clamp(d.x,BX.x0,BX.x1); p.y=clamp(d.y,BX.y0,BX.y1);
+  } else if(d.t==="chat"){
+    const p=host.players.get(id); if(!p||!host.chatOn) return; const now=Date.now(); p.seen=now;
+    if(now-(p.lastChat||0)<1500) return; p.lastChat=now;
+    const m=cleanChat(d.m); if(!m) return; p.say=m; p.sayT=now; addChatLog(p.n,p.c,m);
   }
 }
+function addChatLog(n,c,m){ host.chatLog.push({n,c,m}); host.chatLog=host.chatLog.slice(-6); const box=$("chatlog"); box.querySelectorAll("div").forEach(e=>e.remove());
+  for(const x of host.chatLog){ const d=document.createElement("div"); const b=document.createElement("b"); b.style.color=x.c; b.textContent=x.n; d.append(b,document.createTextNode(x.m)); box.append(d); } }
 function dropPlayer(id){ const p=host.players.get(id); if(p) host.ghost.set(p.n,{s:p.s}); host.players.delete(id); }
 function packState(){ const st=host.st;
   return {type:"s",rs:host.rs||0,ph:st.ph,qi:st.qi,qn:st.qn,q:st.q,a:st.ph==="reveal"?st.a:null,e:st.ph==="reveal"?st.e:"",t:Math.max(0,st.t),T:st.T,cnt:st.cnt||null,
-    P:[...host.players.values()].map(p=>[p.id,p.n,p.c,Math.round(p.x),Math.round(p.y),p.s])}; }
+    ch:host.chatOn?1:0,P:[...host.players.values()].map(p=>[p.id,p.n,p.c,Math.round(p.x),Math.round(p.y),p.s,(p.say&&Date.now()-p.sayT<6000)?p.say:""])}; }
 let lastTick=0;
 function hostTick(){ const st=host.st;
   if(st.ph==="q"){ st.t=host.deadline-Date.now(); const sec=Math.ceil(st.t/1000);
     if(sec!==lastTick){ lastTick=sec; if(sec<=3&&sec>0) beep(880,.1,"square",.08); } if(st.t<=0) reveal(); }
   $("cnt").textContent=`${host.players.size}명`; updQBig(st);
-  const now=Date.now(); for(const p of [...host.players.values()]) if(!p.bot&&now-(p.seen||now)>15000) dropPlayer(p.id);
+  const now=Date.now(); for(const p of [...host.players.values()]){ if(!p.bot&&now-(p.seen||now)>15000) dropPlayer(p.id); else if(p.say&&now-p.sayT>6000) p.say=""; }
   if(host.clients) relayPub(host.clients,TOP+host.code+"/s",packState()); }
 let qbigKey="";
 function updQBig(st){
@@ -570,6 +597,18 @@ function reveal(){ const st=host.st; if(st.ph!=="q") return; st.t=0; const cnt={
 function next(){ if(host.st.qi+1<host.Q.length) ask(host.st.qi+1); else finish(); }
 function finish(){ setPhase("end"); showRank([...host.players.values()].map(p=>({n:p.n,c:p.c,s:p.s})),true); chime(); burst3D(); }
 function backToLobby(){ $("rank").hidden=true; setPhase("lobby"); $("editor").hidden=false; $("lobby").hidden=false; }
+const BADW=["시발","씨발","씨바","시바","ㅅㅂ","ㅆㅂ","병신","ㅂㅅ","개새","새끼","ㅅㄲ","지랄","ㅈㄹ","존나","졸라","ㅈㄴ","닥쳐","꺼져","미친","ㅁㅊ","썅","fuck","shit","bitch"];
+function cleanChat(m){ m=String(m||"").replace(/[\u0000-\u001f<>]/g,"").replace(/\s+/g," ").trim().slice(0,30); let low=m.toLowerCase();
+  for(const w of BADW){ let i; while((i=low.indexOf(w))>=0){ m=m.slice(0,i)+"♥".repeat(w.length)+m.slice(i+w.length); low=m.toLowerCase(); } } return m; }
+const bubCache=new Map();
+function bubbleTex(text){ if(bubCache.has(text)) return bubCache.get(text); if(bubCache.size>200) bubCache.clear();
+  const t=texFrom(512,200,(c,w,h)=>{ c.font="700 44px 'IBM Plex Sans KR'"; const words=[...text]; let lines=[""],i=0;
+    for(const ch of words){ if(c.measureText(lines[i]+ch).width>440){ if(i===1){ lines[1]=lines[1].slice(0,-1)+"…"; break; } i++; lines[i]=""; } lines[i]+=ch; }
+    const tw=Math.max(...lines.map(l=>c.measureText(l).width))+56, th=lines.length*54+34, x=(w-tw)/2, y=h-th-24;
+    c.fillStyle="rgba(255,255,255,.96)"; c.beginPath(); c.roundRect?c.roundRect(x,y,tw,th,28):c.rect(x,y,tw,th); c.fill();
+    c.beginPath(); c.moveTo(w/2-16,y+th-1); c.lineTo(w/2,h-4); c.lineTo(w/2+16,y+th-1); c.fill();
+    c.fillStyle="#2a1b24"; c.textAlign="center"; c.textBaseline="middle"; lines.forEach((l,k)=>c.fillText(l,w/2,y+17+27+k*54)); });
+  bubCache.set(text,t); return t; }
 function btn(label,fn,cls="ghost"){ const b=document.createElement("button"); b.className="pill small "+cls; b.textContent=label; b.onclick=fn; return b; }
 function buildTbar(){
   if(mode!=="host") return;
@@ -583,6 +622,7 @@ function buildTbar(){
   } else if(ph==="q"){ bar.append(btn("정답 바로 공개",reveal,"sun"),btn("+5초",()=>{host.deadline+=5000;host.st.T+=5000;}));
   } else if(ph==="reveal"){ bar.append(btn(host.st.qi+1<host.Q.length?"다음 문제":"최종 순위 보기",next,"sun"),btn("QR",()=>{$("lobby").hidden=!$("lobby").hidden}));
   } else if(ph==="end"){ bar.append(btn("처음으로",backToLobby,"sun")); }
+  bar.append(btn(host.chatOn?"💬 채팅 켜짐":"💬 채팅 꺼짐",()=>{ host.chatOn=!host.chatOn; if(!host.chatOn) for(const p of host.players.values()) p.say=""; $("chatlog").hidden=!host.chatOn; buildTbar(); },host.chatOn?"ghost":"ghost"));
   bar.append(btn(Music.on?"♪ 음악 끄기":"♪ 음악 켜기",musicToggle,Music.on?"ghost":"ghost"));
 }
 function showRank(arr,isHost){
@@ -600,7 +640,8 @@ function showRank(arr,isHost){
 }
 const BOTN=["민준","서연","도윤","하윤","시우","지우","주원","서아","예준","하은","지호","수아","준우","지유","현우","윤서","건우","채원","우진","지민","선우","다은","연우","예린","유준"];
 function addBots(n){ for(let i=0;i<n;i++){ const id="bot"+i; host.players.set(id,{id,n:BOTN[i%BOTN.length],c:COLORS[i%COLORS.length],x:120+Math.random()*760,y:300+Math.random()*300,s:0,ph:Math.random()*6,bot:true,tgt:null,wait:Math.random()*3}); } }
-function botStep(p,dt){ const st=host.st; if(st.ph==="reveal") return;
+const BOTSAY=["O 같은데?","X 아니야?","ㅋㅋㅋ","헷갈려 😮","이거 AI 맞지","👍","정답 뭐야","🔥🔥"];
+function botStep(p,dt){ const st=host.st; if(host.chatOn&&Math.random()<dt*.02){ p.say=BOTSAY[Math.floor(Math.random()*BOTSAY.length)]; p.sayT=Date.now(); addChatLog(p.n,p.c,p.say); } if(st.ph==="reveal") return;
   if(st.ph==="q"){ if(!p.tgt){ p.wait-=dt; if(p.wait>0) return; const go=Math.random()<.7?st.a:(st.a==="O"?"X":"O"), R=go==="O"?ZO:ZX;
       p.tgt={x:R.x+40+Math.random()*(R.w-80),y:R.y+60+Math.random()*(R.h-100)}; } }
   else if(!p.tgt||Math.random()<.004){ p.tgt={x:BX.x0+60+Math.random()*(BX.x1-BX.x0-120),y:BX.y0+60+Math.random()*(BX.y1-BX.y0-80)}; }
@@ -642,7 +683,7 @@ function joinRoom(){
     if(!lost&&stu.lostShown){ stu.lostShown=false; $("toast").hidden=true; } },1000);
 }
 function enterGame(){
-  mode="student"; $("join").hidden=true; $("status").hidden=false; $("help").hidden=false;
+  mode="student"; $("join").hidden=true; $("status").hidden=false; $("help").hidden=false; setupChat();
   const hint=()=>{$("help").textContent=innerHeight>innerWidth?"폰을 가로로 돌리면 더 크게 보여요 · 바닥을 눌러 이동":"바닥을 누르거나 방향키로 이동"}; hint(); addEventListener("resize",hint);
   addEventListener("keydown",e=>{ stu.keys[e.key]=true; if(e.key.startsWith("Arrow")) e.preventDefault(); stu.tgt=null; });
   addEventListener("keyup",e=>{ stu.keys[e.key]=false; });
@@ -657,6 +698,15 @@ function enterGame(){
   (function loop(now){ const dt=Math.min(.05,(now-last)/1000); last=now; stuStep(dt);
     frame3D(stu.st,[...stu.ps.values()],stu.id,now,dt,false); requestAnimationFrame(loop); })(last);
 }
+function setupChat(){
+  const q=$("quick"); ["👍","😂","😮","🔥","O 같아!","X 같아!"].forEach(t=>{ const b=document.createElement("button"); b.type="button"; b.textContent=t; b.onclick=()=>sendChat(t); q.append(b); });
+  $("chatForm").onsubmit=e=>{ e.preventDefault(); const v=$("chatIn").value; if(sendChat(v)) $("chatIn").value=""; $("chatIn").blur(); };
+  $("chatIn").addEventListener("keydown",e=>e.stopPropagation()); $("chatIn").addEventListener("keyup",e=>e.stopPropagation());
+}
+function sendChat(m){ m=cleanChat(m); const c=stu.cli; if(!m||!c||!c.connected) return false; const now=Date.now();
+  if(now-(stu.lastChat||0)<2000){ $("chatmini").textContent="잠깐! 2초 뒤에 다시 보낼 수 있어요"; return false; }
+  stu.lastChat=now; c.publish(TOP+stu.code+"/c",JSON.stringify({t:"chat",id:stu.id,m})); $("chatmini").textContent=""; 
+  const sb=$("chatSend"); sb.disabled=true; setTimeout(()=>sb.disabled=false,2000); return true; }
 function stuStep(dt){
   const locked=stu.st.ph==="reveal"||stu.st.ph==="end", me=stu.me, k=stu.keys; let vx=0,vy=0;
   if(!locked){
@@ -673,9 +723,10 @@ function onHostData(d){
   if(d.type!=="s") return;
   if(d.rs!==stu.rs){ stu.rs=d.rs; stu.tgt=null; }
   const seen=new Set();
-  for(const [id,n,c,x,y,s] of d.P||[]){ seen.add(id); let p=stu.ps.get(id);
+  $("chatbar").hidden=!d.ch||d.ph==="end"; document.body.classList.toggle("chaton",!$("chatbar").hidden); $("help").hidden=!$("chatbar").hidden&&innerHeight<520;
+  for(const [id,n,c,x,y,s,say] of d.P||[]){ seen.add(id); let p=stu.ps.get(id);
     if(!p){ p={id,x,y,tx:x,ty:y,ph:Math.random()*6}; stu.ps.set(id,p); if(id===stu.id){ stu.me.x=x; stu.me.y=y; } }
-    p.n=String(n).slice(0,8); p.c=COLORS.includes(c)?c:"#adb5bd"; p.s=s; p.tx=x; p.ty=y; }
+    p.n=String(n).slice(0,8); p.c=COLORS.includes(c)?c:"#adb5bd"; p.s=s; p.tx=x; p.ty=y; p.say=say?cleanChat(say):""; }
   for(const id of [...stu.ps.keys()]) if(!seen.has(id)) stu.ps.delete(id);
   const prev=stu.st.ph; stu.st=d; const mine=stu.ps.get(stu.id);
   if(d.ph==="q"&&(prev!=="q"||stu.lastQi!==d.qi)&&mine){ stu.me.x=mine.tx; stu.me.y=mine.ty; stu.tgt=null; stu.lastQi=d.qi; }
