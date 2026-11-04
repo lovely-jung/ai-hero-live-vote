@@ -116,6 +116,10 @@ input::placeholder{color:rgba(255,246,236,.35)}
 #chatlog div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #chatlog b{font-weight:700;margin-right:6px}
 #zoneTag{right:max(12px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));border-radius:18px;padding:8px 16px;font-weight:700;font-size:18px}
+#loungeBtn{left:max(12px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));border:0;border-radius:999px;padding:12px 20px;font-weight:700;font-size:16px;background:var(--sun);color:#2b1606;box-shadow:0 6px 20px rgba(0,0,0,.35);animation:lgpulse 1.6s ease-in-out infinite}
+body.chaton #loungeBtn{bottom:calc(max(12px,env(safe-area-inset-bottom)) + 150px)}
+@keyframes lgpulse{50%{transform:scale(1.06)}}
+@media (prefers-reduced-motion:reduce){#loungeBtn{animation:none}}
 body.chaton #zoneTag{bottom:calc(max(12px,env(safe-area-inset-bottom)) + 150px)}
 #zoneTag.o{background:rgba(60,120,230,.8)} #zoneTag.x{background:rgba(220,80,70,.8)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -178,6 +182,7 @@ body.chaton #zoneTag{bottom:calc(max(12px,env(safe-area-inset-bottom)) + 150px)}
 
 <div class="hud glass" id="status" hidden></div>
 <div class="hud glass" id="qcard" hidden></div>
+<button class="hud" id="loungeBtn" hidden>☕ 쉬는 시간! 카페 라운지 가기</button>
 <div class="hud glass" id="help" hidden>화면을 누르거나 방향키로 이동</div>
 
 <div class="hud" id="rank" hidden><div class="card glass"><h2>최종 순위</h2><ol id="rankList"></ol><div id="rankBtns"></div></div></div>
@@ -219,6 +224,13 @@ function relayConnect(topics,onMsg,onUp){
     c.on("message",(t,m)=>{ let d; try{ d=JSON.parse(m.toString()); }catch(e){ return; } onMsg(t,d,c); });
     c.on("error",()=>{}); return c; }).filter(Boolean);
 }
+/* ================= 쉬는 시간 카페 라운지 연결 ================= */
+const LOUNGE="https://lovely-jung.github.io/ai-hero-live-vote/lounge/";
+function h32(s){ let h=0x811c9dc5; for(const ch of s){ h^=ch.codePointAt(0); h=Math.imul(h,0x01000193)>>>0; } return h.toString(36); }
+const loungeCtlTopic=code=>"aihero-lounge-v1/"+h32("lounge:ox-"+code)+"/ctl";
+const b64u={enc(buf){ let s=""; new Uint8Array(buf).forEach(b=>s+=String.fromCharCode(b)); return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); },
+  dec(str){ str=String(str).replace(/-/g,"+").replace(/_/g,"/"); while(str.length%4) str+="="; const s=atob(str), u=new Uint8Array(s.length); for(let i=0;i<s.length;i++) u[i]=s.charCodeAt(i); return u; }};
+const ECK={name:"ECDSA",namedCurve:"P-256"}, ECS={name:"ECDSA",hash:"SHA-256"}, u8=s=>new TextEncoder().encode(s);
 function relayPub(clients,topic,obj){ const m=JSON.stringify(obj); for(const c of clients){ if(c&&c.connected){ try{ c.publish(topic,m,{qos:0}); }catch(e){} } } }
 
 /* 게임 좌표 (2D, 서버 기준) */
@@ -512,7 +524,7 @@ function pickFloor(ev){
 }
 
 /* ================= 선생님(방장) ================= */
-const host={chatOn:true,chatLog:[],clients:null,players:new Map(),ghost:new Map(),Q:[],st:{ph:"lobby",qi:0,qn:0,q:"",a:null,e:"",t:0,T:15000,P:[]},deadline:0,T:15000,code:""};
+const host={br:false,lch:1,lcall:0,lts:0,lmsg:null,lkp:null,lpk:"",ltk:"",chatOn:true,chatLog:[],clients:null,players:new Map(),ghost:new Map(),Q:[],st:{ph:"lobby",qi:0,qn:0,q:"",a:null,e:"",t:0,T:15000,P:[]},deadline:0,T:15000,code:""};
 let mode="home";
 function startHost(demo){
   mode="host"; show(null); $("home").hidden=true;
@@ -536,11 +548,25 @@ function openRoom(){
   makeQR($("qr"),url);
   let shown=false;
   if(typeof mqtt==="undefined"){ $("joinUrl").textContent="실시간 연결 도구를 불러오지 못했어요. 인터넷을 확인하고 새로고침하세요."; host.clients=[]; return; }
-  host.clients=relayConnect(()=>[TOP+code+"/c"],(t,d)=>onStudentData(d),()=>{
+  initLounge();
+  host.clients=relayConnect(()=>[TOP+code+"/c",loungeCtlTopic(code)],(t,d)=>{ if(t===loungeCtlTopic(code)) onLoungeCtl(d); else onStudentData(d); },()=>{
     if(shown) return; shown=true; $("joinUrl").textContent=url;
   });
   setTimeout(()=>{ if(!shown){ $("joinUrl").textContent=url+" · 실시간 연결이 안 돼요. 새로고침하거나, 학교망이 막고 있으면 다른 네트워크로 시도하세요."; } },12000);
 }
+async function initLounge(){ try{ if(!crypto.subtle) return; host.lkp=await crypto.subtle.generateKey(ECK,true,["sign","verify"]);
+    host.lpk=b64u.enc(await crypto.subtle.exportKey("raw",host.lkp.publicKey)); host.ltk=b64u.enc(await crypto.subtle.exportKey("pkcs8",host.lkp.privateKey)); }catch(e){ host.lkp=null; } }
+async function loungeCtl(){ if(!host.lkp) return; const ts=Math.max(Date.now(),host.lts+1), ch=host.lch, call=host.lcall;
+  const sig=b64u.enc(await crypto.subtle.sign(ECS,host.lkp.privateKey,u8(`${h32("lounge:ox-"+host.code)}|${ch}|${call}|${ts}`)));
+  host.lts=ts; host.lmsg={t:"ctl",ch,call,ts,sig}; pubLoungeCtl(); }
+function pubLoungeCtl(){ if(!host.lmsg||!host.clients) return; const m=JSON.stringify(host.lmsg); for(const c of host.clients) if(c&&c.connected) try{ c.publish(loungeCtlTopic(host.code),m,{qos:0,retain:true}); }catch(e){} }
+async function onLoungeCtl(d){ if(!host.lkp||!d||typeof d.sig!=="string") return; const ts=+d.ts||0; if(ts<=host.lts) return; const ch=[0,1,2].includes(d.ch)?d.ch:1, call=d.call?1:0;
+  let ok=false; try{ ok=await crypto.subtle.verify(ECS,host.lkp.publicKey,b64u.dec(d.sig),u8(`${h32("lounge:ox-"+host.code)}|${ch}|${call}|${ts}`)); }catch(e){} if(!ok||ts<=host.lts) return;
+  host.lts=ts; host.lch=ch; host.lcall=call; host.lmsg={t:"ctl",ch,call,ts,sig:d.sig}; buildTbar(); }
+function toggleBreak(){ if(!host.lkp){ toast("알림","이 브라우저에서는 라운지 연결을 만들 수 없어요. (https 주소로 열어 주세요)"); setTimeout(()=>$("toast").hidden=true,2600); return; }
+  host.br=!host.br; host.lcall=host.br?0:1; loungeCtl(); buildTbar(); }
+function loungeChatCycle(){ host.lch=host.lch===1?2:host.lch===2?0:1; loungeCtl(); buildTbar(); }
+function openTeacherLounge(){ const u=LOUNGE+"?c=OX-"+host.code+"&n="+encodeURIComponent("선생님")+"&col=9&k="+host.lpk+"#tk="+host.ltk; window.open(u,"_blank"); }
 function onStudentData(d){
   if(!d||typeof d!=="object"||typeof d.id!=="string") return; const id=d.id.slice(0,20);
   if(d.t==="join"){
@@ -562,14 +588,15 @@ function addChatLog(n,c,m){ host.chatLog.push({n,c,m}); host.chatLog=host.chatLo
 function dropPlayer(id){ const p=host.players.get(id); if(p) host.ghost.set(p.n,{s:p.s}); host.players.delete(id); }
 function packState(){ const st=host.st;
   return {type:"s",rs:host.rs||0,ph:st.ph,qi:st.qi,qn:st.qn,q:st.q,a:st.ph==="reveal"?st.a:null,e:st.ph==="reveal"?st.e:"",t:Math.max(0,st.t),T:st.T,cnt:st.cnt||null,
-    ch:host.chatOn?1:0,P:[...host.players.values()].map(p=>[p.id,p.n,p.c,Math.round(p.x),Math.round(p.y),p.s,(p.say&&Date.now()-p.sayT<6000)?p.say:""])}; }
+    ch:host.chatOn?1:0,br:host.br?1:0,lk:host.br?host.lpk:"",P:[...host.players.values()].map(p=>[p.id,p.n,p.c,Math.round(p.x),Math.round(p.y),p.s,(p.say&&Date.now()-p.sayT<6000)?p.say:""])}; }
 let lastTick=0;
 function hostTick(){ const st=host.st;
   if(st.ph==="q"){ st.t=host.deadline-Date.now(); const sec=Math.ceil(st.t/1000);
     if(sec!==lastTick){ lastTick=sec; if(sec<=3&&sec>0) beep(880,.1,"square",.08); } if(st.t<=0) reveal(); }
   $("cnt").textContent=`${host.players.size}명`; updQBig(st);
   const now=Date.now(); for(const p of [...host.players.values()]){ if(!p.bot&&now-(p.seen||now)>15000) dropPlayer(p.id); else if(p.say&&now-p.sayT>6000) p.say=""; }
-  if(host.clients) relayPub(host.clients,TOP+host.code+"/s",packState()); }
+  if(host.clients) relayPub(host.clients,TOP+host.code+"/s",packState());
+  host.ltick=(host.ltick||0)+1; if(host.ltick%40===0&&host.lmsg&&(host.br||Date.now()-host.lts<180000)) pubLoungeCtl(); }
 let qbigKey="";
 function updQBig(st){
   const el=$("qbig"); if(st.ph!=="q"&&st.ph!=="reveal"){ el.hidden=true; qbigKey=""; return; }
@@ -624,6 +651,8 @@ function buildTbar(){
   } else if(ph==="end"){ bar.append(btn("처음으로",backToLobby,"sun")); }
   bar.append(btn(host.chatOn?"💬 채팅 켜짐":"💬 채팅 꺼짐",()=>{ host.chatOn=!host.chatOn; if(!host.chatOn) for(const p of host.players.values()) p.say=""; $("chatlog").hidden=!host.chatOn; buildTbar(); },host.chatOn?"ghost":"ghost"));
   bar.append(btn(Music.on?"♪ 음악 끄기":"♪ 음악 켜기",musicToggle,Music.on?"ghost":"ghost"));
+  bar.append(btn(host.br?"☕ 쉬는 시간 끝 (다시 모이기)":"☕ 쉬는 시간 (카페 열기)",toggleBreak,host.br?"sun":"ghost"));
+  if(host.br){ bar.append(btn(`카페 채팅: ${["🔇 꺼짐","💬 켜짐","😊 이모지만"][host.lch]}`,loungeChatCycle),btn("👀 카페 들여다보기",openTeacherLounge)); }
 }
 function showRank(arr,isHost){
   arr.sort((a,b)=>b.s-a.s); const ol=$("rankList"); ol.innerHTML=""; let prev=null,pos=0;
@@ -654,10 +683,12 @@ function setupJoin(){
   show("join"); const sws=$("sws"); sws.innerHTML="";
   COLORS.forEach((c,i)=>{ const b=document.createElement("button"); b.type="button"; b.className="sw"; b.style.background=c; b.setAttribute("aria-label",`색 ${i+1}`); b.setAttribute("aria-pressed",String(c===stu.color));
     b.onclick=()=>{stu.color=c;[...sws.children].forEach(x=>x.setAttribute("aria-pressed",String(x===b)))}; sws.append(b); });
-  const room=new URLSearchParams(location.search).get("room"); if(room) $("code").value=room.replace(/\D/g,"").slice(0,4);
+  const qs=new URLSearchParams(location.search), room=qs.get("room"); if(room) $("code").value=room.replace(/\D/g,"").slice(0,4);
+  const ci=parseInt(qs.get("col"),10); if(ci>=0&&ci<COLORS.length){ stu.color=COLORS[ci]; [...sws.children].forEach((x,i)=>x.setAttribute("aria-pressed",String(i===ci))); }
   try{ const n=localStorage.getItem("aiox-name"); if(n) $("nick").value=n; }catch(e){}
   ($("code").value?$("nick"):$("code")).focus();
   $("joinForm").onsubmit=e=>{ e.preventDefault(); joinRoom(); };
+  if(qs.get("auto")&&$("code").value.length===4&&$("nick").value.trim()) joinRoom();
 }
 function joinRoom(){
   const code=$("code").value.replace(/\D/g,""), n=$("nick").value.trim(), err=$("joinErr"); err.textContent="";
@@ -665,7 +696,7 @@ function joinRoom(){
   if(!n){ err.textContent="이름을 입력해 주세요."; return; }
   try{ localStorage.setItem("aiox-name",n); }catch(e){}
   $("joinBtn").disabled=true; $("joinBtn").textContent="교실 찾는 중…";
-  stu.id="s"+rid(); stu.code=code; stu.n=n; stu.lastMsg=0;
+  try{ stu.id=sessionStorage.getItem("aiox-id-"+code)||"s"+rid(); sessionStorage.setItem("aiox-id-"+code,stu.id); }catch(e){ stu.id="s"+rid(); } stu.code=code; stu.n=n; stu.lastMsg=0;
   const hello=c=>c.publish(TOP+code+"/c",JSON.stringify({t:"join",id:stu.id,n,c:stu.color}));
   let found=false;
   const clients=relayConnect(()=>[TOP+code+"/s"],(t,d,c)=>{
@@ -698,6 +729,7 @@ function enterGame(){
   (function loop(now){ const dt=Math.min(.05,(now-last)/1000); last=now; stuStep(dt);
     frame3D(stu.st,[...stu.ps.values()],stu.id,now,dt,false); requestAnimationFrame(loop); })(last);
 }
+$("loungeBtn").onclick=goLounge;
 function setupChat(){
   const q=$("quick"); ["👍","😂","😮","🔥","O 같아!","X 같아!"].forEach(t=>{ const b=document.createElement("button"); b.type="button"; b.textContent=t; b.onclick=()=>sendChat(t); q.append(b); });
   $("chatForm").onsubmit=e=>{ e.preventDefault(); const v=$("chatIn").value; if(sendChat(v)) $("chatIn").value=""; $("chatIn").blur(); };
@@ -731,7 +763,13 @@ function onHostData(d){
   const prev=stu.st.ph; stu.st=d; const mine=stu.ps.get(stu.id);
   if(d.ph==="q"&&(prev!=="q"||stu.lastQi!==d.qi)&&mine){ stu.me.x=mine.tx; stu.me.y=mine.ty; stu.tgt=null; stu.lastQi=d.qi; }
   updStatus(prev,d,mine);
+  const lb=$("loungeBtn"), open=!!(d.br&&d.lk); if(open&&lb.hidden){ toast("☕ 쉬는 시간!","카페 라운지에 놀러 가 보세요. 왼쪽 아래 버튼!"); setTimeout(()=>$("toast").hidden=true,3500); }
+  lb.hidden=!open; stu.lk=d.lk;
 }
+function goLounge(){ if(!stu.lk) return; const ci=Math.max(0,COLORS.indexOf(stu.color));
+  const back=location.origin+location.pathname+"?room="+stu.code+"&col="+ci+"&auto=1";
+  const u=LOUNGE+"?c=OX-"+stu.code+"&n="+encodeURIComponent(stu.n)+"&col="+ci+"&k="+stu.lk+"&back="+encodeURIComponent(back);
+  try{ for(const c of stu.clients||[]) c.end(true); }catch(e){} location.href=u; }
 function updStatus(prev,d,mine){
   const el=$("status"), qc=$("qcard"); el.className="hud glass"; const score=mine?mine.s:0;
   const setQ=(label)=>{ qc.hidden=false; qc.innerHTML=""; const em=document.createElement("em"); em.textContent=label; qc.append(em,document.createTextNode(d.q||"")); };
