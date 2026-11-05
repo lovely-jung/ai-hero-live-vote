@@ -245,8 +245,8 @@ const tPres=()=>TOP+ME.key+"/p", tRoom=r=>TOP+ME.key+"/r/"+r;
 const snd={ctx:null,on:true,master:null,nodes:[],timers:[]};
 try{ snd.on=localStorage.getItem("lounge-snd")!=="0"; }catch(e){}
 function audio(){ if(!snd.ctx){ const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return null; snd.ctx=new AC(); snd.master=snd.ctx.createGain(); snd.master.gain.value=snd.on?.7:0; snd.master.connect(snd.ctx.destination); snd.bus=snd.ctx.createGain(); snd.bus.connect(snd.master); } if(snd.ctx.state==="suspended") snd.ctx.resume(); return snd.ctx; }
-function noiseBuf(ctx,kind){ const n=ctx.sampleRate*3, b=ctx.createBuffer(1,n,ctx.sampleRate), d=b.getChannelData(0); let last=0;
-  for(let i=0;i<n;i++){ const w=Math.random()*2-1; if(kind==="brown"){ last=(last+.02*w)/1.02; d[i]=last*3.2; } else d[i]=w; } return b; }
+function noiseBuf(ctx,kind){ const n=ctx.sampleRate*3, b=ctx.createBuffer(1,n,ctx.sampleRate), d=b.getChannelData(0); let last=0, p0=0,p1=0,p2=0,p3=0,p4=0,p5=0,p6=0;
+  for(let i=0;i<n;i++){ const w=Math.random()*2-1; if(kind==="brown"){ last=(last+.02*w)/1.02; d[i]=last*3.2; } else if(kind==="pink"){ p0=.99886*p0+w*.0555179; p1=.99332*p1+w*.0750759; p2=.969*p2+w*.153852; p3=.8665*p3+w*.3104856; p4=.55*p4+w*.5329522; p5=-.7616*p5-w*.016898; d[i]=(p0+p1+p2+p3+p4+p5+p6+w*.5362)*.11; p6=w*.115926; } else d[i]=w; } return b; }
 function loopNoise(kind,type,freq,q,vol){ const ctx=audio(); if(!ctx) return; const s=ctx.createBufferSource(); s.buffer=noiseBuf(ctx,kind); s.loop=true;
   const f=ctx.createBiquadFilter(); f.type=type; f.frequency.value=freq; f.Q.value=q; const g=ctx.createGain(); g.gain.value=vol; s.connect(f); f.connect(g); g.connect(snd.bus); s.start(); snd.nodes.push(s); return {s,f,g}; }
 function blip(freq,dur,vol,type="sine",slide=0){ const ctx=snd.ctx; if(!ctx||!snd.on) return; const t=ctx.currentTime, o=ctx.createOscillator(), g=ctx.createGain(); o.type=type; o.frequency.setValueAtTime(freq,t); if(slide) o.frequency.exponentialRampToValueAtTime(freq*slide,t+dur);
@@ -260,6 +260,8 @@ function waves(vol,minMs,maxMs,top){ const ctx=audio(); if(!ctx) return; const s
   s.connect(f); f.connect(g); g.connect(snd.bus); s.start(); snd.nodes.push(s);
   const sw=()=>{ const t=ctx.currentTime, up=rnd(1.6,2.6), dn=rnd(2.6,4.2), pk=vol*rnd(.6,1); g.gain.cancelScheduledValues(t); g.gain.setTargetAtTime(pk,t,up/3); g.gain.setTargetAtTime(vol*.12,t+up,dn/3); f.frequency.cancelScheduledValues(t); f.frequency.setTargetAtTime(top*rnd(.8,1.2),t,up/3); f.frequency.setTargetAtTime(240,t+up,dn/3);
     snd.timers.push(setTimeout(sw,rnd(minMs,maxMs))); }; sw(); }
+function rainDrop(vol,f){ const ctx=snd.ctx; if(!ctx||!snd.on) return; const s=ctx.createBufferSource(), n=Math.floor(ctx.sampleRate*.012), b=ctx.createBuffer(1,n,ctx.sampleRate), d=b.getChannelData(0);
+  for(let i=0;i<n;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/n,5); s.buffer=b; const bp=ctx.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=f; bp.Q.value=1.4; const g=ctx.createGain(); g.gain.value=vol; s.connect(bp); bp.connect(g); g.connect(snd.bus); s.start(); }
 function thunder(){ const ctx=snd.ctx; if(!ctx||!snd.on) return; const s=ctx.createBufferSource(); s.buffer=noiseBuf(ctx,"brown"); const f=ctx.createBiquadFilter(); f.type="lowpass"; f.frequency.value=180; const g=ctx.createGain(), t=ctx.currentTime;
   g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(1.6,t+.25); g.gain.exponentialRampToValueAtTime(.0001,t+3.2); s.connect(f); f.connect(g); g.connect(snd.bus); s.start(t); s.stop(t+3.4); }
 function ambient(room){ stopAmbient(); if(!audio()) return;
@@ -274,8 +276,12 @@ function ambient(room){ stopAmbient(); if(!audio()) return;
     const chord=()=>{ const ctx=snd.ctx; if(ctx&&snd.on&&CAFE_MUSIC){ cafeMelody(CHS[ci%4],ci); const t=ctx.currentTime; CHS[ci%4].forEach((n,k)=>{ const o=ctx.createOscillator(), gg=ctx.createGain(); o.type="sine"; o.frequency.value=m2f(n); gg.gain.setValueAtTime(.0001,t+k*.04); gg.gain.exponentialRampToValueAtTime(.022,t+k*.04+.05); gg.gain.exponentialRampToValueAtTime(.0001,t+3.1); o.connect(gg); gg.connect(snd.bus); o.start(t+k*.04); o.stop(t+3.2); });
         const o=ctx.createOscillator(), gg=ctx.createGain(); o.type="triangle"; o.frequency.value=m2f(CHS[ci%4][0]-12); gg.gain.setValueAtTime(.0001,t); gg.gain.exponentialRampToValueAtTime(.05,t+.03); gg.gain.exponentialRampToValueAtTime(.0001,t+1.6); o.connect(gg); gg.connect(snd.bus); o.start(t); o.stop(t+1.7); }
       ci++; snd.timers.push(setTimeout(chord,3200)); }; chord(); }
-  if(room==="rain"){ loopNoise("white","bandpass",1600,.5,.16); loopNoise("white","highpass",5000,.3,.03); loopNoise("brown","lowpass",400,.6,.25);
-    const drip=()=>{ blip(rnd(1400,2600),.06,.025,"sine",.6); snd.timers.push(setTimeout(drip,rnd(300,1600))); }; drip(); }
+  if(room==="rain"){ const ctx=snd.ctx, src=ctx.createBufferSource(); src.buffer=noiseBuf(ctx,"pink"); src.loop=true; const hp=ctx.createBiquadFilter(); hp.type="highpass"; hp.frequency.value=380; const lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=3600;
+    const bed=ctx.createGain(); bed.gain.value=.22; const lfo=ctx.createOscillator(), lg=ctx.createGain(); lfo.frequency.value=.06; lg.gain.value=.04; lfo.connect(lg); lg.connect(bed.gain); src.connect(hp); hp.connect(lp); lp.connect(bed); bed.connect(snd.bus); src.start(); lfo.start(); snd.nodes.push(src,lfo);
+    loopNoise("brown","lowpass",180,.5,.08);
+    const patter=()=>{ rainDrop(rnd(.006,.018),rnd(2600,6000)); snd.timers.push(setTimeout(patter,rnd(35,140))); }; patter();
+    const hudu=()=>{ const n=18+Math.floor(Math.random()*20), span=rnd(500,1100); for(let i=0;i<n;i++) setTimeout(()=>rainDrop(rnd(.02,.05),rnd(1400,3400)),Math.pow(Math.random(),.7)*span);
+      const t=ctx.currentTime; bed.gain.setTargetAtTime(.3,t,.15); bed.gain.setTargetAtTime(.22,t+span/1000,.6); snd.timers.push(setTimeout(hudu,rnd(6000,15000))); }; snd.timers.push(setTimeout(hudu,2500)); }
 }
 function stopAmbient(){ snd.timers.forEach(clearTimeout); snd.timers=[];
   if(snd.ctx&&snd.bus){ const old=snd.bus, nodes=snd.nodes; old.gain.setTargetAtTime(0,snd.ctx.currentTime,.07); setTimeout(()=>{ nodes.forEach(n=>{try{n.stop()}catch(e){}}); try{old.disconnect()}catch(e){} },500); snd.bus=snd.ctx.createGain(); snd.bus.connect(snd.master); }
@@ -794,7 +800,7 @@ $("mfClose").onclick=()=>$("mfBox").hidden=true; $("dexClose").onclick=()=>$("de
 
 /* ================= 비 오는 창가 (넓은 북카페) ================= */
 const RWIN={x:240,y:40,w:1920,h:460};
-const Rain={id:"rain",W:2400,H:1600,top:620,fog:null,drops:[],slide:[],flash:0,next:0,
+const Rain={id:"rain",W:2400,H:1600,top:620,camTop:true,fog:null,drops:[],slide:[],flash:0,next:0,
   init(){ const M=this, C=M.col, P=M.props, Wn=RWIN;
     const sf={c1:"#6a4a5a",c2:"#7d5a6c",c3:"#5a3c4b"}, sf2={c1:"#40566e",c2:"#4f6a86",c3:"#364a60"};
     C.push({t:"r",x0:345,y0:830,x1:755,y1:935}); P.push({k:"sofaDown",x:550,y:900,w:410,...sf}); for(const x of [425,550,675]) addSeat(M,x,926,1,10,x,990);
@@ -854,7 +860,8 @@ const Rain={id:"rain",W:2400,H:1600,top:620,fog:null,drops:[],slide:[],flash:0,n
     else if(p.k==="cushion"){ c.fillStyle="rgba(0,0,0,.25)"; c.beginPath(); c.ellipse(x,y+4,40,12,0,0,7); c.fill(); c.fillStyle=p.col; c.beginPath(); c.ellipse(x,y-6,40,18,0,0,7); c.fill(); c.fillStyle="rgba(255,255,255,.2)"; c.beginPath(); c.ellipse(x-8,y-12,18,6,0,0,7); c.fill(); } },
   front(c){ c.fillStyle="rgba(20,10,30,.1)"; c.fillRect(0,0,this.W,this.H); },
   click(){ return false; }, ctx(){ return null; },
-  acts(){ return [{t:"🧽 창문 닦기",cd:6000,fn:()=>{ this.fog.getContext("2d").clearRect(0,0,RWIN.w,RWIN.h); pub(tRoom("rain"),{t:"e",k:"clear"}); toast("반짝반짝! 창에 손가락으로 써 보세요 ✍️"); }}]; },
+  acts(){ return [{t:"🧽 창문 닦기",cd:6000,fn:()=>{ this.fog.getContext("2d").clearRect(0,0,RWIN.w,RWIN.h); pub(tRoom("rain"),{t:"e",k:"clear"}); const m=Room.me; if(m.y>760) goTo(clamp(m.x,400,2000),660); toast("반짝반짝! 김이 다시 서리면 창을 마우스로 끌거나 손가락으로 그려 보세요 ✍️"); }},
+    {t:"✍️ 창가로 가기",fn:()=>goTo(clamp(Room.me.x,400,2000),660)}]; },
   ev(d){ if(d.k==="draw"&&Array.isArray(d.p)){ const pts=d.p.slice(0,40).filter(a=>Array.isArray(a)).map(([x,y])=>[clamp(+x,0,2400),clamp(+y,0,620)]); if(pts.length) this.wipe(pts); }
     if(d.k==="clear") this.fog.getContext("2d").clearRect(0,0,RWIN.w,RWIN.h); },
   hello(){ return {}; }, sync(){},
@@ -1097,7 +1104,18 @@ function updCtx(){ const b=$("ctx"), m=Room.me, M=MAP(); if(!M){ b.hidden=true; 
     if(!r){ const g=groupAt(M,{x:m.x,y:m.y})||(M.groups||[]).find(g=>Math.hypot(m.x-g.x,(m.y-g.y)*1.2)<g.rx+110); if(g){ const fs=freeSeat(M,g.seats); if(fs>=0) r=[`🪑 ${g.name}에 앉기`,()=>goSit(fs)]; } } }
   const lab=r?r[0]:""; if(b.textContent!==lab) b.textContent=lab; b.hidden=!r; b.onclick=r?()=>{ audio(); r[1](); }:null; }
 function takeDrink(o){ const m=Room.me; Cafe.pending=-1; m.dk=o; m.sips=5; Room.dirty=true; sendState(false); toast(`${MENU[o].e} ${MENU[o].n} 받았어요! 맛있게 ${MENU[o].food?"드세요":"마셔요"}`); buildActs(); updCtx(); }
-function sip(){ const m=Room.me; if(m.dk<0) return; m.sips--; blip(MENU[m.dk].food?520:420,.12,.05,"triangle",MENU[m.dk].food?1.3:.6);
+/* 먹고 마시는 소리 */
+function nzBurst(t0,dur,type,f,q,vol,f2){ const ctx=snd.ctx, s2=ctx.createBufferSource(); s2.buffer=nbuf("white"); const fl=ctx.createBiquadFilter(); fl.type=type; fl.frequency.setValueAtTime(f,t0); if(f2) fl.frequency.exponentialRampToValueAtTime(f2,t0+dur); fl.Q.value=q;
+  const g2=ctx.createGain(); g2.gain.setValueAtTime(.0001,t0); g2.gain.exponentialRampToValueAtTime(vol,t0+Math.min(.04,dur/3)); g2.gain.exponentialRampToValueAtTime(.0001,t0+dur); s2.connect(fl); fl.connect(g2); g2.connect(snd.bus); s2.start(t0,Math.random()*2); s2.stop(t0+dur+.05); }
+function gulp(t0,vol){ const ctx=snd.ctx, o=ctx.createOscillator(), g2=ctx.createGain(); o.type="sine"; o.frequency.setValueAtTime(320,t0); o.frequency.exponentialRampToValueAtTime(110,t0+.13); g2.gain.setValueAtTime(.0001,t0); g2.gain.exponentialRampToValueAtTime(vol,t0+.015); g2.gain.exponentialRampToValueAtTime(.0001,t0+.16); o.connect(g2); g2.connect(snd.bus); o.start(t0); o.stop(t0+.2); }
+function eatSound(dk,vol){ const ctx=snd.ctx; if(!ctx||!snd.on||!MENU[dk]) return; const it=MENU[dk], t=ctx.currentTime+.02;
+  if(!it.food){ nzBurst(t,.42,"bandpass",700,2.2,.05*vol,2600); if(it.e==="🧋"){ for(let i=0;i<3;i++) nzBurst(t+.45+i*.09,.05,"bandpass",1200,3,.06*vol); } gulp(t+.55,.22*vol); if(Math.random()<.5) gulp(t+.85,.15*vol); if(it.hot) nzBurst(t+1.1,.5,"lowpass",900,.6,.035*vol); }
+  else if(it.e==="🍪"||it.e==="🥐"){ for(let i=0;i<4;i++) nzBurst(t+i*.13+Math.random()*.03,.07,"bandpass",2400+Math.random()*1500,1.2,.08*vol); for(let i=0;i<3;i++) nzBurst(t+.6+i*.2,.09,"lowpass",500,.7,.05*vol); }
+  else { for(let i=0;i<4;i++) nzBurst(t+i*.2,.11,"lowpass",420,.8,.07*vol); gulp(t+.9,.12*vol); } }
+const eatFx=[];
+function eatWord(dk){ const it=MENU[dk]; if(!it) return "😋"; return !it.food?(it.e==="🧋"?"쭈욱~ 🧋":["후루룩~","꿀꺽!","호로록~"][Math.floor(Math.random()*3)]):(it.e==="🍪"||it.e==="🥐"?"바삭바삭!":"냠냠~"); }
+function spawnEat(x,y,txt){ eatFx.push({x:x+rnd(-10,10),y:y-110,txt,k:0}); }
+function sip(){ const m=Room.me; if(m.dk<0) return; m.sips--; eatSound(m.dk,1); const w=eatWord(m.dk); spawnEat(m.x,m.y,w); pub(tRoom(Room.id),{t:"e",k:"sip",dk:m.dk,w,x:Math.round(m.x),y:Math.round(m.y)});
   if(m.sips<=0){ toast(MENU[m.dk].food?"냠냠, 다 먹었어요! 😋":"꿀꺽, 다 마셨어요! 😋"); m.dk=-1; Room.dirty=true; sendState(false); } buildActs(); }
 function openMenu(){ const grid=$("menuGrid"); if(!grid.children.length) MENU.forEach((m,i)=>{ const b=document.createElement("button"); b.type="button"; const e=document.createElement("span"); e.textContent=m.e; b.append(e,document.createTextNode(m.n)); b.onclick=()=>order(i); grid.append(b); });
   $("menuErr").textContent=""; $("menuBox").hidden=false; }
@@ -1127,7 +1145,8 @@ function mapRender(t,dt){
   cam.z=(cam.z||1)+(zt-(cam.z||1))*Math.min(1,dt*(roastMe?1.6:3)); SCc*=cam.z; const vw=innerWidth/SCc, vh=innerHeight/SCc;
   const cl=(v,size,view)=>view>=size+120?(size-view)/2:clamp(v,-60,size+60-view);
   let fx=m.x, fy=m.y-vh*.05; const zw=clamp((cam.z-1)/1.1,0,1); if(roastMe||zw>0&&Room.id==="fire"){ const tp=mallowTip(m), k=roastMe?Math.max(zw,.35):zw, ax=(Math.min(m.x,tp.x,FX)+Math.max(m.x,tp.x,FX))/2, ay=(Math.min(tp.y-110,FY-230)+Math.max(m.y+60,FY+60))/2; fx+=(ax-fx)*Math.min(1,k*1.5); fy+=(ay-fy)*Math.min(1,k*1.5); }
-  const tx=cl(fx-vw/2,M.W,vw), ty=cl(fy-vh/2,M.H,vh); if(!cam.init){ cam.x=tx; cam.y=ty; cam.init=true; } else { cam.x+=(tx-cam.x)*Math.min(1,dt*5); cam.y+=(ty-cam.y)*Math.min(1,dt*5); }
+  let ty0=fy-vh/2; if(M.camTop) ty0=Math.min(ty0,Math.max(-30,m.y-vh*.82));
+  const tx=cl(fx-vw/2,M.W,vw), ty=cl(ty0,M.H,vh); if(!cam.init){ cam.x=tx; cam.y=ty; cam.init=true; } else { cam.x+=(tx-cam.x)*Math.min(1,dt*5); cam.y+=(ty-cam.y)*Math.min(1,dt*5); }
   g.setTransform(1,0,0,1,0,0); g.fillStyle="#120d0b"; g.fillRect(0,0,cv.width,cv.height);
   const S=SCc*DPR; g.setTransform(S,0,0,S,-cam.x*S,-cam.y*S);
   g.drawImage(M.bg,0,0); M.back(g,t);
@@ -1140,6 +1159,7 @@ function mapRender(t,dt){
   items.sort((a,b)=>a.y-b.y); for(const it of items){ if(it.p) drawProp(g,it.p,t); else drawAvatar(g,it.a,t,it.me); }
   if(m.st<0&&!m.walk){ const pu=.5+.5*Math.sin(t/300); M.seats.forEach((st,i)=>{ if(Math.hypot(st.x-m.x,st.y-m.y)>300||seatTaken(i)||(Room.id==="cafe"&&i===Cafe.piano)) return; g.strokeStyle=`rgba(255,213,154,${.35+pu*.4})`; g.lineWidth=3; g.beginPath(); g.ellipse(st.x,st.y+2,26+pu*4,9+pu*1.5,0,0,7); g.stroke(); }); }
   M.front(g,t);
+  for(let i=eatFx.length-1;i>=0;i--){ const f=eatFx[i]; f.k+=dt/1.6; if(f.k>=1){ eatFx.splice(i,1); continue; } const sc=clamp(.85/SCc,1,1.7); g.save(); g.translate(f.x,f.y-f.k*60); g.scale(sc,sc); g.globalAlpha=f.k<.15?f.k/.15:1-(f.k-.15)/.85; g.font="700 22px 'Gaegu'"; g.textAlign="center"; g.lineWidth=5; g.strokeStyle="rgba(40,20,10,.7)"; g.strokeText(f.txt,0,0); g.fillStyle="#fff2c8"; g.fillText(f.txt,0,0); g.restore(); } g.globalAlpha=1;
   drawMini(M,vw,vh);
 }
 function drawMini(M,vw,vh){ const el=$("mini"); if(el.hidden) return; const w=el.clientWidth, h=el.clientHeight; if(!w) return; const dp=Math.min(2,DPR||1);
@@ -1238,7 +1258,7 @@ function enterRoom(r){
   const q=$("quick"); q.innerHTML=""; ROOMS[r].quick.forEach(t=>{ const b=document.createElement("button"); b.type="button"; b.textContent=t; b.onclick=()=>sendChat(t); q.append(b); });
   if(r==="sea") Sea.setOwnFish(ME.id,ME.n,MYF);
   buildActs(); sub(tRoom(r)); net.handler=onRoomMsg; ambient(r); if(r==="dance") Dance.music(); if(r==="zen") Zen.music(); netWarn(net.warn||"");
-  const hint=$("hint"); hint.textContent={cafe:"바닥을 눌러 걷기 · 카운터에서 음료 주문 · 안쪽 문으로 다른 방에 가요",fire:"바닥을 눌러 걷기 · 통나무에 앉아 불멍 · 장작을 넣으면 불이 커져요",sea:"물고기를 누르면 도감에 모여요 · 내 물고기를 넣어 보세요 · 2분마다 고래상어가 지나가요",rain:"바닥을 눌러 걷기 · 김 서린 창에 손가락으로 그려 보세요",zen:"싱잉볼을 눌러 보세요 · 매트에 앉아 명상하거나 호흡 가이드를 따라 해요",dance:"춤 버튼을 누르고 무대 위를 돌아다녀 보세요! 🪩"}[r];
+  const hint=$("hint"); hint.textContent={cafe:"바닥을 눌러 걷기 · 카운터에서 음료 주문 · 안쪽 문으로 다른 방에 가요",fire:"바닥을 눌러 걷기 · 통나무에 앉아 불멍 · 장작을 넣으면 불이 커져요",sea:"물고기를 누르면 도감에 모여요 · 내 물고기를 넣어 보세요 · 2분마다 고래상어가 지나가요",rain:"김 서린 창문을 마우스로 끌거나 손가락으로 문질러 글씨를 써 보세요 ✍️",zen:"싱잉볼을 눌러 보세요 · 매트에 앉아 명상하거나 호흡 가이드를 따라 해요",dance:"춤 버튼을 누르고 무대 위를 돌아다녀 보세요! 🪩"}[r];
   hint.hidden=false; hint.style.opacity=1; clearTimeout(Room.hintT); Room.hintT=setTimeout(()=>{ hint.style.opacity=0; Room.hintT=setTimeout(()=>hint.hidden=true,800); },6500);
   applyCtl(false); updCtx(); sendState(true); presence();
 }
@@ -1261,7 +1281,10 @@ function onRoomMsg(t,d){
     const st=+d.st; p.st=st>=0&&st<M.seats.length?st:-1; if(p.st>=0){ const s=M.seats[p.st]; p.tx=s.x; p.ty=s.y; p.dir=s.dir; }
     if(d.sid&&d.sid!==p.sid&&d.say){ p.sid=d.sid; const s=clean(d.say), md=chatMode(); const pm=CTL.ch; if(p.tch||(!isMuted(d.id)&&(pm===1||(pm===2&&emojiOnly(s))))){ p.say=s; p.sayT=performance.now(); } }
     M.sync(d,p); return; }
-  if(d.t==="e"){ const p=Room.peers.get(d.id); if(p) p.seen=performance.now(); M.ev(d); }
+  if(d.t==="e"){ const p=Room.peers.get(d.id); if(p) p.seen=performance.now();
+    if(d.k==="sip"){ const dk=+d.dk; if(!p||!(dk>=0&&dk<MENU.length)) return; const now=performance.now(); if(now-(p.sipT||0)<1500) return; p.sipT=now; const ok=["후루룩~","꿀꺽!","호로록~","쭈욱~ 🧋","바삭바삭!","냠냠~"]; spawnEat(p.x,p.y,ok.includes(d.w)?d.w:"냠냠~");
+      const dist=Math.hypot(p.x-Room.me.x,p.y-Room.me.y); if(dist<500) eatSound(dk,.5*(1-dist/500)+.1); return; }
+    M.ev(d); }
 }
 function sendState(hi){ if(!Room.id) return; const m=Room.me; const o={t:"s",n:ME.n,c:ME.c,x:Math.round(m.x),y:Math.round(m.y),m:m.m<0?-1:Math.round(m.m*100)/100,dk:m.dk,st:m.st,ps:m.ps||0,g:ME.g||0,...MAP().hello()};
   if(CTL.tg) o.tg=CTL.tg;
@@ -1284,7 +1307,7 @@ let drawing=false;
 cv.addEventListener("pointerdown",ev=>{ if(!Room.id) return; audio(); const w=toWorld(ev);
   if(Room.id==="rain"&&Rain.inWin(w.x,w.y)){ drawing=true; Rain.wipe([[w.x,w.y]]); Room.drawPts.push([Math.round(w.x),Math.round(w.y)]); Room.lastPt=w; cv.setPointerCapture(ev.pointerId); return; }
   mapClick(w); });
-cv.addEventListener("pointermove",ev=>{ if(!drawing) return; const w=toWorld(ev); if(!Rain.inWin(w.x,w.y)) return; const l=Room.lastPt; if(l&&Math.hypot(w.x-l.x,w.y-l.y)<4) return;
+cv.addEventListener("pointermove",ev=>{ if(!drawing){ if(Room.id==="rain"&&ev.pointerType==="mouse"){ const w=toWorld(ev); cv.style.cursor=Rain.inWin(w.x,w.y)?"crosshair":""; } else if(cv.style.cursor) cv.style.cursor=""; return; } const w=toWorld(ev); if(!Rain.inWin(w.x,w.y)) return; const l=Room.lastPt; if(l&&Math.hypot(w.x-l.x,w.y-l.y)<4) return;
   Rain.wipe(l?[[l.x,l.y],[w.x,w.y]]:[[w.x,w.y]]); if(Room.drawPts.length&&l) Room.drawPts.push([Math.round(w.x),Math.round(w.y)]); else Room.drawPts.push([Math.round(l?l.x:w.x),Math.round(l?l.y:w.y)],[Math.round(w.x),Math.round(w.y)]); Room.lastPt=w; });
 addEventListener("pointerup",()=>{ if(drawing&&Room.drawPts.length){ pub(tRoom("rain"),{t:"e",k:"draw",p:Room.drawPts.splice(0,40)}); } drawing=false; Room.lastPt=null; });
 addEventListener("keydown",e=>{ if(!Room.id||e.target.tagName==="INPUT") return;
