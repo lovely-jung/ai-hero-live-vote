@@ -238,6 +238,7 @@ function seeded(seed){ let s=seed>>>0; return ()=>{ s=Math.imul(s^s>>>15,1|s); s
 
 /* ================= 아바타 ================= */
 function drawAvatar(c,p,t,isMe){
+  const roast=isRoasting(p); if(roast&&!p.walk) p.dir=FX>=p.x?1:-1;
   const s=p.S||(.78+((p.y-600)/260)*.42), x=p.x, y=p.y, sit=p.sit||0, walk=sit?0:(p.walk||0); let bob=walk?Math.abs(Math.sin(t/110+p.ph))*5:Math.sin(t/700+p.ph)*1.4, dsg=p.dir<0?-1:1;
   c.save(); c.translate(x,y); c.scale(s*(p.dir<0?-1:1),s);
   c.fillStyle="rgba(0,0,0,.28)"; c.beginPath(); c.ellipse(0,0,30,9,0,0,7); c.fill();
@@ -254,9 +255,10 @@ function drawAvatar(c,p,t,isMe){
   c.fillStyle="rgba(255,255,255,.18)"; c.beginPath(); c.ellipse(-8,-44,9,13,-.3,0,7); c.fill();
   c.fillStyle=p.c; const sw=walk?Math.sin(t/110+p.ph)*.5:Math.sin(t/900+p.ph)*.08;
   for(const sd of [-1,1]){ c.save(); c.translate(sd*24,-48); c.rotate(armA!=null?-sd*(armA+(dn===3?Math.sin(t/150+sd)*.35:0)):sd*(.35+sw*sd)); c.beginPath(); c.ellipse(0,14,8,15,0,0,7); c.fill(); c.restore(); }
-  if(p.m!=null&&p.m>=0){ c.save(); c.translate(26,-46); c.rotate(-.9); c.strokeStyle="#8b5a2b"; c.lineWidth=3; c.beginPath(); c.moveTo(0,0); c.lineTo(0,-62); c.stroke();
+  if(p.m!=null&&p.m>=0){ const L=roast?140:62; c.save(); c.translate(26,-46); c.rotate(roast?1.2+Math.sin(t/500)*.05:-.9); c.strokeStyle="#8b5a2b"; c.lineWidth=3; c.beginPath(); c.moveTo(0,0); c.lineTo(0,-L); c.stroke();
     const k=p.m, col=k<.5?`rgb(${255},${250-k*60},${235-k*120})`:k<1?`rgb(${255-(k-.5)*80},${220-(k-.5)*160},${175-(k-.5)*200})`:"#5a3a22";
-    c.fillStyle=col; rr(c,-9,-80,18,22,6); c.fill(); c.restore(); }
+    if(roast&&k<1.1){ c.globalCompositeOperation="lighter"; const gl=c.createRadialGradient(0,-L-8,2,0,-L-8,34); gl.addColorStop(0,"rgba(255,170,70,.55)"); gl.addColorStop(1,"rgba(255,120,40,0)"); c.fillStyle=gl; c.fillRect(-34,-L-42,68,68); c.globalCompositeOperation="source-over"; }
+    c.fillStyle=col; rr(c,-10,-L-20,20,24,7); c.fill(); if(k>.45&&k<1.1){ c.fillStyle="rgba(150,80,20,.35)"; rr(c,-10,-L-6,20,10,5); c.fill(); } c.restore(); }
   c.fillStyle="#ffe0c7"; c.beginPath(); c.arc(0,-82,27,0,7); c.fill();
   c.fillStyle="#3b2c35"; c.beginPath(); c.arc(0,-86,28,Math.PI*1.04,Math.PI*1.96); c.quadraticCurveTo(10,-96,-26,-84); c.fill();
   c.beginPath(); c.arc(6,-110,7,0,7); c.fill();
@@ -483,6 +485,10 @@ function drawRobot(c,x,y,t,busy,dj){ const bob=dj?Math.abs(Math.sin(beatPh()*Mat
 
 /* ================= 불멍 캠프장 ================= */
 const FX=1200, FY=880;
+function isRoasting(p){ return Room.id==="fire"&&p&&p.m!=null&&p.m>=0&&Math.hypot(p.x-FX,(p.y-FY)*1.5)<440; }
+function mallowTip(m){ const M=MAP(), sit=m.st>=0&&M.seats[m.st]?M.seats[m.st].h:0, d=FX>=m.x?1:-1, S=.64; return {x:m.x+d*(26+Math.sin(1.2)*150)*S, y:m.y-(sit+46+Math.cos(1.2)*150)*S}; }
+function roastStage(k){ return k<.35?"하얀 마시멜로… 살살 굽는 중":k<.75?"노릇노릇해지는 중… 🔥":k<1.1?"완벽해요! 지금 먹어요 😋":"앗, 새까맣게 탔어요 😵"; }
+function eatMallow(){ const m=Room.me; if(!(m.m>=0)) return; const k=m.m; toast(k<.35?"말랑말랑 생 마시멜로! 🤍":k<.75?"따끈따끈 맛있어요 😋":k<1.1?"노릇노릇 완벽한 맛! 🍡✨":"으악, 쓴맛… 다음엔 조금만 구워요 😅"); m.m=-1; Room.dirty=true; buildActs(); }
 const Fire={id:"fire",W:2400,H:1600,top:400,sitR:470,level:1,parts:[],embers:[],thrown:[],flies:[],
   init(){ const M=this, C=M.col, P=M.props, R=seeded(31);
     C.push({t:"e",x:FX,y:FY-6,rx:150,ry:92}); P.push({k:"fire",x:FX,y:FY});
@@ -524,7 +530,7 @@ const Fire={id:"fire",W:2400,H:1600,top:400,sitR:470,level:1,parts:[],embers:[],
     for(const f of this.flies){ f.ph+=dt; f.x+=Math.sin(f.ph*.7)*dt*16; f.y+=Math.cos(f.ph*.9)*dt*10; }
     this.thrown=this.thrown.filter(o=>{ o.k+=dt/.8; if(o.k>=1){ this.level=Math.min(2.3,this.level+.28); for(let i=0;i<26;i++) this.embers.push({x:FX+rnd(-20,20),y:FY-30,vx:rnd(-80,80),vy:-rnd(120,260),l:0,L:rnd(.8,1.8)}); if(Room.id==="fire"){ crack(.5); crack(.35); } return false; } return true; });
     const m=Room.me, d=Math.hypot(m.x-FX,(m.y-FY)*1.5); if(m.m!=null&&m.m>=0&&m.m<1.15&&d<420){ const before=m.m; m.m+=dt*.06*this.level;
-      if(before<.75&&m.m>=.75){ toast("노릇노릇 완벽해요! 🍡"); } if(before<1.1&&m.m>=1.1){ toast("앗, 너무 탔어요 😵"); } Room.dirty=true; } },
+      if(before<.75&&m.m>=.75){ blip(1320,.3,.05); setTimeout(()=>blip(1760,.4,.045),120); } if(before<1.1&&m.m>=1.1){ blip(180,.4,.06,"sawtooth",.5); } Room.dirty=true; } },
   back(c,t){ const L=this.level, fl=Math.sin(t/90)*.04+Math.sin(t/37)*.03;
     const R=520*L*(1+fl), gl=c.createRadialGradient(FX,FY,10,FX,FY,R); gl.addColorStop(0,"rgba(255,170,70,.45)"); gl.addColorStop(.4,"rgba(255,120,40,.16)"); gl.addColorStop(1,"rgba(255,90,30,0)");
     c.globalCompositeOperation="lighter"; c.fillStyle=gl; c.fillRect(FX-R,FY-R,R*2,R*2); c.globalCompositeOperation="source-over"; },
@@ -543,12 +549,17 @@ const Fire={id:"fire",W:2400,H:1600,top:400,sitR:470,level:1,parts:[],embers:[],
     else if(p.k==="tent"){ c.fillStyle="rgba(0,0,0,.3)"; c.beginPath(); c.ellipse(x,y+2,130,22,0,0,7); c.fill(); c.fillStyle=x<1200?"#d9774a":"#4a8fd9"; c.beginPath(); c.moveTo(x-125,y); c.lineTo(x,y-170); c.lineTo(x+125,y); c.fill();
       c.fillStyle="rgba(0,0,0,.2)"; c.beginPath(); c.moveTo(x,y-170); c.lineTo(x+125,y); c.lineTo(x+40,y); c.fill(); c.fillStyle="#2a1a12"; c.beginPath(); c.moveTo(x-34,y); c.lineTo(x,y-90); c.lineTo(x+34,y); c.fill(); c.strokeStyle="#c9b28a"; c.lineWidth=2; c.beginPath(); c.moveTo(x,y-170); c.lineTo(x,y-196); c.stroke(); }
     else if(p.k==="lantern"){ c.fillStyle="#2a2a2a"; c.fillRect(x-3,y-110,6,110); c.fillStyle="#ffcf7a"; rr(c,x-12,y-134,24,28,6); c.fill(); c.globalCompositeOperation="lighter"; const lg=c.createRadialGradient(x,y-120,2,x,y-120,90); lg.addColorStop(0,"rgba(255,200,120,.45)"); lg.addColorStop(1,"rgba(255,200,120,0)"); c.fillStyle=lg; c.fillRect(x-90,y-210,180,180); c.globalCompositeOperation="source-over"; } },
-  front(c,t){ const L=this.level, dk=c.createRadialGradient(FX,FY-40,200*L,FX,FY-40,1500); dk.addColorStop(0,"rgba(6,6,24,0)"); dk.addColorStop(1,"rgba(6,6,24,.5)"); c.fillStyle=dk; c.fillRect(0,0,this.W,this.H);
+  front(c,t){ this.fr(c,t); const m=Room.me; if(isRoasting(m)&&!m.walk){ const tp=mallowTip(m), k=Math.min(m.m,1.2), sc=1/SCc; c.save(); c.translate(tp.x,tp.y-34*sc*.9); c.scale(sc,sc);
+      const txt=roastStage(k); c.font="700 15px 'IBM Plex Sans KR'"; const w=Math.max(170,c.measureText(txt).width+24); c.fillStyle="rgba(20,12,8,.82)"; rr(c,-w/2,-50,w,44,14); c.fill();
+      c.fillStyle="#fff"; c.textAlign="center"; c.textBaseline="middle"; c.fillText(txt,0,-37); c.fillStyle="rgba(255,255,255,.15)"; rr(c,-w/2+12,-22,w-24,8,4); c.fill();
+      const gr=c.createLinearGradient(-w/2+12,0,w/2-12,0); gr.addColorStop(0,"#fff4e0"); gr.addColorStop(.55,"#e6a046"); gr.addColorStop(.85,"#b8661f"); gr.addColorStop(1,"#3a2414"); c.fillStyle=gr; rr(c,-w/2+12,-22,(w-24)*Math.min(1,k/1.15),8,4); c.fill();
+      c.fillStyle="#7dff6a"; c.fillRect(-w/2+12+(w-24)*.65,-25,2,14); c.fillRect(-w/2+12+(w-24)*.95,-25,2,14); c.restore(); } },
+  fr(c,t){ const L=this.level, dk=c.createRadialGradient(FX,FY-40,200*L,FX,FY-40,1500); dk.addColorStop(0,"rgba(6,6,24,0)"); dk.addColorStop(1,"rgba(6,6,24,.5)"); c.fillStyle=dk; c.fillRect(0,0,this.W,this.H);
     for(const f of this.flies){ const a=.4+.6*Math.max(0,Math.sin(f.ph*2.2)); c.fillStyle=`rgba(220,255,140,${a})`; c.beginPath(); c.arc(f.x,f.y,2.6,0,7); c.fill(); c.fillStyle=`rgba(220,255,140,${a*.15})`; c.beginPath(); c.arc(f.x,f.y,11,0,7); c.fill(); } },
-  click(){ return false; }, ctx(m){ return Math.hypot(m.x-FX,(m.y-FY)*1.5)<300?["🪵 장작 넣기",()=>this.acts()[0].fn()]:null; },
+  click(){ return false; }, ctx(m){ if(m.m>=0&&isRoasting(m)) return [m.m<.35?"🍡 굽는 중… (먹기)":"😋 마시멜로 먹기",eatMallow]; return Math.hypot(m.x-FX,(m.y-FY)*1.5)<300?["🪵 장작 넣기",()=>this.acts()[0].fn()]:null; },
   acts(){ return [
     {t:"🪵 장작 넣기",cd:2500,fn:()=>{ const m=Room.me; this.thrown.push({x:m.x,y:m.y-60,k:0}); pub(tRoom("fire"),{t:"e",k:"log",x:Math.round(m.x),y:Math.round(m.y-60)}); }},
-    {t:"🍡 마시멜로",toggle:()=>Room.me.m!=null&&Room.me.m>=0,fn:()=>{ const m=Room.me; m.m=(m.m!=null&&m.m>=0)?-1:0; if(m.m===0) toast("모닥불 가까이 가면 구워져요"); Room.dirty=true; }} ]; },
+    {t:Room.me.m>=0?"😋 마시멜로 먹기":"🍡 마시멜로 굽기",toggle:()=>Room.me.m!=null&&Room.me.m>=0,fn:()=>{ const m=Room.me; if(m.m>=0){ eatMallow(); return; } m.m=0; toast("모닥불 가까이 가서 멈추면 구워져요"); Room.dirty=true; buildActs(); }} ]; },
   ev(d){ if(d.k==="log") this.thrown.push({x:clamp(+d.x||FX,0,2400),y:clamp(+d.y||FY,0,1600),k:0}); },
   hello(){ return {L:Math.round(this.level*100)/100}; },
   sync(d){ if(typeof d.L==="number"&&d.L>this.level+.15) this.level+=(Math.min(2.3,d.L)-this.level)*.5; },
@@ -834,7 +845,7 @@ function openSeats(){ const M=MAP(), grid=$("seatGrid"); grid.innerHTML="";
     b.append(nm,st,who); if(!free) b.disabled=true; b.onclick=()=>{ $("seatBox").hidden=true; const fs=freeSeat(M,g.seats); if(fs>=0) goSit(fs); }; grid.append(b); }
   $("seatBox").hidden=false; }
 function updCtx(){ const b=$("ctx"), m=Room.me, M=MAP(); if(!M){ b.hidden=true; return; } let r=null;
-  if(m.st>=0) r=["🙋 일어나기",standUp];
+  if(m.st>=0) r=(Room.id==="fire"&&isRoasting(m)&&M.ctx(m))||["🙋 일어나기",standUp];
   else { r=M.ctx(m); if(!r&&Room.id!=="cafe"&&Math.hypot(m.x-EXIT.x,m.y-EXIT.y)<170) r=["☕ 카페로 돌아가기",()=>enterRoom("cafe")];
     if(!r){ const si=nearestSeat(m.x,m.y,95); if(si>=0&&!seatTaken(si)){ const g=M.groups&&M.seats[si].g>=0?M.groups[M.seats[si].g]:null; r=[Room.id==="cafe"&&si===Cafe.piano?"🎹 피아노 치기":g?`🪑 ${g.name}에 앉기`:"🪑 앉기",()=>sitDown(si)]; } }
     if(!r){ const g=groupAt(M,{x:m.x,y:m.y})||(M.groups||[]).find(g=>Math.hypot(m.x-g.x,(m.y-g.y)*1.2)<g.rx+110); if(g){ const fs=freeSeat(M,g.seats); if(fs>=0) r=[`🪑 ${g.name}에 앉기`,()=>goSit(fs)]; } } }
@@ -862,12 +873,15 @@ function peersStep(dt){ const now=performance.now(); for(const [id,p] of Room.pe
   $("who").textContent=`👥 ${Room.peers.size+1}명`; }
 
 /* ================= 화면 ================= */
-let SCc=1; const cam={x:0,y:0,init:false}; let taps=[];
+let SCc=1; const cam={x:0,y:0,z:1,init:false}; let taps=[];
 function mapScale(){ SCc=innerWidth<700?innerWidth/640:Math.min(innerWidth/1500,innerHeight/950); SCc=Math.max(SCc,.42); }
 function mapRender(t,dt){
-  const M=MAP(); mapScale(); const vw=innerWidth/SCc, vh=innerHeight/SCc, m=Room.me;
+  const M=MAP(), m=Room.me; mapScale(); const roastMe=isRoasting(m)&&!m.walk&&m.m<1.15;
+  let zt=1; if(roastMe){ const tp=mallowTip(m), x0=Math.min(m.x,tp.x,FX)-150, x1=Math.max(m.x,tp.x,FX)+150, y0=Math.min(tp.y-110,FY-230), y1=Math.max(m.y+60,FY+60); zt=clamp(Math.min(innerWidth/((x1-x0)*SCc),innerHeight/((y1-y0)*SCc)),1,2.1); }
+  cam.z=(cam.z||1)+(zt-(cam.z||1))*Math.min(1,dt*(roastMe?1.6:3)); SCc*=cam.z; const vw=innerWidth/SCc, vh=innerHeight/SCc;
   const cl=(v,size,view)=>view>=size+120?(size-view)/2:clamp(v,-60,size+60-view);
-  const tx=cl(m.x-vw/2,M.W,vw), ty=cl(m.y-vh*.55,M.H,vh); if(!cam.init){ cam.x=tx; cam.y=ty; cam.init=true; } else { cam.x+=(tx-cam.x)*Math.min(1,dt*5); cam.y+=(ty-cam.y)*Math.min(1,dt*5); }
+  let fx=m.x, fy=m.y-vh*.05; const zw=clamp((cam.z-1)/1.1,0,1); if(roastMe||zw>0&&Room.id==="fire"){ const tp=mallowTip(m), k=roastMe?Math.max(zw,.35):zw, ax=(Math.min(m.x,tp.x,FX)+Math.max(m.x,tp.x,FX))/2, ay=(Math.min(tp.y-110,FY-230)+Math.max(m.y+60,FY+60))/2; fx+=(ax-fx)*Math.min(1,k*1.5); fy+=(ay-fy)*Math.min(1,k*1.5); }
+  const tx=cl(fx-vw/2,M.W,vw), ty=cl(fy-vh/2,M.H,vh); if(!cam.init){ cam.x=tx; cam.y=ty; cam.init=true; } else { cam.x+=(tx-cam.x)*Math.min(1,dt*5); cam.y+=(ty-cam.y)*Math.min(1,dt*5); }
   g.setTransform(1,0,0,1,0,0); g.fillStyle="#120d0b"; g.fillRect(0,0,cv.width,cv.height);
   const S=SCc*DPR; g.setTransform(S,0,0,S,-cam.x*S,-cam.y*S);
   g.drawImage(M.bg,0,0); M.back(g,t);
@@ -930,7 +944,7 @@ function enterRoom(r){
   if(from){ pub(tRoom(from),{t:"bye"}); unsub(tRoom(from)); }
   Room.id=r; Room.peers.clear(); const M=MAPS[r]; if(!M.bg) buildMap(M);
   const m=Room.me; m.tx=null; m.goal=null; m.m=-1; m.say=""; m.st=-1; m.dn=0;
-  const sp=M.spawn(from); m.x=sp.x; m.y=sp.y; cam.init=false;
+  const sp=M.spawn(from); m.x=sp.x; m.y=sp.y; cam.init=false; cam.z=1;
   ["menuBox","roomsBox","seatBox"].forEach(i=>$(i).hidden=true); $("piano").hidden=true;
   $("intro").hidden=true; document.body.classList.add("inroom");
   ["topL","topR","acts","mini"].forEach(i=>$(i).hidden=false); $("roomName").textContent=r==="cafe"&&ME.cls.startsWith("OX-")?`☕ 카페 · OX ${ME.cls.slice(3)}방`:ROOMS[r].name;
