@@ -146,6 +146,9 @@ body.admin #hint{top:max(150px,calc(env(safe-area-inset-top) + 144px))}
   <p class="dim" id="oxDesc" style="font-size:14px">선생님이 알려 준 퀴즈방 코드 4자리를 넣어요.</p>
   <input type="text" id="oxIn" inputmode="numeric" maxlength="4" placeholder="예: 1234"><p class="err" id="oxErr"></p>
   <button class="pill sun" type="submit" id="oxGo">퀴즈방으로 가기</button></form></div>
+<div class="modal" id="danceBox" hidden><div class="card glass">
+  <div class="mtitle"><div><h2>💃 어떤 춤을 출까?</h2><p class="dim" style="font-size:14px">음악 박자에 맞춰 춤춰요. 무대 위를 돌아다니면서 춰도 돼요!</p></div><button class="pill ghost small" id="danceClose">닫기</button></div>
+  <div class="menu" id="danceGrid"></div></div></div>
 <div class="modal" id="annBox" hidden><form class="card glass" id="annForm" style="width:min(480px,100%)" autocomplete="off">
   <div class="mtitle"><h2>📣 모두에게 공지</h2><button class="pill ghost small" id="annClose" type="button">닫기</button></div>
   <input type="text" id="annIn" maxlength="60" placeholder="예: 5분 뒤 수업 시작해요!">
@@ -308,6 +311,7 @@ function rr(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,
 function seeded(seed){ let s=seed>>>0; return ()=>{ s=Math.imul(s^s>>>15,1|s); s^=s+Math.imul(s^s>>>7,61|s); return ((s^s>>>14)>>>0)/4294967296; }; }
 
 /* ================= 아바타 ================= */
+function danceOf(p){ const d=p.dn||0; if(d===99){ const bt=Math.floor(Date.now()/(60000/Dance.bpm())/8); return 1+((bt+((p.ph||0)*10|0))%10); } return d; }
 const SHADE={}; function shade(hex,amt){ const k=hex+amt; if(SHADE[k]) return SHADE[k]; const n=parseInt(hex.slice(1),16); let r=n>>16,g=(n>>8)&255,b=n&255;
   if(amt>0){ r+=(255-r)*amt; g+=(255-g)*amt; b+=(255-b)*amt; } else { r*=1+amt; g*=1+amt; b*=1+amt; } return SHADE[k]=`rgb(${r|0},${g|0},${b|0})`; }
 function drawAvatar(c,p,t,isMe){
@@ -321,14 +325,22 @@ function drawAvatar(c,p,t,isMe){
   if(ps===4&&!sit){ c.translate(0,-4); c.fillStyle="#3b2c35"; c.beginPath(); c.ellipse(0,-6,30,9,0,0,7); c.fill(); c.translate(0,-10); }
   else if(ps===3&&!sit){ c.fillStyle="#3b2c35"; c.beginPath(); c.ellipse(-2,-5,10,7,0,0,7); c.fill(); c.beginPath(); c.ellipse(8,-30,9,6,.8,0,7); c.fill(); }
   else if(sit){ c.translate(0,-sit); c.fillStyle="#3b2c35"; c.beginPath(); c.ellipse(14,-4,11,7,0,0,7); c.ellipse(24,-2,10,7,0,0,7); c.fill(); }
+  else if(!walk&&danceOf(p)===9){ const kk=Math.floor(Date.now()/(60000/Dance.bpm()))%2, kh=Math.abs(Math.sin(beatPh()*Math.PI)); c.fillStyle="#3b2c35"; c.strokeStyle="#3b2c35"; c.lineWidth=7; c.lineCap="round"; const kx=kk?14:-14; c.beginPath(); c.ellipse(-kx,-5,10,7,0,0,7); c.fill(); const ex=kx*(2.1+kh*1.3), ey=-8-kh*30; c.beginPath(); c.moveTo(kx*.5,-12); c.lineTo(ex,ey); c.stroke(); c.beginPath(); c.ellipse(ex+kx*.25,ey-2,10,6,kx>0?-.5:.5,0,7); c.fill(); c.lineCap="butt"; }
   else { c.fillStyle="#3b2c35"; c.beginPath(); c.ellipse(-12+ft,-5,10,7,0,0,7); c.ellipse(12-ft,-5,10,7,0,0,7); c.fill(); c.fillStyle="rgba(255,255,255,.12)"; c.beginPath(); c.ellipse(-14+ft,-8,5,2.5,0,0,7); c.ellipse(10-ft,-8,5,2.5,0,0,7); c.fill(); }
-  let armA=null, spin=0, tilt=0; const dn=sit?0:(p.dn||0);
+  let armA=null, armS=null, spin=0, tilt=0, dxs=0, heart=0; const dn=sit?0:danceOf(p);
   if(dn){ const ph=beatPh(), hop=Math.abs(Math.sin(ph*Math.PI)), on=Math.floor(t/260)%2;
     if(dn===1){ bob=hop*16; armA=1.2+hop*1.3; } else if(dn===2){ bob=hop*6; spin=1; armA=1.5+Math.sin(t/120)*.2; }
-    else if(dn===3){ bob=hop*7; armA=2.55; tilt=Math.sin(t/300)*.12; } else if(dn===4){ bob=2; tilt=on?.16:-.16; armA=on?1.7:.3; } }
+    else if(dn===3){ bob=hop*7; armA=2.55; tilt=Math.sin(t/300)*.12; } else if(dn===4){ bob=2; tilt=on?.16:-.16; armA=on?1.7:.3; }
+    else { const ms=60000/Dance.bpm(), bt=Date.now()/ms, odd=Math.floor(bt)%2;
+      if(dn===5){ bob=hop*5; dxs=Math.sin(bt*Math.PI)*16; armS=[1.3,1.3]; tilt=Math.sin(bt*Math.PI)*.06; }
+      else if(dn===6){ const w=Math.sin(t/220); bob=Math.abs(w)*6; tilt=w*.17; armS=[1.6+w*.9,1.6-w*.9]; }
+      else if(dn===7){ bob=hop*5; tilt=odd?.12:-.12; armS=odd?[.25,2.75]:[2.75,.25]; }
+      else if(dn===8){ bob=hop*4; tilt=Math.sin(t/400)*.1; armS=[2.75,2.75]; heart=1; }
+      else if(dn===9){ bob=hop*4; armS=[1.2,1.2]; tilt=odd?.05:-.05; }
+      else if(dn===10){ bob=hop*7; const cl=Math.pow(1-ph,3); armS=[2.4+cl*.55,2.4+cl*.55]; } } }
   if(ps===3) tilt=Math.sin(t/900+p.ph)*.04;
   if(ps===2){ const k=(performance.now()-(p.psT||0))/2600, b=k<.35?k/.35:k<.6?1:k<1?1-(k-.6)/.4:0; tilt=.75*(b*b*(3-2*b)); }
-  c.translate(0,-bob); if(tilt) c.rotate(tilt);
+  c.translate(dxs,-bob); if(tilt) c.rotate(tilt);
   const ya=spin?(t/210+p.ph)%(Math.PI*2):.55, cy=Math.cos(ya), fx=Math.sin(ya), wf=.8+.2*Math.abs(cy), front=cy>-.2;
   const body=c.createRadialGradient(-9*fx-4,-50,4,0,-36,40); body.addColorStop(0,shade(p.c,.38)); body.addColorStop(.55,p.c); body.addColorStop(1,shade(p.c,-.32));
   c.fillStyle=body; c.beginPath(); c.ellipse(0,-34,26*wf,30,0,0,7); c.fill();
@@ -338,7 +350,7 @@ function drawAvatar(c,p,t,isMe){
   if(p.g===1){ c.fillStyle="rgba(0,0,0,.12)"; c.beginPath(); c.ellipse(0,-12,27*wf,9,0,0,Math.PI); c.fill(); c.fillStyle=shade(p.c,-.08); }
   if(ps===1||ps===2){ c.fillStyle=p.c; for(const sd of [-1,1]){ c.save(); c.translate(sd*14,-50); c.rotate(-1.1+sd*.15); c.beginPath(); c.ellipse(0,12,7,14,0,0,7); c.fill(); c.restore(); } c.fillStyle="#ffe0c7"; c.beginPath(); c.ellipse(24,-62,5,10,-.2,0,7); c.fill(); }
   else if(ps===3){ c.fillStyle=p.c; for(const sd of [-1,1]){ c.save(); c.translate(sd*16,-54); c.rotate(Math.PI-sd*.18); c.beginPath(); c.ellipse(0,16,7,17,0,0,7); c.fill(); c.restore(); } c.fillStyle="#ffe0c7"; c.beginPath(); c.ellipse(0,-92-32,5,9,0,0,7); c.fill(); }
-  else for(const sd of [-1,1]){ c.save(); c.translate(sd*24*wf,-48); c.fillStyle=spin&&sd*fx<0?shade(p.c,-.25):shade(p.c,-.05); c.rotate(armA!=null?-sd*(armA+(dn===3?Math.sin(t/150+sd)*.35:0)):sd*(.35+sw*sd)); c.beginPath(); c.ellipse(0,14,8,15,0,0,7); c.fill(); c.restore(); }
+  else for(const sd of [-1,1]){ c.save(); c.translate(sd*24*wf,-48); c.fillStyle=spin&&sd*fx<0?shade(p.c,-.25):shade(p.c,-.05); c.rotate(armS?-sd*armS[sd>0?1:0]:armA!=null?-sd*(armA+(dn===3?Math.sin(t/150+sd)*.35:0)):sd*(.35+sw*sd)); c.beginPath(); c.ellipse(0,14,8,15,0,0,7); c.fill(); c.restore(); }
   if(p.m!=null&&p.m>=0){ const L=roast?140:62; c.save(); c.translate(26,-46); c.rotate(roast?1.2+Math.sin(t/500)*.05:-.9); c.strokeStyle="#8b5a2b"; c.lineWidth=3; c.beginPath(); c.moveTo(0,0); c.lineTo(0,-L); c.stroke();
     const k=p.m, col=k<.5?`rgb(${255},${250-k*60},${235-k*120})`:k<1?`rgb(${255-(k-.5)*80},${220-(k-.5)*160},${175-(k-.5)*200})`:"#5a3a22";
     if(roast&&k<1.1){ c.globalCompositeOperation="lighter"; const gl=c.createRadialGradient(0,-L-8,2,0,-L-8,34); gl.addColorStop(0,"rgba(255,170,70,.55)"); gl.addColorStop(1,"rgba(255,120,40,0)"); c.fillStyle=gl; c.fillRect(-34,-L-42,68,68); c.globalCompositeOperation="source-over"; }
@@ -361,6 +373,7 @@ function drawAvatar(c,p,t,isMe){
       if(p.g===1){ c.strokeStyle="#2a1c24"; c.lineWidth=1.6; c.beginPath(); c.moveTo(e2+3,-82); c.lineTo(e2+7,-85); c.moveTo(e1+3,-82); c.lineTo(e1+6,-85.5); c.stroke(); } }
     c.fillStyle="rgba(255,120,120,.38)"; c.beginPath(); c.ellipse(e1-8*cw,-70,6*cw,3.5,0,0,7); c.ellipse(e2+9*cw,-70,6*cw,3.5,0,0,7); c.fill();
     c.strokeStyle="rgba(150,80,70,.55)"; c.lineWidth=1.6; c.beginPath(); c.arc((e1+e2)/2,-71,3.2,.2,Math.PI-.2); c.stroke(); }
+  if(heart){ const hp=1+.15*Math.sin(t/120); c.save(); c.translate(0,-150); c.scale(hp,hp); c.fillStyle="#ff4f8b"; c.beginPath(); c.moveTo(0,8); c.bezierCurveTo(-16,-4,-10,-18,0,-9); c.bezierCurveTo(10,-18,16,-4,0,8); c.fill(); c.restore(); }
   c.restore();
   // 손에 든 음료
   const so=sit*s, ns=p.NS||s;
@@ -903,6 +916,11 @@ const STG={x:1180,y:1000,rx:470,ry:250}, BAR={x0:2040,x1:2370,y0:600,y1:1330};
 const TRACKS=[{n:"신나는 디스코",bpm:118,bass:[36,null,48,null,36,null,48,null,41,null,53,null,43,null,55,null],ch:[[60,64,67],[57,60,64],[53,57,60],[55,59,62]]},
   {n:"하우스 파티",bpm:124,bass:[33,null,33,45,null,33,45,null,31,null,31,43,null,31,43,null],ch:[[57,60,64],[57,60,64],[55,59,62],[55,59,62]]},
   {n:"K-팝 댄스",bpm:128,bass:[38,null,null,38,null,null,50,null,41,null,null,41,null,null,53,null],ch:[[62,65,69],[58,62,65],[60,64,67],[57,60,64]]}];
+const DANCES=[["통통 점프",1,"🐰"],["빙글빙글",2,"🌀"],["손 흔들기",3,"🙌"],["로봇 춤",4,"🤖"],["게걸음",5,"🦀"],["웨이브",6,"🌊"],["디스코",7,"🕺"],["하트 춤",8,"💖"],["캉캉 킥",9,"🦵"],["박수 춤",10,"👏"],["랜덤 춤",99,"🎲"]];
+function openDances(){ const g2=$("danceGrid"); g2.innerHTML=""; const m=Room.me; for(const [n,id,e] of DANCES){ const b=document.createElement("button"); b.type="button"; const sp=document.createElement("span"); sp.textContent=e; b.append(sp,document.createTextNode(n)); if(m.dn===id) b.style.background="rgba(255,179,71,.35)";
+    b.onclick=()=>{ m.dn=id; if(m.st>=0) standUp(); Room.dirty=true; $("danceBox").hidden=true; buildActs(); }; g2.append(b); }
+  const st=document.createElement("button"); st.type="button"; const sp=document.createElement("span"); sp.textContent="⏹"; st.append(sp,document.createTextNode("멈추기")); st.onclick=()=>{ m.dn=0; Room.dirty=true; $("danceBox").hidden=true; buildActs(); }; g2.append(st);
+  $("danceBox").hidden=false; }
 function beatPh(){ const ms=60000/Dance.bpm(); return (Date.now()%ms)/ms; }
 const Dance={id:"dance",W:2400,H:1600,top:470,tr:0,trT:0,conf:[],lastTr:0,
   bpm(){ return TRACKS[this.tr].bpm; },
@@ -943,6 +961,8 @@ const Dance={id:"dance",W:2400,H:1600,top:470,tr:0,trT:0,conf:[],lastTr:0,
     c.fillStyle="rgba(255,255,255,.9)"; c.font="700 30px 'Gaegu'"; c.textAlign="center"; c.textBaseline="middle"; c.fillText("♪ "+TRACKS[this.tr].n,1200,74); c.restore();
     // 벽 업라이트
     c.globalCompositeOperation="lighter"; for(let i=0;i<10;i++){ const x=120+i*240, col=cols[(i+beat)%5]; const g2=c.createLinearGradient(0,470,0,40); g2.addColorStop(0,col+"88"); g2.addColorStop(1,col+"00"); c.fillStyle=g2; c.beginPath(); c.moveTo(x-30,470); c.lineTo(x+30,470); c.lineTo(x+80,40); c.lineTo(x-80,40); c.fill(); }
+    // 레이저 (캐릭터 뒤 바닥 쪽, 8박 중 4박)
+    if(beat%8<4){ for(let i=0;i<9;i++){ const a=Math.PI*.5+(i-4)*.17+Math.sin(t/700)*.35; c.strokeStyle=i%2?"rgba(80,255,140,.4)":"rgba(80,220,255,.36)"; c.lineWidth=2; c.beginPath(); c.moveTo(1200,300); c.lineTo(1200+Math.cos(a)*1700,300+Math.sin(a)*1700); c.stroke(); } }
     // 무대 주변 빛 번짐
     const sp=c.createRadialGradient(STG.x,STG.y,STG.rx*.6,STG.x,STG.y,STG.rx+260); sp.addColorStop(0,cols[beat%5]+"30"); sp.addColorStop(1,cols[beat%5]+"00"); c.fillStyle=sp; c.fillRect(STG.x-STG.rx-260,STG.y-STG.ry-260,(STG.rx+260)*2,(STG.ry+260)*2);
     c.globalCompositeOperation="source-over"; },
@@ -982,8 +1002,6 @@ const Dance={id:"dance",W:2400,H:1600,top:470,tr:0,trT:0,conf:[],lastTr:0,
       const ang=Math.atan2(ty-TY,tx-fx2), len=Math.hypot(tx-fx2,ty-TY); c.save(); c.translate(fx2,TY); c.rotate(ang); const bg=c.createLinearGradient(0,0,len,0); bg.addColorStop(0,col+"70"); bg.addColorStop(1,col+"10");
       c.fillStyle=bg; c.beginPath(); c.moveTo(0,-5); c.lineTo(len,-46); c.lineTo(len,46); c.lineTo(0,5); c.fill(); c.restore();
       const sg=c.createRadialGradient(tx,ty,4,tx,ty,70); sg.addColorStop(0,col+"aa"); sg.addColorStop(1,col+"00"); c.fillStyle=sg; c.beginPath(); c.ellipse(tx,ty,70,34,0,0,7); c.fill(); }
-    // 레이저 (8박 중 4박)
-    if(beat%8<4){ for(let i=0;i<9;i++){ const a=Math.PI*.5+(i-4)*.17+Math.sin(t/700)*.35; c.strokeStyle=i%2?"rgba(80,255,140,.55)":"rgba(80,220,255,.5)"; c.lineWidth=2; c.beginPath(); c.moveTo(1200,300); c.lineTo(1200+Math.cos(a)*1700,300+Math.sin(a)*1700); c.stroke(); } }
     // 미러볼 반사
     for(let i=0;i<70;i++){ const a=i*2.4+t/1500, r=120+(i*53)%640; c.fillStyle=`rgba(255,255,255,${.2+.3*Math.sin(t/260+i)})`; c.beginPath(); c.arc(X+Math.cos(a)*r,Y+Math.sin(a)*r*.55,2.6,0,7); c.fill(); }
     c.globalCompositeOperation="source-over";
@@ -997,7 +1015,7 @@ const Dance={id:"dance",W:2400,H:1600,top:470,tr:0,trT:0,conf:[],lastTr:0,
     for(const p of this.conf){ c.save(); c.translate(p.x,p.y); c.rotate(p.r); c.fillStyle=p.c; c.globalAlpha=Math.min(1,2.6-p.l); c.fillRect(-6,-3,12,6); c.restore(); } c.globalAlpha=1; },
   click(){ return false; }, ctx(){ return null; },
   acts(){ const m=Room.me, mv=(t,n)=>({t,toggle:()=>m.dn===n,fn:()=>{ m.dn=m.dn===n?0:n; if(m.st>=0) standUp(); Room.dirty=true; buildActs(); }});
-    return [mv("💃 통통 점프",1),mv("🕺 빙글빙글",2),mv("🙌 손 흔들기",3),mv("🤖 로봇 춤",4),
+    return [{t:m.dn?`💃 ${(DANCES.find(d=>d[1]===m.dn)||["춤"])[0]}`:"💃 춤 고르기",cls:m.dn?"on":"",fn:openDances}, ...(m.dn?[{t:"⏹ 춤 멈추기",fn:()=>{ m.dn=0; Room.dirty=true; buildActs(); }}]:[]),
       {t:"🎉 폭죽",cd:2500,fn:()=>{ this.burst(m.x,m.y-90); pub(tRoom("dance"),{t:"e",k:"conf",x:Math.round(m.x),y:Math.round(m.y-90)}); }},
       {t:"🎵 노래 바꾸기",cd:4000,fn:()=>{ this.setTr((this.tr+1)%TRACKS.length,Date.now()); pub(tRoom("dance"),{t:"e",k:"tr",tr:this.tr,trT:this.trT}); toast("🎵 "+TRACKS[this.tr].n); }}]; },
   burst(x,y){ const cols=["#ff4fd8","#4fd8ff","#ffe14f","#7dff6a","#fff"]; for(let i=0;i<40;i++) this.conf.push({x,y,vx:rnd(-260,260),vy:rnd(-520,-160),r:rnd(0,6),vr:rnd(-10,10),l:0,c:cols[i%5]}); if(Room.id==="dance") blip(880,.2,.04,"triangle",1.6); },
@@ -1247,8 +1265,8 @@ function drawMini(M,vw,vh){ const el=$("mini"); if(el.hidden) return; const w=el
   c.fillStyle="#ffb347"; c.strokeStyle="#fff"; c.lineWidth=1.5*dp; c.beginPath(); c.arc(Room.me.x*k,Room.me.y*k,4.6*dp,0,7); c.fill(); c.stroke();
   c.strokeStyle="rgba(255,255,255,.7)"; c.lineWidth=1*dp; c.strokeRect(cam.x*k,cam.y*k,vw*k,vh*k); }
 $("mini").addEventListener("pointerdown",e=>{ const M=MAP(); if(!M) return; e.stopPropagation(); const r=$("mini").getBoundingClientRect(); audio(); const w={x:(e.clientX-r.left)/r.width*M.W,y:(e.clientY-r.top)/r.height*M.H}; if(Room.id==="cafe"&&Cafe.click(w)) return; goTo(w.x,w.y); });
-$("menuClose").onclick=()=>$("menuBox").hidden=true; $("roomsClose").onclick=()=>$("roomsBox").hidden=true; $("seatClose").onclick=()=>$("seatBox").hidden=true;
-for(const id of ["menuBox","roomsBox","qrbox","seatBox","dexBox","mfBox","charBox","annBox","peopleBox","oxBox"]) $(id).addEventListener("pointerdown",e=>{ if(e.target.id===id) $(id).hidden=true; });
+$("menuClose").onclick=()=>$("menuBox").hidden=true; $("danceClose").onclick=()=>$("danceBox").hidden=true; $("roomsClose").onclick=()=>$("roomsBox").hidden=true; $("seatClose").onclick=()=>$("seatBox").hidden=true;
+for(const id of ["menuBox","roomsBox","qrbox","seatBox","dexBox","mfBox","charBox","annBox","peopleBox","oxBox","danceBox"]) $(id).addEventListener("pointerdown",e=>{ if(e.target.id===id) $(id).hidden=true; });
 /* ================= 선생님 통제 (서명된 명령만 따름) ================= */
 const b64u={enc(buf){ let s=""; new Uint8Array(buf).forEach(b=>s+=String.fromCharCode(b)); return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); },
   dec(str){ str=String(str).replace(/-/g,"+").replace(/_/g,"/"); while(str.length%4) str+="="; const s=atob(str), u=new Uint8Array(s.length); for(let i=0;i<s.length;i++) u[i]=s.charCodeAt(i); return u; }};
@@ -1327,7 +1345,7 @@ function enterRoom(r){
   if(r!=="zen"){ Zen.breath=false; $("breath").hidden=true; }
   const m=Room.me; m.tx=null; m.goal=null; m.m=-1; m.say=""; m.st=-1; m.dn=0; m.ps=0;
   const sp=M.spawn(from); m.x=sp.x; m.y=sp.y; cam.init=false; cam.z=1;
-  ["menuBox","roomsBox","seatBox","dexBox","mfBox"].forEach(i=>$(i).hidden=true); $("fishCard").hidden=true; $("piano").hidden=true;
+  ["menuBox","roomsBox","seatBox","dexBox","mfBox","danceBox"].forEach(i=>$(i).hidden=true); $("fishCard").hidden=true; $("piano").hidden=true;
   $("intro").hidden=true; document.body.classList.add("inroom");
   ["topL","topR","acts","mini"].forEach(i=>$(i).hidden=false); $("roomName").textContent=r==="cafe"&&ME.cls.startsWith("OX-")?`☕ 카페 · OX ${ME.cls.slice(3)}방`:r==="cafe"&&ME.cls!=="all"?`☕ 카페 · ${ME.cls}`:ROOMS[r].name;
   $("tbar").hidden=!CTL.sk; document.body.classList.toggle("admin",!!CTL.sk); $("qrBtn").hidden=!(r==="cafe"&&!ME.back);
@@ -1354,7 +1372,7 @@ function onRoomMsg(t,d){
   if(d.t==="s"){ let p=Room.peers.get(d.id); const x=clamp(+d.x||0,0,M.W), y=clamp(+d.y||0,0,M.H);
     if(!p){ p={x,y,ph:Math.random()*6,dir:1,walk:0,st:-1}; Room.peers.set(d.id,p); if(d.hi) sendState(true); }
     p.n=clean(d.n,8)||"친구"; p.c=COLORS.includes(d.c)?d.c:"#e9ecef"; p.tx=x; p.ty=y; p.m=typeof d.m==="number"?clamp(d.m,-1,1.2):-1; p.seen=performance.now();
-    const dk=+d.dk; p.dk=dk>=0&&dk<MENU.length?dk:-1; const dn=+d.dn; p.dn=dn>=1&&dn<=4?dn:0; const ps=+d.ps; const ps2=ps>=1&&ps<=4?ps:0; if(ps2!==p.ps){ p.ps=ps2; p.psT=performance.now(); } p.g=d.g===1?1:0; if(d.tg) checkTeacher(d.id,p,d.tg);
+    const dk=+d.dk; p.dk=dk>=0&&dk<MENU.length?dk:-1; const dn=+d.dn; p.dn=(dn>=1&&dn<=10)||dn===99?dn:0; const ps=+d.ps; const ps2=ps>=1&&ps<=4?ps:0; if(ps2!==p.ps){ p.ps=ps2; p.psT=performance.now(); } p.g=d.g===1?1:0; if(d.tg) checkTeacher(d.id,p,d.tg);
     const st=+d.st; p.st=st>=0&&st<M.seats.length?st:-1; if(p.st>=0){ const s=M.seats[p.st]; p.tx=s.x; p.ty=s.y; p.dir=s.dir; }
     if(d.sid&&d.sid!==p.sid&&d.say){ p.sid=d.sid; const s=clean(d.say), md=chatMode(); const pm=CTL.ch; if(p.tch||(!isMuted(d.id)&&(pm===1||(pm===2&&emojiOnly(s))))){ p.say=s; p.sayT=performance.now(); } }
     M.sync(d,p); return; }
@@ -1390,7 +1408,7 @@ addEventListener("pointerup",()=>{ if(drawing&&Room.drawPts.length){ pub(tRoom("
 addEventListener("keydown",e=>{ if(!Room.id||e.target.tagName==="INPUT") return;
   if(Room.id==="cafe"&&!$("piano").hidden&&/^[0-9]$/.test(e.key)){ pianoKey((+e.key+9)%10); return; }
   if((e.key==="e"||e.key==="E"||e.key===" ")&&!$("ctx").hidden){ e.preventDefault(); $("ctx").click(); return; }
-  if(e.key==="Escape"){ ["menuBox","roomsBox","qrbox","seatBox","dexBox","mfBox","charBox","annBox","peopleBox","oxBox"].forEach(i=>$(i).hidden=true); return; }
+  if(e.key==="Escape"){ ["menuBox","roomsBox","qrbox","seatBox","dexBox","mfBox","charBox","annBox","peopleBox","oxBox","danceBox"].forEach(i=>$(i).hidden=true); return; }
   Room.keys[e.key.length===1?e.key.toLowerCase():e.key]=true; if(e.key.startsWith("Arrow")) e.preventDefault(); });
 addEventListener("keyup",e=>{ Room.keys[e.key.length===1?e.key.toLowerCase():e.key]=false; });
 addEventListener("blur",()=>{ Room.keys={}; });
