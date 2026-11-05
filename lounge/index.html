@@ -47,6 +47,16 @@ input[type=text]{width:100%;font:inherit;font-size:18px;padding:12px 14px;border
 .menu button{border:1px solid var(--edge);background:rgba(255,255,255,.07);border-radius:18px;padding:12px 6px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:14px;font-weight:600}
 .menu button span{font-size:34px;line-height:1.1}
 .menu button:hover{background:rgba(255,179,71,.22)}
+.seats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.seats button{border:1px solid var(--edge);background:rgba(255,255,255,.07);border-radius:16px;padding:12px;display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left}
+.seats button b{font-size:17px}
+.seats button small{font-size:13px;color:var(--sun2)}
+.seats button .who{font-size:12.5px;color:var(--dim);line-height:1.4}
+.seats button:disabled{opacity:.45}
+.seats button:not(:disabled):hover{background:rgba(255,179,71,.2)}
+@media (max-width:560px){.seats{grid-template-columns:repeat(2,1fr)}}
+.mtitle .pill{white-space:nowrap;flex:none}
+@media (max-width:560px){.modal h2{font-size:26px}}
 .mtitle{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .rooms{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .rooms button{border:0;border-radius:20px;padding:16px 10px;color:#fff;display:flex;flex-direction:column;gap:4px;align-items:center;font-weight:700;font-size:16px}
@@ -111,6 +121,9 @@ input[type=text]{width:100%;font:inherit;font-size:18px;padding:12px 14px;border
 <div class="modal" id="menuBox" hidden><div class="card glass">
   <div class="mtitle"><div><h2>☕ 쉼 카페 메뉴</h2><p class="dim" style="font-size:14px">고르면 로봇 바리스타가 만들어 줘요. 전부 무료!</p></div><button class="pill ghost small" id="menuClose">닫기</button></div>
   <div class="menu" id="menuGrid"></div><p class="err" id="menuErr"></p></div></div>
+<div class="modal" id="seatBox" hidden><div class="card glass">
+  <div class="mtitle"><div><h2>🪑 어디에 앉을까?</h2><p class="dim" style="font-size:14px">친구가 앉은 테이블에 같이 앉아 이야기해요. 테이블을 직접 눌러도 돼요.</p></div><button class="pill ghost small" id="seatClose">닫기</button></div>
+  <div class="seats" id="seatGrid"></div></div></div>
 <div class="modal" id="roomsBox" hidden><div class="card glass">
   <div class="mtitle"><div><h2>🚪 어디로 갈까?</h2><p class="dim" style="font-size:14px">고르면 그 방 문 앞까지 걸어가서 들어가요.</p></div><button class="pill ghost small" id="roomsClose">닫기</button></div>
   <div class="rooms" id="roomsGrid"></div></div></div>
@@ -297,7 +310,8 @@ function sofaDown(c,x,y,w,c1,c2,c3){ c.fillStyle="rgba(20,10,5,.25)"; c.fillRect
 /* ================= 공간 엔진 (위에서 비스듬히 내려다보는 넓은 방) ================= */
 const MAP=()=>MAPS[Room.id];
 function buildMap(M){ if(!M.seats){ M.seats=[]; M.col=[]; M.props=[]; M.init(); } M.build(); M.thumb=off(240,160,(c)=>c.drawImage(M.bg,0,0,M.W,M.H,0,0,240,160)); }
-function addSeat(M,x,y,dir,h,ax,ay){ M.seats.push({x,y,dir,h,ax:ax??x,ay:ay??y}); return M.seats.length-1; }
+function addSeat(M,x,y,dir,h,ax,ay){ const g=M._g??-1; M.seats.push({x,y,dir,h,ax:ax??x,ay:ay??y,g}); const i=M.seats.length-1; if(g>=0) M.groups[g].seats.push(i); return i; }
+function addGroup(M,name,x,y,rx,ry){ M.groups=M.groups||[]; M.groups.push({name,x,y,rx,ry,seats:[]}); M._g=M.groups.length-1; return M._g; }
 function collideMap(M,p){ const r=18;
   for(const o of M.col){
     if(o.t==="r"){ if(p.x>o.x0-r&&p.x<o.x1+r&&p.y>o.y0-r*.6&&p.y<o.y1+r*.6){ const d=[p.x-(o.x0-r),(o.x1+r)-p.x,p.y-(o.y0-r*.6),(o.y1+r*.6)-p.y], m=Math.min(...d), i=d.indexOf(m); if(i===0) p.x=o.x0-r; else if(i===1) p.x=o.x1+r; else if(i===2) p.y=o.y0-r*.6; else p.y=o.y1+r*.6; } }
@@ -320,7 +334,8 @@ function drawProp(c,p,t){ const x=p.x, y=p.y;
   case "table":{ c.fillStyle="rgba(40,20,8,.25)"; c.beginPath(); c.ellipse(x,y+6,58,18,0,0,7); c.fill(); c.fillStyle="#4a2e1f"; c.fillRect(x-6,y-40,12,42); c.beginPath(); c.ellipse(x,y+2,28,9,0,0,7); c.fill();
     c.fillStyle="#7a4a2c"; c.beginPath(); c.ellipse(x,y-36,66,40,0,0,7); c.fill(); c.fillStyle="#c9925c"; c.beginPath(); c.ellipse(x,y-42,66,40,0,0,7); c.fill(); c.strokeStyle="rgba(255,240,210,.35)"; c.lineWidth=2; c.beginPath(); c.ellipse(x,y-44,56,32,0,Math.PI*1.1,Math.PI*1.9); c.stroke();
     const r=seeded(p.seed); if(r()<.6){ c.fillStyle="#e9f2f0"; rr(c,x-8,y-66,16,22,4); c.fill(); c.fillStyle=["#ff8fa3","#ffd43b","#9775fa"][Math.floor(r()*3)]; c.beginPath(); c.arc(x,y-70,7,0,7); c.arc(x-7,y-64,5,0,7); c.arc(x+7,y-64,5,0,7); c.fill(); }
-    else { c.fillStyle="#fff"; c.beginPath(); c.ellipse(x-18,y-44,13,5,0,0,7); c.fill(); c.fillStyle="#f1e3d3"; rr(c,x+8,y-58,16,16,3); c.fill(); } break; }
+    else { c.fillStyle="#fff"; c.beginPath(); c.ellipse(x-18,y-44,13,5,0,0,7); c.fill(); c.fillStyle="#f1e3d3"; rr(c,x+8,y-58,16,16,3); c.fill(); }
+    if(p.no){ c.fillStyle="#fff7e8"; rr(c,x+22,y-46,26,22,5); c.fill(); c.strokeStyle="#c9925c"; c.lineWidth=1.5; c.stroke(); c.fillStyle="#7a4a2c"; c.font="700 15px 'IBM Plex Sans KR'"; c.textAlign="center"; c.textBaseline="middle"; c.fillText(p.no,x+35,y-34.5); } break; }
   case "chairL": case "chairR": { const s=p.k==="chairL"?-1:1; c.fillStyle="rgba(40,20,8,.2)"; c.beginPath(); c.ellipse(x,y+3,24,8,0,0,7); c.fill(); c.strokeStyle="#4a2e1f"; c.lineWidth=4; c.beginPath(); c.moveTo(x-14,y); c.lineTo(x-14,y-18); c.moveTo(x+14,y); c.lineTo(x+14,y-18); c.stroke();
     c.fillStyle="#8b5636"; c.beginPath(); c.ellipse(x,y-20,24,12,0,0,7); c.fill(); c.fillStyle="#6e4029"; rr(c,x+s*16-5,y-62,10,44,5); c.fill(); rr(c,x+s*20-6,y-66,12,24,6); c.fill(); break; }
   case "chairT": { c.strokeStyle="#4a2e1f"; c.lineWidth=4; c.beginPath(); c.moveTo(x-14,y); c.lineTo(x-14,y-18); c.moveTo(x+14,y); c.lineTo(x+14,y-18); c.stroke(); c.fillStyle="#6e4029"; rr(c,x-24,y-66,48,40,10); c.fill(); c.fillStyle="#8b5636"; c.beginPath(); c.ellipse(x,y-20,24,12,0,0,7); c.fill(); break; }
@@ -345,16 +360,16 @@ const Cafe={id:"cafe",W:2400,H:1600,top:262,orders:[],notes:[],taps:[],robot:{sa
     M.piano=addSeat(M,2175,1345,1,20,2175,1405);
     C.push({t:"r",x0:2035,y0:1165,x1:2315,y1:1300}); P.push({k:"piano",x:2175,y:1298}); P.push({k:"pbench",x:2175,y:1344});
     C.push({t:"r",x0:50,y0:236,x1:695,y1:446}); P.push({k:"robot",x:370,y:292}); P.push({k:"counter",x:370,y:446});
-    for(const x of [170,290,410,530]){ addSeat(M,x,494,1,24,x,530); P.push({k:"stool",x,y:493.5}); }
-    for(const [x,y,n] of TABLES){ C.push({t:"e",x,y:y-8,rx:82,ry:54}); P.push({k:"table",x,y,seed:x*7+y});
+    addGroup(M,"☕ 바 의자",350,494,230,50); for(const x of [170,290,410,530]){ addSeat(M,x,494,1,24,x,530); P.push({k:"stool",x,y:493.5}); }
+    TABLES.forEach(([x,y,n],ti)=>{ addGroup(M,`${ti+1}번 테이블`,x,y-34,92,72); C.push({t:"e",x,y:y-8,rx:82,ry:54}); P.push({k:"table",x,y,seed:x*7+y,no:ti+1});
       const ch=[[-98,0,1],[98,0,-1]]; if(n===4) ch.push([0,-80,1],[0,78,-1]);
-      for(const [dx,dy,dir] of ch){ const kind=dy<0?"chairT":dy>0?"chairB":dx<0?"chairL":"chairR"; addSeat(M,x+dx,y+dy,dir,15); P.push({k:kind,x:x+dx,y:y+dy-.5}); if(kind==="chairB") P.push({k:"chairBack",x:x+dx,y:y+dy+.5}); } }
-    const sf={c1:"#3f6b5a",c2:"#4f826d",c3:"#365c4d"};
+      for(const [dx,dy,dir] of ch){ const kind=dy<0?"chairT":dy>0?"chairB":dx<0?"chairL":"chairR"; addSeat(M,x+dx,y+dy,dir,15); P.push({k:kind,x:x+dx,y:y+dy-.5}); if(kind==="chairB") P.push({k:"chairBack",x:x+dx,y:y+dy+.5}); } });
+    const sf={c1:"#3f6b5a",c2:"#4f826d",c3:"#365c4d"}; addGroup(M,"🛋️ 소파 라운지",390,1290,300,250);
     C.push({t:"r",x0:185,y0:1075,x1:595,y1:1178}); P.push({k:"sofaDown",x:390,y:1140,w:410,pillow:1,...sf}); for(const x of [262,390,518]) addSeat(M,x,1166,1,10,x,1230);
     C.push({t:"r",x0:92,y0:1250,x1:188,y1:1350}); P.push({k:"arm",x:140,y:1322,side:1}); addSeat(M,140,1334,1,10,222,1300);
     C.push({t:"r",x0:592,y0:1250,x1:688,y1:1350}); P.push({k:"arm",x:640,y:1322,side:-1}); addSeat(M,640,1334,-1,10,558,1300);
     C.push({t:"r",x0:300,y0:1252,x1:480,y1:1322}); P.push({k:"ctable",x:390,y:1322});
-    C.push({t:"r",x0:205,y0:1402,x1:575,y1:1494}); P.push({k:"sofaUpSeat",x:390,y:1404,w:370,...sf}); P.push({k:"sofaUpBack",x:390,y:1494,w:380,...sf}); for(const x of [275,390,505]) addSeat(M,x,1458,1,10,x,1372);
+    C.push({t:"r",x0:205,y0:1402,x1:575,y1:1494}); P.push({k:"sofaUpSeat",x:390,y:1404,w:370,...sf}); P.push({k:"sofaUpBack",x:390,y:1494,w:380,...sf}); for(const x of [275,390,505]) addSeat(M,x,1458,1,10,x,1372); M._g=-1;
     for(const [x,y] of [[760,310],[2340,660],[70,1540],[2330,1540],[70,860],[2330,960],[1190,1535],[1620,1535],[690,1000]]){ C.push({t:"c",x,y,r:30}); P.push({k:"plant",x,y,seed:x+y}); }
   },
   build(){ const R=seeded(5), W=this.W, H=this.H;
@@ -443,7 +458,7 @@ const Cafe={id:"cafe",W:2400,H:1600,top:262,orders:[],notes:[],taps:[],robot:{sa
   acts(){ const m=Room.me, L=[];
     if(this.pending>=0) L.push({t:`🛎️ ${MENU[this.pending].e} 받으러 가기`,cls:"hot",fn:()=>goTo(COUNTER.x,COUNTER.y+30,{k:"counter"})});
     else L.push({t:"☕ 주문하기",fn:()=>{ if(Math.hypot(m.x-COUNTER.x,(m.y-COUNTER.y)*1.3)<260) openMenu(); else goTo(COUNTER.x+rnd(-120,120),COUNTER.y+30,{k:"counter"}); }});
-    L.push({t:"🚪 다른 방 가기",fn:openRooms});
+    L.push({t:"🪑 자리 고르기",fn:openSeats}); L.push({t:"🚪 다른 방 가기",fn:openRooms});
     L.push({t:"🎹 피아노",fn:()=>{ const s=this.seats[this.piano]; if(m.st!==this.piano) goTo(s.ax,s.ay,{k:"seat",i:this.piano}); }}); return L; },
   making(){ const now=performance.now(); return this.orders.find(o=>!o.done&&now>=o.start); },
   addOrder(id,n,o){ const now=performance.now(), last=this.orders.filter(x=>!x.done).pop(), start=last?Math.max(now,last.end):now;
@@ -468,7 +483,7 @@ function drawRobot(c,x,y,t,busy,dj){ const bob=dj?Math.abs(Math.sin(beatPh()*Mat
 
 /* ================= 불멍 캠프장 ================= */
 const FX=1200, FY=880;
-const Fire={id:"fire",W:2400,H:1600,top:400,level:1,parts:[],embers:[],thrown:[],flies:[],
+const Fire={id:"fire",W:2400,H:1600,top:400,sitR:470,level:1,parts:[],embers:[],thrown:[],flies:[],
   init(){ const M=this, C=M.col, P=M.props, R=seeded(31);
     C.push({t:"e",x:FX,y:FY-6,rx:150,ry:92}); P.push({k:"fire",x:FX,y:FY});
     for(let i=0;i<8;i++){ const a=i/8*Math.PI*2+Math.PI/8, lx=FX+Math.cos(a)*350, ly=FY+Math.sin(a)*225, tx=-Math.sin(a), ty=Math.cos(a)*.6;
@@ -804,12 +819,25 @@ function nearestSeat(x,y,r){ const M=MAP(); let best=-1, bd=r; M.seats.forEach((
 function mapClick(w){ const M=MAP();
   if(M.click(w)) return;
   if(Room.id!=="cafe"&&Math.abs(w.x-EXIT.x)<130&&w.y>1420){ goTo(EXIT.x,EXIT.y-10,{k:"exit"}); return; }
-  const si=nearestSeat(w.x,w.y-20,48); if(si>=0){ const s=M.seats[si]; goTo(s.ax,s.ay,{k:"seat",i:si}); return; }
+  const si=nearestSeat(w.x,w.y-20,48); if(si>=0){ goSit(si); return; }
+  const g=groupAt(M,w); if(g){ const fs=freeSeat(M,g.seats); if(fs>=0) goSit(fs); else toast(`${g.name}는 자리가 꽉 찼어요 🙂`); return; }
+  const pp={x:w.x,y:w.y}; collideMap(M,pp); if(Math.hypot(pp.x-w.x,pp.y-w.y)>2){ const near=[]; M.seats.forEach((s,i)=>{ if(Math.hypot(s.x-w.x,s.y-w.y)<(M.sitR||170)) near.push(i); }); const fs=freeSeat(M,near); if(fs>=0){ goSit(fs); return; } }
   goTo(w.x,w.y); }
+function groupAt(M,w){ for(const g of M.groups||[]){ if(((w.x-g.x)/g.rx)**2+((w.y-g.y)/g.ry)**2<1) return g; } return null; }
+function freeSeat(M,list){ const m=Room.me; let best=-1, bd=1e9; for(const i of list){ if(seatTaken(i)||i===m.st) continue; const s=M.seats[i], d=Math.hypot(s.ax-m.x,s.ay-m.y); if(d<bd){ bd=d; best=i; } } return best; }
+function goSit(i){ const s=MAP().seats[i]; goTo(s.ax,s.ay,{k:"seat",i}); }
+function seatPeople(M,g){ const names=[]; for(const p of Room.peers.values()) if(p.st>=0&&g.seats.includes(p.st)) names.push(p.n); if(g.seats.includes(Room.me.st)) names.unshift(ME.n+"(나)"); return names; }
+function openSeats(){ const M=MAP(), grid=$("seatGrid"); grid.innerHTML="";
+  const gs=[...(M.groups||[])].sort((x,y)=>(seatPeople(M,y).length>0)-(seatPeople(M,x).length>0));
+  for(const g of gs){ const ppl=seatPeople(M,g), free=g.seats.filter(i=>!seatTaken(i)&&i!==Room.me.st).length;
+    const b=document.createElement("button"); b.type="button"; const nm=document.createElement("b"); nm.textContent=g.name; const st=document.createElement("small"); st.textContent=free?`빈자리 ${free}개`:"꽉 찼어요"; const who=document.createElement("span"); who.className="who"; who.textContent=ppl.length?"👥 "+ppl.join(", "):"아직 아무도 없어요";
+    b.append(nm,st,who); if(!free) b.disabled=true; b.onclick=()=>{ $("seatBox").hidden=true; const fs=freeSeat(M,g.seats); if(fs>=0) goSit(fs); }; grid.append(b); }
+  $("seatBox").hidden=false; }
 function updCtx(){ const b=$("ctx"), m=Room.me, M=MAP(); if(!M){ b.hidden=true; return; } let r=null;
   if(m.st>=0) r=["🙋 일어나기",standUp];
   else { r=M.ctx(m); if(!r&&Room.id!=="cafe"&&Math.hypot(m.x-EXIT.x,m.y-EXIT.y)<170) r=["☕ 카페로 돌아가기",()=>enterRoom("cafe")];
-    if(!r){ const si=nearestSeat(m.x,m.y,95); if(si>=0&&!seatTaken(si)) r=[Room.id==="cafe"&&si===Cafe.piano?"🎹 피아노 치기":"🪑 앉기",()=>sitDown(si)]; } }
+    if(!r){ const si=nearestSeat(m.x,m.y,95); if(si>=0&&!seatTaken(si)){ const g=M.groups&&M.seats[si].g>=0?M.groups[M.seats[si].g]:null; r=[Room.id==="cafe"&&si===Cafe.piano?"🎹 피아노 치기":g?`🪑 ${g.name}에 앉기`:"🪑 앉기",()=>sitDown(si)]; } }
+    if(!r){ const g=groupAt(M,{x:m.x,y:m.y})||(M.groups||[]).find(g=>Math.hypot(m.x-g.x,(m.y-g.y)*1.2)<g.rx+110); if(g){ const fs=freeSeat(M,g.seats); if(fs>=0) r=[`🪑 ${g.name}에 앉기`,()=>goSit(fs)]; } } }
   const lab=r?r[0]:""; if(b.textContent!==lab) b.textContent=lab; b.hidden=!r; b.onclick=r?()=>{ audio(); r[1](); }:null; }
 function takeDrink(o){ const m=Room.me; Cafe.pending=-1; m.dk=o; m.sips=5; Room.dirty=true; sendState(false); toast(`${MENU[o].e} ${MENU[o].n} 받았어요! 맛있게 ${MENU[o].food?"드세요":"마셔요"}`); buildActs(); updCtx(); }
 function sip(){ const m=Room.me; if(m.dk<0) return; m.sips--; blip(MENU[m.dk].food?520:420,.12,.05,"triangle",MENU[m.dk].food?1.3:.6);
@@ -850,6 +878,7 @@ function mapRender(t,dt){
   for(const p of Room.peers.values()) items.push({y:p.y,a:{...p,S:.64,NS:ns,sit:seatH(p)},me:false});
   items.push({y:m.y,a:{...m,n:ME.n,c:ME.c,tch:!!CTL.sk,S:.64,NS:ns,sit:seatH(m)},me:true});
   items.sort((a,b)=>a.y-b.y); for(const it of items){ if(it.p) drawProp(g,it.p,t); else drawAvatar(g,it.a,t,it.me); }
+  if(m.st<0&&!m.walk){ const pu=.5+.5*Math.sin(t/300); M.seats.forEach((st,i)=>{ if(Math.hypot(st.x-m.x,st.y-m.y)>300||seatTaken(i)||(Room.id==="cafe"&&i===Cafe.piano)) return; g.strokeStyle=`rgba(255,213,154,${.35+pu*.4})`; g.lineWidth=3; g.beginPath(); g.ellipse(st.x,st.y+2,26+pu*4,9+pu*1.5,0,0,7); g.stroke(); }); }
   M.front(g,t);
   drawMini(M,vw,vh);
 }
@@ -861,8 +890,8 @@ function drawMini(M,vw,vh){ const el=$("mini"); if(el.hidden) return; const w=el
   c.fillStyle="#ffb347"; c.strokeStyle="#fff"; c.lineWidth=1.5*dp; c.beginPath(); c.arc(Room.me.x*k,Room.me.y*k,4.6*dp,0,7); c.fill(); c.stroke();
   c.strokeStyle="rgba(255,255,255,.7)"; c.lineWidth=1*dp; c.strokeRect(cam.x*k,cam.y*k,vw*k,vh*k); }
 $("mini").addEventListener("pointerdown",e=>{ const M=MAP(); if(!M) return; e.stopPropagation(); const r=$("mini").getBoundingClientRect(); audio(); const w={x:(e.clientX-r.left)/r.width*M.W,y:(e.clientY-r.top)/r.height*M.H}; if(Room.id==="cafe"&&Cafe.click(w)) return; goTo(w.x,w.y); });
-$("menuClose").onclick=()=>$("menuBox").hidden=true; $("roomsClose").onclick=()=>$("roomsBox").hidden=true;
-for(const id of ["menuBox","roomsBox","qrbox"]) $(id).addEventListener("pointerdown",e=>{ if(e.target.id===id) $(id).hidden=true; });
+$("menuClose").onclick=()=>$("menuBox").hidden=true; $("roomsClose").onclick=()=>$("roomsBox").hidden=true; $("seatClose").onclick=()=>$("seatBox").hidden=true;
+for(const id of ["menuBox","roomsBox","qrbox","seatBox"]) $(id).addEventListener("pointerdown",e=>{ if(e.target.id===id) $(id).hidden=true; });
 /* ================= 선생님 통제 (서명된 명령만 따름) ================= */
 const b64u={enc(buf){ let s=""; new Uint8Array(buf).forEach(b=>s+=String.fromCharCode(b)); return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); },
   dec(str){ str=String(str).replace(/-/g,"+").replace(/_/g,"/"); while(str.length%4) str+="="; const s=atob(str), u=new Uint8Array(s.length); for(let i=0;i<s.length;i++) u[i]=s.charCodeAt(i); return u; }};
@@ -902,7 +931,7 @@ function enterRoom(r){
   Room.id=r; Room.peers.clear(); const M=MAPS[r]; if(!M.bg) buildMap(M);
   const m=Room.me; m.tx=null; m.goal=null; m.m=-1; m.say=""; m.st=-1; m.dn=0;
   const sp=M.spawn(from); m.x=sp.x; m.y=sp.y; cam.init=false;
-  ["menuBox","roomsBox"].forEach(i=>$(i).hidden=true); $("piano").hidden=true;
+  ["menuBox","roomsBox","seatBox"].forEach(i=>$(i).hidden=true); $("piano").hidden=true;
   $("intro").hidden=true; document.body.classList.add("inroom");
   ["topL","topR","acts","mini"].forEach(i=>$(i).hidden=false); $("roomName").textContent=r==="cafe"&&ME.cls.startsWith("OX-")?`☕ 카페 · OX ${ME.cls.slice(3)}방`:ROOMS[r].name;
   $("tbar").hidden=!CTL.sk; $("qrBtn").hidden=!(r==="cafe"&&!ME.back);
@@ -960,7 +989,7 @@ addEventListener("pointerup",()=>{ if(drawing&&Room.drawPts.length){ pub(tRoom("
 addEventListener("keydown",e=>{ if(!Room.id||e.target.tagName==="INPUT") return;
   if(Room.id==="cafe"&&!$("piano").hidden&&/^[0-9]$/.test(e.key)){ pianoKey((+e.key+9)%10); return; }
   if((e.key==="e"||e.key==="E"||e.key===" ")&&!$("ctx").hidden){ e.preventDefault(); $("ctx").click(); return; }
-  if(e.key==="Escape"){ ["menuBox","roomsBox","qrbox"].forEach(i=>$(i).hidden=true); return; }
+  if(e.key==="Escape"){ ["menuBox","roomsBox","qrbox","seatBox"].forEach(i=>$(i).hidden=true); return; }
   Room.keys[e.key.length===1?e.key.toLowerCase():e.key]=true; if(e.key.startsWith("Arrow")) e.preventDefault(); });
 addEventListener("keyup",e=>{ Room.keys[e.key.length===1?e.key.toLowerCase():e.key]=false; });
 addEventListener("blur",()=>{ Room.keys={}; });
