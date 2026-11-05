@@ -59,6 +59,11 @@ input[type=text]{width:100%;font:inherit;font-size:18px;padding:12px 14px;border
 .dex{border:1px solid var(--edge);background:rgba(80,170,255,.1);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:3px;align-items:center;text-align:center}
 .dex span{font-size:30px}.dex b{font-size:14px}.dex small{font-size:11.5px;color:var(--dim);line-height:1.35}.dex.no{opacity:.55;background:rgba(255,255,255,.04)}
 #mfShape .pill[aria-pressed="true"]{background:var(--sun);color:#2b1606}
+#annBanner{left:50%;top:max(64px,calc(env(safe-area-inset-top) + 58px));transform:translateX(-50%);width:min(560px,calc(100% - 24px));border-radius:18px;padding:14px 18px;background:#ffb347;color:#2b1606;font-weight:700;font-size:18px;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.4);transition:opacity .5s;z-index:8}
+.plist{display:flex;flex-direction:column;gap:6px;max-height:55vh;overflow:auto}.prow{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.06)}.prow span{font-size:13px;color:var(--dim)}.prow.muted{background:rgba(255,100,100,.15)}
+#tbar{max-width:min(720px,calc(100% - 360px));flex-wrap:wrap;justify-content:center;top:max(62px,calc(env(safe-area-inset-top) + 56px))!important}
+body.admin #hint{top:max(150px,calc(env(safe-area-inset-top) + 144px))}
+@media (max-width:900px){#tbar{max-width:calc(100% - 24px)}}
 #breath{left:50%;top:50%;transform:translate(-50%,-62%);width:200px;height:200px;display:grid;place-items:center;pointer-events:none}
 #breath .bc{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,rgba(255,236,200,.55),rgba(255,214,160,.18) 60%,rgba(255,214,160,0) 72%);border:2px solid rgba(255,240,210,.7);transition:transform .12s linear}
 #breath .bt{position:relative;font-weight:700;font-size:18px;color:#5a3d22;text-shadow:0 1px 6px rgba(255,255,255,.9)}
@@ -107,7 +112,7 @@ input[type=text]{width:100%;font:inherit;font-size:18px;padding:12px 14px;border
 #piano button.down{background:linear-gradient(#ffe2b5,#ffc46b)}
 #piano button kbd{font:inherit;font-size:10px;opacity:.55}
 @media (max-width:700px){#mini{width:132px;height:88px;bottom:auto;top:max(64px,calc(env(safe-area-inset-top) + 58px))}#piano button{width:30px;height:96px;font-size:11px}#piano button kbd{display:none}}
-@media (max-width:560px){#topL b{display:none}#hint{max-width:calc(100% - 24px);top:auto;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 170px)}#tbar{top:auto;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 118px);flex-wrap:wrap;justify-content:center;width:calc(100% - 24px);border-radius:18px}#ctx{font-size:15px;padding:10px 18px}}
+@media (max-width:560px){#topL b{display:none}#topR .lbl{display:none}#qrBtn{display:none!important}#who{padding:8px 10px}#hint{max-width:calc(100% - 24px);top:auto;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 170px)}#tbar{top:auto;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 118px);flex-wrap:wrap;justify-content:center;width:calc(100% - 24px);border-radius:18px}#ctx{font-size:15px;padding:10px 18px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -124,8 +129,10 @@ input[type=text]{width:100%;font:inherit;font-size:18px;padding:12px 14px;border
     <div><label for="nick">별명 (실명 말고!)</label><input type="text" id="nick" maxlength="8" placeholder="예: 졸린판다"></div>
     <div><label>내 캐릭터</label><div class="swatches" id="gsel"></div></div>
     <div><label>내 캐릭터 색</label><div class="swatches" id="sws"></div></div>
+    <div id="adminRow" hidden><label for="adminPw">관리자 비밀번호</label><input type="password" id="adminPw" autocomplete="current-password" maxlength="40"></div>
     <div class="err" id="introErr"></div>
-    <button class="pill sun" type="submit">카페 들어가기</button>
+    <button class="pill sun" type="submit" id="introGo">카페 들어가기</button>
+    <button class="pill ghost small" type="button" id="adminToggle" style="align-self:center">🔐 관리자 접속</button>
     <p class="note">접속 코드를 아는 사람만 들어올 수 있어요. 공개 서버를 거쳐 전달되니 이름·학교·전화번호 같은 개인정보는 쓰지 마세요.</p>
   </form>
 </section>
@@ -134,6 +141,19 @@ input[type=text]{width:100%;font:inherit;font-size:18px;padding:12px 14px;border
 <div class="modal" id="menuBox" hidden><div class="card glass">
   <div class="mtitle"><div><h2>☕ 쉼 카페 메뉴</h2><p class="dim" style="font-size:14px">고르면 로봇 바리스타가 만들어 줘요. 전부 무료!</p></div><button class="pill ghost small" id="menuClose">닫기</button></div>
   <div class="menu" id="menuGrid"></div><p class="err" id="menuErr"></p></div></div>
+<div class="modal" id="oxBox" hidden><form class="card glass" id="oxForm" style="width:min(420px,100%)" autocomplete="off">
+  <div class="mtitle"><h2 id="oxTitle">🅾️❌ 퀴즈방 가기</h2><button class="pill ghost small" id="oxClose" type="button">닫기</button></div>
+  <p class="dim" id="oxDesc" style="font-size:14px">선생님이 알려 준 퀴즈방 코드 4자리를 넣어요.</p>
+  <input type="text" id="oxIn" inputmode="numeric" maxlength="4" placeholder="예: 1234"><p class="err" id="oxErr"></p>
+  <button class="pill sun" type="submit" id="oxGo">퀴즈방으로 가기</button></form></div>
+<div class="modal" id="annBox" hidden><form class="card glass" id="annForm" style="width:min(480px,100%)" autocomplete="off">
+  <div class="mtitle"><h2>📣 모두에게 공지</h2><button class="pill ghost small" id="annClose" type="button">닫기</button></div>
+  <input type="text" id="annIn" maxlength="60" placeholder="예: 5분 뒤 수업 시작해요!">
+  <div class="swatches"><button type="button" class="pill ghost small" data-ann="5분 뒤 수업 시작해요!">⏰ 5분 뒤 시작</button><button type="button" class="pill ghost small" data-ann="바른 말 고운 말을 써요 🙂">🙂 바른 말</button><button type="button" class="pill ghost small" data-ann="이제 자리로 돌아와요!">🪑 자리로</button></div>
+  <button class="pill sun" type="submit">공지 보내기</button></form></div>
+<div class="modal" id="peopleBox" hidden><div class="card glass" style="width:min(520px,100%)">
+  <div class="mtitle"><div><h2>👥 지금 들어온 학생</h2><p class="dim" style="font-size:14px">어느 방에 있는지 보이고, 학생별로 채팅을 막을 수 있어요.</p></div><button class="pill ghost small" id="peopleClose">닫기</button></div>
+  <div id="peopleGrid" class="plist"></div><button class="pill ghost small" id="unmuteAll" type="button" hidden>🔈 모두 채팅 풀기</button></div></div>
 <div class="modal" id="charBox" hidden><div class="card glass" style="width:min(460px,100%)">
   <div class="mtitle"><h2>🎨 내 캐릭터</h2><button class="pill ghost small" id="charClose">닫기</button></div>
   <div><label>모습</label><div class="swatches" id="gsel2"></div></div><div><label>색</label><div class="swatches" id="sws2"></div></div>
@@ -155,7 +175,7 @@ input[type=text]{width:100%;font:inherit;font-size:18px;padding:12px 14px;border
 
 <div class="hud glass" id="topL" hidden><button class="pill ghost small" id="backBtn">← 나가기</button><b id="roomName"></b></div>
 <div class="hud" id="topR" hidden><span class="glass" id="who">1명</span><button class="pill ghost small glass" id="charBtn" aria-label="내 캐릭터 바꾸기">🎨</button><button class="pill ghost small glass" id="qrBtn" hidden>📱 초대</button><button class="pill ghost small glass" id="sndBtn">🔊 소리 켜짐</button></div>
-<div class="hud glass" id="tbar" hidden><b>🍎 선생님</b><button id="tOn" aria-pressed="true">💬 채팅 켜기</button><button id="tEmo" aria-pressed="false">😊 이모지만</button><button id="tOff" aria-pressed="false">🔇 채팅 끄기</button><button id="tCall" aria-pressed="false">📣 퀴즈방으로 부르기</button></div>
+<div class="hud glass" id="tbar" hidden><b>🍎 선생님</b><button id="tOn" aria-pressed="true">💬 채팅 켜기</button><button id="tEmo" aria-pressed="false">😊 이모지만</button><button id="tOff" aria-pressed="false">🔇 채팅 끄기</button><button id="tCall" aria-pressed="false">🔔 쉬는 시간 끝</button><button id="tAnn">📣 공지</button><button id="tOx">🅾️ 퀴즈방 코드</button><button id="tPeople">👥 학생</button></div>
 <div class="hud glass" id="hint" hidden></div>
 <div class="hud glass" id="net" hidden></div>
 <div class="hud" id="acts" hidden></div>
@@ -169,6 +189,7 @@ input[type=text]{width:100%;font:inherit;font-size:18px;padding:12px 14px;border
   <div id="chatmini"></div>
 </div>
 <div class="hud glass" id="toast" hidden></div>
+<div class="hud" id="annBanner" hidden role="status"></div>
 <div class="hud" id="breath" hidden aria-live="polite"><div class="bc"></div><div class="bt">천천히 들이마셔요</div></div>
 <div class="hud glass" id="fishCard" hidden aria-live="polite"></div>
 
@@ -192,7 +213,7 @@ function clean(m,max=30){ m=String(m||"").replace(/[\u0000-\u001f<>]/g,"").repla
   for(const w of BADW){ let i; while((i=low.indexOf(w))>=0){ m=m.slice(0,i)+"♥".repeat(w.length)+m.slice(i+w.length); low=m.toLowerCase(); } } return m; }
 function h32(s){ let h=0x811c9dc5; for(const ch of s){ h^=ch.codePointAt(0); h=Math.imul(h,0x01000193)>>>0; } return h.toString(36); }
 let toastT=0; function toast(msg,ms=1800){ const t=$("toast"); t.textContent=msg; t.hidden=false; t.style.opacity=1; clearTimeout(toastT); toastT=setTimeout(()=>{t.style.opacity=0; setTimeout(()=>t.hidden=true,400)},ms); }
-const ME={id:"u"+rid(),n:"",c:COLORS[Math.floor(Math.random()*9)],g:0,cls:"",key:"",acc:""};
+const ME={id:(()=>{ try{ let i=sessionStorage.getItem("lounge-id"); if(!i){ i="u"+rid(); sessionStorage.setItem("lounge-id",i); } return i; }catch(e){ return "u"+rid(); } })(),n:"",c:COLORS[Math.floor(Math.random()*9)],g:0,cls:"",key:"",acc:""};
 try{ const s=JSON.parse(localStorage.getItem("lounge-me")||"null"); if(s){ ME.n=s.n||""; ME.c=COLORS.includes(s.c)?s.c:ME.c; ME.cls=s.cls||""; ME.g=s.g===1?1:0; } ME.acc=localStorage.getItem("lounge-acc")||""; }catch(e){}
 
 /* ================= 실시간 연결 (공개 MQTT, 반 코드별 주제) ================= */
@@ -232,13 +253,20 @@ function blip(freq,dur,vol,type="sine",slide=0){ const ctx=snd.ctx; if(!ctx||!sn
   g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+dur); o.connect(g); g.connect(snd.bus); o.start(t); o.stop(t+dur+.05); }
 function crack(vol=.25){ const ctx=snd.ctx; if(!ctx||!snd.on) return; const s=ctx.createBufferSource(), n=Math.floor(ctx.sampleRate*.04), b=ctx.createBuffer(1,n,ctx.sampleRate), d=b.getChannelData(0);
   for(let i=0;i<n;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/n,3); s.buffer=b; const f=ctx.createBiquadFilter(); f.type="highpass"; f.frequency.value=1200+Math.random()*2500; const g=ctx.createGain(); g.gain.value=vol*Math.random(); s.connect(f); f.connect(g); g.connect(snd.bus); s.start(); }
+function softCrack(vol){ const ctx=snd.ctx; if(!ctx||!snd.on) return; const s=ctx.createBufferSource(), n=Math.floor(ctx.sampleRate*.03), b=ctx.createBuffer(1,n,ctx.sampleRate), d=b.getChannelData(0);
+  for(let i=0;i<n;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/n,4); s.buffer=b; const f=ctx.createBiquadFilter(); f.type="bandpass"; f.frequency.value=700+Math.random()*900; f.Q.value=.8; const g=ctx.createGain(); g.gain.value=vol*(.4+Math.random()*.6); s.connect(f); f.connect(g); g.connect(snd.bus); s.start(); }
+/* 잔잔한 물결·파도: 노이즈가 천천히 밀려왔다 빠지게 */
+function waves(vol,minMs,maxMs,top){ const ctx=audio(); if(!ctx) return; const s=ctx.createBufferSource(); s.buffer=noiseBuf(ctx,"brown"); s.loop=true; const f=ctx.createBiquadFilter(); f.type="lowpass"; f.frequency.value=250; const g=ctx.createGain(); g.gain.value=.0001;
+  s.connect(f); f.connect(g); g.connect(snd.bus); s.start(); snd.nodes.push(s);
+  const sw=()=>{ const t=ctx.currentTime, up=rnd(1.6,2.6), dn=rnd(2.6,4.2), pk=vol*rnd(.6,1); g.gain.cancelScheduledValues(t); g.gain.setTargetAtTime(pk,t,up/3); g.gain.setTargetAtTime(vol*.12,t+up,dn/3); f.frequency.cancelScheduledValues(t); f.frequency.setTargetAtTime(top*rnd(.8,1.2),t,up/3); f.frequency.setTargetAtTime(240,t+up,dn/3);
+    snd.timers.push(setTimeout(sw,rnd(minMs,maxMs))); }; sw(); }
 function thunder(){ const ctx=snd.ctx; if(!ctx||!snd.on) return; const s=ctx.createBufferSource(); s.buffer=noiseBuf(ctx,"brown"); const f=ctx.createBiquadFilter(); f.type="lowpass"; f.frequency.value=180; const g=ctx.createGain(), t=ctx.currentTime;
   g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(1.6,t+.25); g.gain.exponentialRampToValueAtTime(.0001,t+3.2); s.connect(f); f.connect(g); g.connect(snd.bus); s.start(t); s.stop(t+3.4); }
 function ambient(room){ stopAmbient(); if(!audio()) return;
-  if(room==="fire"){ loopNoise("brown","lowpass",320,.7,.55); loopNoise("white","bandpass",900,.6,.02);
-    const tick=()=>{ crack(.22); if(Math.random()<.3) setTimeout(()=>crack(.14),40); snd.timers.push(setTimeout(tick,rnd(60,420)/Fire.level)); }; tick();
-    const cricket=()=>{ for(let i=0;i<3;i++) setTimeout(()=>blip(4300,.05,.012,"sine"),i*70); snd.timers.push(setTimeout(cricket,rnd(2500,6000))); }; cricket(); }
-  if(room==="sea"){ loopNoise("brown","lowpass",240,.5,.7); const hum=loopNoise("white","bandpass",420,4,.015);
+  if(room==="fire"){ waves(.16,4500,7500,900);
+    const tick=()=>{ softCrack(.05+.03*Math.min(Fire.level,2)); snd.timers.push(setTimeout(tick,rnd(500,2200)/Math.sqrt(Fire.level))); }; tick();
+    const cricket=()=>{ for(let i=0;i<2;i++) setTimeout(()=>blip(4200,.06,.004,"sine"),i*90); snd.timers.push(setTimeout(cricket,rnd(4000,9000))); }; cricket(); }
+  if(room==="sea"){ waves(.12,6000,9000,600); loopNoise("brown","lowpass",260,.5,.18); const hum=loopNoise("white","bandpass",420,4,.015);
     const bub=()=>{ blip(rnd(500,900),.12,.03,"sine",2.2); snd.timers.push(setTimeout(bub,rnd(500,2500))); }; bub(); }
   if(room==="cafe"){
     const clink=()=>{ blip(rnd(2300,3300),.07,.018,"triangle"); if(Math.random()<.4) setTimeout(()=>blip(rnd(2600,3500),.05,.012,"triangle"),90); snd.timers.push(setTimeout(clink,rnd(2500,7000))); }; clink();
@@ -991,12 +1019,20 @@ const Zen={id:"zen",W:2400,H:1600,top:600,rings:[],motes:[],birds:[],breath:fals
   mini(c,k){ c.fillStyle="#ffcf9a"; c.fillRect(ZWIN.x*k,ZWIN.y*k,ZWIN.w*k,ZWIN.h*k); c.fillStyle="#c9a24a"; c.beginPath(); c.arc(BOWL.x*k,BOWL.y*k,4,0,7); c.fill(); },
   musicGain(){ if(this.out&&snd.ctx) this.out.gain.setTargetAtTime(ZEN_MUSIC?1:0,snd.ctx.currentTime,.6); },
   music(){ const ctx=snd.ctx; if(!ctx) return; const out=ctx.createGain(); out.gain.value=0; out.connect(snd.bus); this.out=out;
-    const lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=900; lp.connect(out);
-    for(const [f,v,ty] of [[65.41,.05,"sine"],[98,.04,"sine"],[130.81,.03,"triangle"],[196,.018,"sine"],[261.63*1.002,.012,"sine"]]){ const o=ctx.createOscillator(), gn=ctx.createGain(), lfo=ctx.createOscillator(), lg=ctx.createGain();
-      o.type=ty; o.frequency.value=f; gn.gain.value=v; lfo.frequency.value=.05+Math.random()*.08; lg.gain.value=v*.6; lfo.connect(lg); lg.connect(gn.gain); o.connect(gn); gn.connect(lp); o.start(); lfo.start(); snd.nodes.push(o,lfo); }
-    const s=ctx.createBufferSource(); s.buffer=nbuf("brown"); s.loop=true; const wf=ctx.createBiquadFilter(); wf.type="lowpass"; wf.frequency.value=700; const wg=ctx.createGain(); wg.gain.value=.08; s.connect(wf); wf.connect(wg); wg.connect(out); s.start(); snd.nodes.push(s);
-    const strike=()=>{ if(Room.id!=="zen") return; if(ZEN_MUSIC&&snd.on) bowlSound(.45,[130.81,146.83,174.61][Math.floor(Math.random()*3)]); snd.timers.push(setTimeout(strike,rnd(14000,24000))); }; snd.timers.push(setTimeout(strike,3000));
-    const chime=()=>{ if(Room.id!=="zen") return; if(ZEN_MUSIC&&snd.on){ const n=3+Math.floor(Math.random()*4); for(let i=0;i<n;i++) setTimeout(()=>blip([1568,1760,2093,2349,2637][Math.floor(Math.random()*5)],1.6,.012,"sine"),i*rnd(120,260)); } snd.timers.push(setTimeout(chime,rnd(9000,20000))); }; snd.timers.push(setTimeout(chime,6000));
+    // 공간감: 부드러운 메아리(딜레이)
+    const send=ctx.createGain(); send.gain.value=.45; const dl=ctx.createDelay(2); dl.delayTime.value=.46; const fb=ctx.createGain(); fb.gain.value=.42; const dlp=ctx.createBiquadFilter(); dlp.type="lowpass"; dlp.frequency.value=2000;
+    send.connect(dl); dl.connect(dlp); dlp.connect(fb); fb.connect(dl); dlp.connect(out);
+    const m2f=m=>440*Math.pow(2,(m-69)/12);
+    const CH=[{pad:[50,57,62,66,69],mel:[74,76,78,81,83,86]},{pad:[47,54,59,62,66],mel:[71,74,76,78,83]},{pad:[43,50,55,59,62],mel:[71,74,78,79,83]},{pad:[45,52,57,61,64],mel:[69,73,76,78,81]}];
+    const pad=(n,t0,dur)=>{ for(const det of [-4,4]){ const o=ctx.createOscillator(), g2=ctx.createGain(), lp=ctx.createBiquadFilter(); o.type="triangle"; o.frequency.value=m2f(n); o.detune.value=det; lp.type="lowpass"; lp.frequency.value=900;
+        g2.gain.setValueAtTime(.0001,t0); g2.gain.exponentialRampToValueAtTime(.016,t0+2.8); g2.gain.setValueAtTime(.016,t0+dur-1); g2.gain.exponentialRampToValueAtTime(.0001,t0+dur+2.5); o.connect(lp); lp.connect(g2); g2.connect(out); o.start(t0); o.stop(t0+dur+2.6); } };
+    const harp=(n,t0,v)=>{ for(const [mul,vv,d] of [[1,1,3.2],[2,.18,1.6],[3,.05,.8]]){ const o=ctx.createOscillator(), g2=ctx.createGain(); o.type="sine"; o.frequency.value=m2f(n)*mul; g2.gain.setValueAtTime(.0001,t0); g2.gain.exponentialRampToValueAtTime(v*vv,t0+.02); g2.gain.exponentialRampToValueAtTime(.0001,t0+d);
+        o.connect(g2); g2.connect(out); g2.connect(send); o.start(t0); o.stop(t0+d+.05); } };
+    let ci=0; const bar=()=>{ if(Room.id!=="zen") return; if(ZEN_MUSIC&&snd.on){ const c=CH[ci%4], t0=ctx.currentTime+.05, L=8;
+        c.pad.forEach(n=>pad(n,t0,L)); const R=seeded(ci*13+5); let k=Math.floor(R()*c.mel.length);
+        for(let b=0;b<8;b++){ if(R()<.45) continue; k=clamp(k+Math.floor(R()*3)-1,0,c.mel.length-1); harp(c.mel[k],t0+b*1+R()*.08,.05+R()*.025); }
+        if(ci%4===0) harp(c.pad[0]+12,t0,.06); if(ci%8===0) setTimeout(()=>bowlSound(.25,146.83),400); }
+      ci++; snd.timers.push(setTimeout(bar,8000)); }; bar();
     this.musicGain(); }
 };
 function setPose(n){ const m=Room.me; if(n===2){ if(m.ps===2) return; m.psPrev=m.ps===1?1:0; } if(m.st>=0&&(n===2||n===3)) standUp(); m.ps=n; m.psT=performance.now(); Room.dirty=true; sendState(false); buildActs(); if(n===2) setTimeout(()=>blip(220,.5,.03,"sine"),900); }
@@ -1115,30 +1151,66 @@ function drawMini(M,vw,vh){ const el=$("mini"); if(el.hidden) return; const w=el
   c.strokeStyle="rgba(255,255,255,.7)"; c.lineWidth=1*dp; c.strokeRect(cam.x*k,cam.y*k,vw*k,vh*k); }
 $("mini").addEventListener("pointerdown",e=>{ const M=MAP(); if(!M) return; e.stopPropagation(); const r=$("mini").getBoundingClientRect(); audio(); const w={x:(e.clientX-r.left)/r.width*M.W,y:(e.clientY-r.top)/r.height*M.H}; if(Room.id==="cafe"&&Cafe.click(w)) return; goTo(w.x,w.y); });
 $("menuClose").onclick=()=>$("menuBox").hidden=true; $("roomsClose").onclick=()=>$("roomsBox").hidden=true; $("seatClose").onclick=()=>$("seatBox").hidden=true;
-for(const id of ["menuBox","roomsBox","qrbox","seatBox","dexBox","mfBox","charBox"]) $(id).addEventListener("pointerdown",e=>{ if(e.target.id===id) $(id).hidden=true; });
+for(const id of ["menuBox","roomsBox","qrbox","seatBox","dexBox","mfBox","charBox","annBox","peopleBox","oxBox"]) $(id).addEventListener("pointerdown",e=>{ if(e.target.id===id) $(id).hidden=true; });
 /* ================= 선생님 통제 (서명된 명령만 따름) ================= */
 const b64u={enc(buf){ let s=""; new Uint8Array(buf).forEach(b=>s+=String.fromCharCode(b)); return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); },
   dec(str){ str=String(str).replace(/-/g,"+").replace(/_/g,"/"); while(str.length%4) str+="="; const s=atob(str), u=new Uint8Array(s.length); for(let i=0;i<s.length;i++) u[i]=s.charCodeAt(i); return u; }};
 const EC={name:"ECDSA",namedCurve:"P-256"}, SIG={name:"ECDSA",hash:"SHA-256"}, u8=s=>new TextEncoder().encode(s);
-const CTL={pk:null,sk:null,ch:1,call:0,ts:0,tg:""};
+const CTL={pk:null,sk:null,ch:1,call:0,ts:0,tg:"",mu:[],ann:"",annTs:0,ox:""};
+const OX_URL="https://mellow-starlight-f63066.netlify.app/";
+const ADMIN={"pk": "BBZwWTURUdIT_uct1v4TNqf_JA4e39n8SabydsbgWrTl1s9J2zPPUAmz4As13qvQcVUsWV2vPrITsIZhiNsIbd8", "salt": "xY1NlpWWsfU8E9QscprLXg", "iv": "_qift60mwFsLgPnw", "ct": "Nb56A5iW9yR2hMFsP8-cXY7mSeUYoiLUK5KxMYL_TJIABoHhzJG5Biru6Zytsltyu9nFN-mv0Aq9dLs3JrqRNZ4gNGh3XmecuebgtG6ybJsZHggXKiZ_CHFetq4Gas2ZAKmmbYl0GGxMaejfzJTl9XWIwqQvBgNLgdokiMbSq8ZyOv0pyUttLcgmsT6bTPApeRlfGbkC6x_-D2YlXZ6z63-HwrksXVybGQnlEmiS1R4gaXNVNQAcucDNuxnrxKHC94wqJ02Yl_AsngelaoICKLbi_n2bgvcapW7XnPYOdg"};
 const tCtl=()=>TOP+ME.key+"/ctl";
 async function ctlInit(k,tk){ try{ if(!window.crypto||!crypto.subtle) return;
     if(k) CTL.pk=await crypto.subtle.importKey("raw",b64u.dec(k),EC,false,["verify"]);
     if(tk&&CTL.pk){ CTL.sk=await crypto.subtle.importKey("pkcs8",b64u.dec(tk),EC,false,["sign"]); CTL.tg=b64u.enc(await crypto.subtle.sign(SIG,CTL.sk,u8("t|"+ME.key+"|"+ME.id))); }
   }catch(e){ CTL.sk=null; } }
-async function onCtl(d){ if(!CTL.pk||!d||typeof d.sig!=="string") return; const ts=+d.ts||0; if(ts<=CTL.ts) return; const ch=[0,1,2].includes(d.ch)?d.ch:1, call=d.call?1:0;
-  let ok=false; try{ ok=await crypto.subtle.verify(SIG,CTL.pk,b64u.dec(d.sig),u8(`${ME.key}|${ch}|${call}|${ts}`)); }catch(e){} if(!ok||ts<=CTL.ts) return;
-  const was=CTL.call; CTL.ts=ts; CTL.ch=ch; CTL.call=call; applyCtl(!was&&call&&Date.now()-ts<180000); }
-async function sendCtl(ch,call){ if(!CTL.sk) return; const ts=Math.max(Date.now(),CTL.ts+1); const sig=b64u.enc(await crypto.subtle.sign(SIG,CTL.sk,u8(`${ME.key}|${ch}|${call}|${ts}`)));
-  CTL.ts=ts; CTL.ch=ch; CTL.call=call; applyCtl(false); const msg=JSON.stringify({t:"ctl",ch,call,ts,sig}); for(const c of net.clients) if(c&&c.connected) try{ c.publish(tCtl(),msg,{qos:0,retain:true}); }catch(e){} }
+async function adminUnlock(pw){ try{ const base=await crypto.subtle.importKey("raw",u8(pw),"PBKDF2",false,["deriveKey"]);
+    const key=await crypto.subtle.deriveKey({name:"PBKDF2",salt:b64u.dec(ADMIN.salt),iterations:310000,hash:"SHA-256"},base,{name:"AES-GCM",length:256},false,["decrypt"]);
+    const pt=await crypto.subtle.decrypt({name:"AES-GCM",iv:b64u.dec(ADMIN.iv)},key,b64u.dec(ADMIN.ct)); return JSON.parse(new TextDecoder().decode(pt)); }catch(e){ return null; } }
+const ctlStr=(ch,call,ts,mu,ann,v,ox)=>v===2?`${ME.key}|${ch}|${call}|${ts}|${mu.join(",")}|${ann}|${ox||""}`:`${ME.key}|${ch}|${call}|${ts}`;
+async function onCtl(d){ if(!CTL.pk||!d||typeof d.sig!=="string") return; const ts=+d.ts||0; if(ts<=CTL.ts) return; const ch=[0,1,2].includes(d.ch)?d.ch:1, call=d.call?1:0, v=d.v===2?2:1;
+  const mu=v===2&&Array.isArray(d.mu)?d.mu.filter(x=>typeof x==="string").slice(0,60):[], ann=v===2&&typeof d.ann==="string"?d.ann.slice(0,80):"", ox=v===2&&/^\d{4}$/.test(d.ox||"")?d.ox:"";
+  let ok=false; try{ ok=await crypto.subtle.verify(SIG,CTL.pk,b64u.dec(d.sig),u8(ctlStr(ch,call,ts,mu,ann,v,ox))); }catch(e){} if(!ok||ts<=CTL.ts) return;
+  const was=CTL.call, newAnn=v===2&&ann&&(ann!==CTL.ann||+d.at!==CTL.annTs)&&Date.now()-(+d.at||0)<90000; CTL.ts=ts; CTL.ch=ch; CTL.call=call; if(v===2){ CTL.mu=mu; CTL.ann=ann; CTL.annTs=+d.at||0; CTL.ox=ox; }
+  applyCtl(!was&&call&&Date.now()-ts<180000); if(newAnn&&!CTL.sk) showAnn(ann); }
+async function sendCtl(ch,call,extra){ if(!CTL.sk) return; const ts=Math.max(Date.now(),CTL.ts+1); if(extra&&extra.mu) CTL.mu=extra.mu; if(extra&&"ann" in extra){ CTL.ann=extra.ann; CTL.annTs=ts; } if(extra&&"ox" in extra) CTL.ox=extra.ox;
+  const v=(CTL.mu.length||CTL.ann||CTL.ox||!ME.cls.startsWith("OX-"))?2:1, o={t:"ctl",ch,call,ts};
+  if(v===2){ o.v=2; o.mu=CTL.mu; o.ann=CTL.ann; o.at=CTL.annTs; o.ox=CTL.ox; }
+  o.sig=b64u.enc(await crypto.subtle.sign(SIG,CTL.sk,u8(ctlStr(ch,call,ts,CTL.mu,CTL.ann,v,CTL.ox))));
+  CTL.ts=ts; CTL.ch=ch; CTL.call=call; applyCtl(false); const msg=JSON.stringify(o); for(const c of net.clients) if(c&&c.connected) try{ c.publish(tCtl(),msg,{qos:0,retain:true}); }catch(e){} }
 async function checkTeacher(id,p,tg){ if(!CTL.pk||typeof tg!=="string"||p.tgc===tg) return; p.tgc=tg; try{ p.tch=await crypto.subtle.verify(SIG,CTL.pk,b64u.dec(tg),u8("t|"+ME.key+"|"+id)); }catch(e){ p.tch=false; } }
-function chatMode(){ return CTL.sk?1:CTL.ch; }
+const isMuted=id=>CTL.mu.includes(id);
+function chatMode(){ return CTL.sk?1:isMuted(ME.id)?0:CTL.ch; }
 function applyCtl(newCall){ const md=chatMode(), inR=!!Room.id;
-  $("chatbar").hidden=!inR||md===0; $("chatOff").hidden=!inR||md!==0; $("chatForm").hidden=md===2; $("chatmini").textContent=md===2?"지금은 선생님이 이모지만 쓸 수 있게 했어요":"";
-  if(md<1) for(const p of Room.peers.values()) if(!p.tch&&p.say&&(md===0||!emojiOnly(p.say))) p.say="";
+  $("chatbar").hidden=!inR||md===0; $("chatOff").hidden=!inR||md!==0; $("chatOff").textContent=isMuted(ME.id)&&!CTL.sk?"🔇 선생님이 내 채팅을 잠시 막았어요":"🔇 선생님이 채팅을 잠시 껐어요";
+  $("chatForm").hidden=md===2; $("chatmini").textContent=md===2?"지금은 선생님이 이모지만 쓸 수 있게 했어요":"";
+  for(const [id,p] of Room.peers) if(!p.tch&&p.say&&(isMuted(id)||CTL.ch===0||(CTL.ch===2&&!emojiOnly(p.say)))) p.say="";
   if(md===0&&!CTL.sk) Room.me.say="";
-  if(CTL.sk){ $("tOn").setAttribute("aria-pressed",String(CTL.ch===1)); $("tEmo").setAttribute("aria-pressed",String(CTL.ch===2)); $("tOff").setAttribute("aria-pressed",String(CTL.ch===0)); $("tCall").setAttribute("aria-pressed",String(!!CTL.call)); }
+  if(CTL.sk){ $("tOn").setAttribute("aria-pressed",String(CTL.ch===1)); $("tEmo").setAttribute("aria-pressed",String(CTL.ch===2)); $("tOff").setAttribute("aria-pressed",String(CTL.ch===0)); $("tCall").setAttribute("aria-pressed",String(!!CTL.call)); $("tCall").textContent=ME.back||ME.cls.startsWith("OX-")?"📣 퀴즈방으로 부르기":CTL.call?"🔔 쉬는 시간 끝 (취소)":"🔔 쉬는 시간 끝"; $("tPeople").textContent=`👥 학생 ${peopleList().length}명`+(CTL.mu.length?` · 🔇${CTL.mu.length}`:""); $("tOx").textContent=CTL.ox?`🅾️ 퀴즈방 ${CTL.ox}`:"🅾️ 퀴즈방 코드"; $("tOx").hidden=ME.cls.startsWith("OX-"); }
   layoutHud(); if(newCall&&!CTL.sk) showCall(); }
+function showAnn(text){ const el=$("annBanner"); el.textContent="📣 선생님: "+text; el.hidden=false; el.style.opacity=1; blip(880,.2,.05); setTimeout(()=>blip(1175,.3,.05),150); clearTimeout(showAnn.t); showAnn.t=setTimeout(()=>{ el.style.opacity=0; showAnn.t=setTimeout(()=>el.hidden=true,500); },12000); }
+function peopleList(){ const now=performance.now(), L=[]; for(const [id,p] of pres) if(now-p.at<9000&&id!==ME.id) L.push({id,n:p.n||"친구",r:p.r}); return L.sort((a,b)=>a.n.localeCompare(b.n)); }
+function openPeople(){ const box=$("peopleGrid"); box.innerHTML=""; const L=peopleList();
+  if(!L.length){ const e=document.createElement("p"); e.className="dim"; e.textContent="아직 들어온 학생이 없어요."; box.append(e); }
+  for(const q of L){ const row=document.createElement("div"); row.className="prow"; const nm=document.createElement("b"); nm.textContent=q.n; const rm=document.createElement("span"); rm.textContent=ROOMS[q.r]?ROOMS[q.r].name:"(입장 중)";
+    const bt=document.createElement("button"); bt.type="button"; bt.className="pill ghost small"; const mu=isMuted(q.id); bt.textContent=mu?"🔈 채팅 풀기":"🔇 채팅 막기"; if(mu) row.classList.add("muted");
+    bt.onclick=async()=>{ const next=isMuted(q.id)?CTL.mu.filter(x=>x!==q.id):[...CTL.mu,q.id].slice(-60); await sendCtl(CTL.ch,CTL.call,{mu:next}); openPeople(); toast(isMuted(q.id)?`🔇 ${q.n}의 채팅을 막았어요`:`🔈 ${q.n}의 채팅을 풀었어요`); };
+    row.append(nm,rm,bt); box.append(row); }
+  $("unmuteAll").hidden=!CTL.mu.length; $("peopleBox").hidden=false; }
+function oxGoto(code){ const ci=Math.max(0,COLORS.indexOf(ME.c)); location.href=OX_URL+"?room="+code+"&n="+encodeURIComponent(ME.n)+"&col="+ci+"&auto=1"; }
+function openOx(admin){ $("oxErr").textContent=""; $("oxIn").value=CTL.ox||""; $("oxTitle").textContent=admin?"🅾️ 퀴즈방 코드 알려 주기":"🅾️❌ 퀴즈방 가기";
+  $("oxDesc").textContent=admin?"OX 퀴즈방(선생님 화면)의 4자리 코드를 넣으면, 학생들의 '퀴즈방 가기' 버튼이 그 방으로 바로 연결돼요. 비우면 연결을 지워요.":"선생님이 알려 준 퀴즈방 코드 4자리를 넣어요.";
+  $("oxGo").textContent=admin?"학생들에게 알려 주기":"퀴즈방으로 가기"; $("oxForm").dataset.admin=admin?"1":""; $("oxBox").hidden=false; $("oxIn").focus(); }
+$("oxClose").onclick=()=>$("oxBox").hidden=true;
+$("oxForm").onsubmit=async e=>{ e.preventDefault(); const v=$("oxIn").value.replace(/\D/g,"");
+  if($("oxForm").dataset.admin){ if(v&&v.length!==4){ $("oxErr").textContent="4자리 숫자로 넣어 주세요."; return; } await sendCtl(CTL.ch,CTL.call,{ox:v}); $("oxBox").hidden=true; toast(v?`🅾️ 퀴즈방 ${v}번을 학생들에게 알려 줬어요`:"퀴즈방 연결을 지웠어요"); return; }
+  if(v.length!==4){ $("oxErr").textContent="퀴즈방 코드는 4자리 숫자예요."; return; } oxGoto(v); };
+$("tOx").onclick=()=>openOx(true);
+function quizBtn(){ if(CTL.sk){ window.open(OX_URL,"_blank"); return; } if(CTL.ox) oxGoto(CTL.ox); else openOx(false); }
+$("tPeople").onclick=openPeople; $("peopleClose").onclick=()=>$("peopleBox").hidden=true; $("unmuteAll").onclick=async()=>{ await sendCtl(CTL.ch,CTL.call,{mu:[]}); openPeople(); };
+$("tAnn").onclick=()=>{ $("annIn").value=""; $("annBox").hidden=false; $("annIn").focus(); }; $("annClose").onclick=()=>$("annBox").hidden=true;
+$("annForm").onsubmit=async e=>{ e.preventDefault(); const t=clean($("annIn").value,60); if(!t) return; await sendCtl(CTL.ch,CTL.call,{ann:t}); $("annBox").hidden=true; toast("📣 공지를 보냈어요"); };
+for(const b of $("annBox").querySelectorAll("[data-ann]")) b.onclick=()=>{ $("annIn").value=b.dataset.ann; };
 let callT=0;
 function showCall(){ const box=$("callBox"), go=$("callGo"); box.hidden=false; clearInterval(callT);
   if(ME.back){ let n=10; const upd=()=>$("callMsg").textContent=`쉬는 시간 끝! ${n}초 뒤에 퀴즈방으로 돌아가요.`; upd(); go.textContent="지금 돌아가기"; go.onclick=goBack; callT=setInterval(()=>{ n--; upd(); if(n<=0){ clearInterval(callT); goBack(); } },1000); }
@@ -1159,8 +1231,8 @@ function enterRoom(r){
   ["menuBox","roomsBox","seatBox","dexBox","mfBox"].forEach(i=>$(i).hidden=true); $("fishCard").hidden=true; $("piano").hidden=true;
   $("intro").hidden=true; document.body.classList.add("inroom");
   ["topL","topR","acts","mini"].forEach(i=>$(i).hidden=false); $("roomName").textContent=r==="cafe"&&ME.cls.startsWith("OX-")?`☕ 카페 · OX ${ME.cls.slice(3)}방`:r==="cafe"&&ME.cls!=="all"?`☕ 카페 · ${ME.cls}`:ROOMS[r].name;
-  $("tbar").hidden=!CTL.sk; $("qrBtn").hidden=!(r==="cafe"&&!ME.back);
-  const bb=$("backBtn"); bb.textContent=r!=="cafe"?"← 카페로":ME.back?"← OX 퀴즈방":CTL.sk?"":"✏️ 나가기"; bb.hidden=!bb.textContent;
+  $("tbar").hidden=!CTL.sk; document.body.classList.toggle("admin",!!CTL.sk); $("qrBtn").hidden=!(r==="cafe"&&!ME.back);
+  const bb=$("backBtn"); bb.textContent=r!=="cafe"?"← 카페로":ME.back?"← OX 퀴즈방":"🅾️❌ 퀴즈방"; bb.hidden=!bb.textContent;
   const q=$("quick"); q.innerHTML=""; ROOMS[r].quick.forEach(t=>{ const b=document.createElement("button"); b.type="button"; b.textContent=t; b.onclick=()=>sendChat(t); q.append(b); });
   if(r==="sea") Sea.setOwnFish(ME.id,ME.n,MYF);
   buildActs(); sub(tRoom(r)); net.handler=onRoomMsg; ambient(r); if(r==="dance") Dance.music(); if(r==="zen") Zen.music(); netWarn(net.warn||"");
@@ -1171,6 +1243,7 @@ function enterRoom(r){
 function leaveRoom(){ if(!Room.id) return;
   if(Room.id!=="cafe"){ enterRoom("cafe"); return; }
   if(ME.back){ goBack(); return; }
+  quizBtn(); return;
   pub(tRoom(Room.id),{t:"bye"}); unsub(tRoom(Room.id)); Room.id=null; stopAmbient(); document.body.classList.remove("inroom");
   ["topL","topR","chatbar","chatOff","acts","hint","net","mini","ctx","piano","tbar"].forEach(i=>$(i).hidden=true); unsub(tPres()); $("intro").hidden=false; }
 function goBack(){ if(Room.id) pub(tRoom(Room.id),{t:"bye"}); if(ME.back) location.href=ME.back; }
@@ -1184,7 +1257,7 @@ function onRoomMsg(t,d){
     p.n=clean(d.n,8)||"친구"; p.c=COLORS.includes(d.c)?d.c:"#e9ecef"; p.tx=x; p.ty=y; p.m=typeof d.m==="number"?clamp(d.m,-1,1.2):-1; p.seen=performance.now();
     const dk=+d.dk; p.dk=dk>=0&&dk<MENU.length?dk:-1; const dn=+d.dn; p.dn=dn>=1&&dn<=4?dn:0; const ps=+d.ps; const ps2=ps>=1&&ps<=4?ps:0; if(ps2!==p.ps){ p.ps=ps2; p.psT=performance.now(); } p.g=d.g===1?1:0; if(d.tg) checkTeacher(d.id,p,d.tg);
     const st=+d.st; p.st=st>=0&&st<M.seats.length?st:-1; if(p.st>=0){ const s=M.seats[p.st]; p.tx=s.x; p.ty=s.y; p.dir=s.dir; }
-    if(d.sid&&d.sid!==p.sid&&d.say){ p.sid=d.sid; const s=clean(d.say), md=chatMode(); if(p.tch||md===1||(md===2&&emojiOnly(s))){ p.say=s; p.sayT=performance.now(); } }
+    if(d.sid&&d.sid!==p.sid&&d.say){ p.sid=d.sid; const s=clean(d.say), md=chatMode(); const pm=CTL.ch; if(p.tch||(!isMuted(d.id)&&(pm===1||(pm===2&&emojiOnly(s))))){ p.say=s; p.sayT=performance.now(); } }
     M.sync(d,p); return; }
   if(d.t==="e"){ const p=Room.peers.get(d.id); if(p) p.seen=performance.now(); M.ev(d); }
 }
@@ -1215,7 +1288,7 @@ addEventListener("pointerup",()=>{ if(drawing&&Room.drawPts.length){ pub(tRoom("
 addEventListener("keydown",e=>{ if(!Room.id||e.target.tagName==="INPUT") return;
   if(Room.id==="cafe"&&!$("piano").hidden&&/^[0-9]$/.test(e.key)){ pianoKey((+e.key+9)%10); return; }
   if((e.key==="e"||e.key==="E"||e.key===" ")&&!$("ctx").hidden){ e.preventDefault(); $("ctx").click(); return; }
-  if(e.key==="Escape"){ ["menuBox","roomsBox","qrbox","seatBox","dexBox","mfBox","charBox"].forEach(i=>$(i).hidden=true); return; }
+  if(e.key==="Escape"){ ["menuBox","roomsBox","qrbox","seatBox","dexBox","mfBox","charBox","annBox","peopleBox","oxBox"].forEach(i=>$(i).hidden=true); return; }
   Room.keys[e.key.length===1?e.key.toLowerCase():e.key]=true; if(e.key.startsWith("Arrow")) e.preventDefault(); });
 addEventListener("keyup",e=>{ Room.keys[e.key.length===1?e.key.toLowerCase():e.key]=false; });
 addEventListener("blur",()=>{ Room.keys={}; });
@@ -1232,7 +1305,7 @@ $("chatForm").onsubmit=e=>{ e.preventDefault(); if(sendChat($("chatIn").value)) 
 const pres=new Map();
 function presence(){ if(!ME.key) return; pub(tPres(),{t:"p",n:ME.n,r:Room.id||""}); }
 setInterval(presence,3000);
-function onPresence(d){ if(d.t!=="p") return; pres.set(d.id,{r:String(d.r||""),at:performance.now()}); }
+function onPresence(d){ if(d.t!=="p") return; pres.set(d.id,{r:String(d.r||""),n:clean(d.n,8),at:performance.now()}); if(CTL.sk&&!$("tbar").hidden) $("tPeople").textContent=`👥 학생 ${peopleList().length}명`+(CTL.mu.length?` · 🔇${CTL.mu.length}`:""); }
 
 /* ================= 시작 ================= */
 const QS=new URLSearchParams(location.search), HS=new URLSearchParams(location.hash.slice(1));
@@ -1242,6 +1315,7 @@ if(QS.get("n")) ME.n=clean(QS.get("n"),8)||ME.n;
 if(QS.get("col")!==null){ const ci=parseInt(QS.get("col"),10); if(ci>=0&&ci<COLORS.length) ME.c=COLORS[ci]; }
 const ACC_H="1tkrjjr", accOK=a=>h32("aihero-acc:"+String(a||"").trim())===ACC_H;
 const keyOf=cls=>cls.startsWith("OX-")?h32("lounge:"+cls.toLowerCase().replace(/\s+/g,"")):h32("lounge:"+ME.acc.trim()+":"+cls.toLowerCase().replace(/\s+/g,""));
+let ADMIN_SK=null;
 function saveMe(){ try{ localStorage.setItem("lounge-me",JSON.stringify({n:ME.n,c:ME.c,g:ME.g,cls:ME.back||ME.cls==="all"?"":ME.cls})); if(ME.acc&&accOK(ME.acc)) localStorage.setItem("lounge-acc",ME.acc); }catch(e){} }
 async function start(cls){
   if(ME.key){ unsub(tPres()); unsub(tCtl()); }
@@ -1249,7 +1323,8 @@ async function start(cls){
   saveMe();
   let tk=HS.get("tk"); try{ if(tk) sessionStorage.setItem("lounge-tk-"+ME.key,tk); else tk=sessionStorage.getItem("lounge-tk-"+ME.key); }catch(e){}
   if(HS.get("tk")) history.replaceState(null,"",location.pathname+location.search);
-  await ctlInit(QS.get("k"),tk);
+  const ox=cls.startsWith("OX-"); if(!ox&&!tk){ try{ ADMIN_SK=ADMIN_SK||sessionStorage.getItem("lounge-admin"); }catch(e){} tk=ADMIN_SK; }
+  await ctlInit(ox?QS.get("k"):ADMIN.pk,tk);
   audio(); netStart(); net.handler=onRoomMsg; sub(tPres()); sub(tCtl());
   enterRoom("cafe");
   if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ for(const id in MAPS) if(MAPS[id].bg) buildMap(MAPS[id]); });
@@ -1262,7 +1337,11 @@ function colorBtns(box,cur,onPick){ box.innerHTML=""; COLORS.forEach((c,i)=>{ co
   // 반 나누기 기능: 지금은 꺼 둠. 켜려면 CLASS_MODE=true 로 바꾸거나 주소 끝에 &class=on 을 붙이세요.
   const CLASS_MODE=false, classOn=CLASS_MODE||QS.get("class")==="on"; $("clsRow").hidden=!classOn;
   $("acc").value=ME.acc; $("cls").value=classOn?(qc&&!qc.startsWith("OX-")?qc:(ME.cls==="all"?"":ME.cls)):""; $("nick").value=ME.n;
-  $("introForm").onsubmit=e=>{ e.preventDefault(); const acc=$("acc").value.trim(), cls=(classOn?$("cls").value.trim().slice(0,16):"")||"all", n=clean($("nick").value,8);
+  $("adminToggle").onclick=()=>{ const on=$("adminRow").hidden; $("adminRow").hidden=!on; $("adminToggle").textContent=on?"↩ 학생으로 들어가기":"🔐 관리자 접속"; $("acc").closest("div").hidden=on; $("introGo").textContent=on?"관리자로 들어가기":"카페 들어가기"; if(on){ if(!$("nick").value) $("nick").value="선생님"; $("adminPw").focus(); } };
+  $("introForm").onsubmit=async e=>{ e.preventDefault();
+    if(!$("adminRow").hidden){ const n=clean($("nick").value,8)||"선생님"; $("introErr").textContent="확인 중…"; const r=await adminUnlock($("adminPw").value); if(!r){ $("introErr").textContent="관리자 비밀번호가 맞지 않아요."; return; }
+      $("introErr").textContent=""; ME.acc=r.acc; ME.n=n; ADMIN_SK=r.sk; try{ sessionStorage.setItem("lounge-admin",r.sk); }catch(e){} start(classOn&&$("cls").value.trim()?$("cls").value.trim().slice(0,16):"all"); return; }
+    const acc=$("acc").value.trim(), cls=(classOn?$("cls").value.trim().slice(0,16):"")||"all", n=clean($("nick").value,8);
     if(!accOK(acc)){ $("introErr").textContent="접속 코드가 맞지 않아요. 선생님께 다시 확인해 주세요."; $("acc").focus(); return; }
     if(cls.toUpperCase().startsWith("OX-")){ $("introErr").textContent="반 이름에는 OX- 를 쓸 수 없어요."; return; }
     if(!n){ $("introErr").textContent="별명을 넣어 주세요."; return; }

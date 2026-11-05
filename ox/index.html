@@ -688,6 +688,7 @@ function setupJoin(){
   try{ const n=localStorage.getItem("aiox-name"); if(n) $("nick").value=n; }catch(e){}
   ($("code").value?$("nick"):$("code")).focus();
   $("joinForm").onsubmit=e=>{ e.preventDefault(); joinRoom(); };
+  const qn=qs.get("n"); if(qn) $("nick").value=String(qn).replace(/[<>]/g,"").slice(0,8);
   if(qs.get("auto")&&$("code").value.length===4&&$("nick").value.trim()) joinRoom();
 }
 function joinRoom(){
