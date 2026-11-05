@@ -64,6 +64,15 @@ input[type=text]{width:100%;font:inherit;font-size:18px;padding:12px 14px;border
 #tbar{max-width:min(720px,calc(100% - 360px));flex-wrap:wrap;justify-content:center;top:max(62px,calc(env(safe-area-inset-top) + 56px))!important}
 body.admin #hint{top:max(150px,calc(env(safe-area-inset-top) + 144px))}
 @media (max-width:900px){#tbar{max-width:calc(100% - 24px)}}
+#adminPanel{left:max(12px,env(safe-area-inset-left));top:max(64px,calc(env(safe-area-inset-top) + 58px));width:240px;border-radius:16px;padding:10px;font-size:13px;z-index:6}
+#adminPanel .apHead{display:flex;justify-content:space-between;align-items:center;gap:8px}#adminPanel .apHead b{font-size:15px;color:var(--sun2)}
+#adminPanel .apHead button{border:1px solid var(--edge);background:rgba(255,255,255,.08);border-radius:999px;padding:3px 10px;font-size:12px}
+#apList{display:flex;flex-direction:column;gap:3px;margin-top:8px;max-height:30vh;overflow:auto}.apRow{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;padding:4px 6px;border-radius:8px;background:rgba(255,255,255,.06)}
+.apRow span{color:var(--dim);font-size:12px}.apRow small{color:var(--dim);font-size:11px}.apRow.mu{background:rgba(255,100,100,.18)}.apEmpty{color:var(--dim);padding:4px}
+.apSub{margin-top:8px;font-size:12px;color:var(--dim);border-top:1px solid var(--edge);padding-top:6px}#apLogs{max-height:18vh;overflow:auto}.apLog{font-size:12px;padding:2px 0}.apLog.in{color:#b8f5c4}.apLog.out{color:#ffb4a8}
+#adminPanel.fold #apBody{display:none}#adminPanel.fold{width:auto}
+
+@media (max-width:700px){#adminPanel{width:200px;top:auto;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 130px)}}
 #breath{left:50%;top:50%;transform:translate(-50%,-62%);width:200px;height:200px;display:grid;place-items:center;pointer-events:none}
 #breath .bc{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,rgba(255,236,200,.55),rgba(255,214,160,.18) 60%,rgba(255,214,160,0) 72%);border:2px solid rgba(255,240,210,.7);transition:transform .12s linear}
 #breath .bt{position:relative;font-weight:700;font-size:18px;color:#5a3d22;text-shadow:0 1px 6px rgba(255,255,255,.9)}
@@ -182,6 +191,8 @@ body.admin #hint{top:max(150px,calc(env(safe-area-inset-top) + 144px))}
 <div class="hud glass" id="hint" hidden></div>
 <div class="hud glass" id="net" hidden></div>
 <div class="hud" id="acts" hidden></div>
+<div class="hud glass" id="adminPanel" hidden><div class="apHead"><b id="apCount">👥 지금 0명</b><button type="button" id="apFold" aria-label="접속자 패널 접기/펴기">접기</button></div>
+  <div id="apBody"><div id="apList"></div><div class="apSub">입장 기록</div><div id="apLogs"><div id="apLog"></div></div></div></div>
 <canvas class="hud" id="mini" hidden aria-label="카페 지도 (누르면 그쪽으로 걸어가요)"></canvas>
 <button class="hud" id="ctx" hidden></button>
 <div class="hud glass" id="piano" hidden></div>
@@ -1314,7 +1325,7 @@ function applyCtl(newCall){ const md=chatMode(), inR=!!Room.id;
   if(CTL.sk){ $("tOn").setAttribute("aria-pressed",String(CTL.ch===1)); $("tEmo").setAttribute("aria-pressed",String(CTL.ch===2)); $("tOff").setAttribute("aria-pressed",String(CTL.ch===0)); $("tCall").setAttribute("aria-pressed",String(!!CTL.call)); $("tCall").textContent=ME.back||ME.cls.startsWith("OX-")?"📣 퀴즈방으로 부르기":CTL.call?"🔔 쉬는 시간 끝 (취소)":"🔔 쉬는 시간 끝"; $("tPeople").textContent=`👥 학생 ${peopleList().length}명`+(CTL.mu.length?` · 🔇${CTL.mu.length}`:""); $("tOx").textContent=CTL.ox?`🅾️ 퀴즈방 ${CTL.ox}`:"🅾️ 퀴즈방 코드"; $("tOx").hidden=ME.cls.startsWith("OX-"); }
   layoutHud(); if(newCall&&!CTL.sk) showCall(); }
 function showAnn(text){ const el=$("annBanner"); el.textContent="📣 선생님: "+text; el.hidden=false; el.style.opacity=1; blip(880,.2,.05); setTimeout(()=>blip(1175,.3,.05),150); clearTimeout(showAnn.t); showAnn.t=setTimeout(()=>{ el.style.opacity=0; showAnn.t=setTimeout(()=>el.hidden=true,500); },12000); }
-function peopleList(){ const now=performance.now(), L=[]; for(const [id,p] of pres) if(now-p.at<9000&&id!==ME.id) L.push({id,n:p.n||"친구",r:p.r}); return L.sort((a,b)=>a.n.localeCompare(b.n)); }
+function peopleList(){ const now=performance.now(), L=[]; for(const [id,p] of pres) if(!p.gone&&now-p.at<10000&&id!==ME.id) L.push({id,n:p.n||"친구",r:p.r}); return L.sort((a,b)=>a.n.localeCompare(b.n)); }
 function openPeople(){ const box=$("peopleGrid"); box.innerHTML=""; const L=peopleList();
   if(!L.length){ const e=document.createElement("p"); e.className="dim"; e.textContent="아직 나 말고 들어온 사람이 없어요."; box.append(e); }
   for(const q of L){ const row=document.createElement("div"); row.className="prow"; const nm=document.createElement("b"); nm.textContent=q.n; const rm=document.createElement("span"); rm.textContent=ROOMS[q.r]?ROOMS[q.r].name:"(입장 중)";
@@ -1334,7 +1345,8 @@ $("oxForm").onsubmit=async e=>{ e.preventDefault(); const v=$("oxIn").value.repl
   if(v.length!==4){ $("oxErr").textContent="퀴즈방 코드는 4자리 숫자예요."; return; } oxGoto(v); };
 $("tOx").onclick=()=>openOx(true);
 function quizBtn(){ if(CTL.sk){ window.open(OX_URL,"_blank"); return; } if(CTL.ox) oxGoto(CTL.ox); else openOx(false); }
-$("tPeople").onclick=openPeople; $("peopleClose").onclick=()=>$("peopleBox").hidden=true; $("unmuteAll").onclick=async()=>{ await sendCtl(CTL.ch,CTL.call,{mu:[]}); openPeople(); };
+$("tPeople").onclick=openPeople; $("apFold").onclick=()=>{ const el=$("adminPanel"); el.classList.toggle("fold"); $("apFold").textContent=el.classList.contains("fold")?"펴기":"접기"; try{ localStorage.setItem("lounge-apfold",el.classList.contains("fold")?"1":"0"); }catch(e){} renderAdminPanel(); };
+try{ if(localStorage.getItem("lounge-apfold")==="1"||innerWidth<700){ $("adminPanel").classList.add("fold"); $("apFold").textContent="펴기"; } }catch(e){} $("peopleClose").onclick=()=>$("peopleBox").hidden=true; $("unmuteAll").onclick=async()=>{ await sendCtl(CTL.ch,CTL.call,{mu:[]}); openPeople(); };
 $("tAnn").onclick=()=>{ $("annIn").value=""; $("annBox").hidden=false; $("annIn").focus(); }; $("annClose").onclick=()=>$("annBox").hidden=true;
 $("annForm").onsubmit=async e=>{ e.preventDefault(); const t=clean($("annIn").value,60); if(!t) return; await sendCtl(CTL.ch,CTL.call,{ann:t}); $("annBox").hidden=true; toast("📣 공지를 보냈어요"); };
 for(const b of $("annBox").querySelectorAll("[data-ann]")) b.onclick=()=>{ $("annIn").value=b.dataset.ann; };
@@ -1358,7 +1370,7 @@ function enterRoom(r){
   ["menuBox","roomsBox","seatBox","dexBox","mfBox","danceBox"].forEach(i=>$(i).hidden=true); $("fishCard").hidden=true; $("piano").hidden=true;
   $("intro").hidden=true; document.body.classList.add("inroom");
   ["topL","topR","acts","mini"].forEach(i=>$(i).hidden=false); $("roomName").textContent=r==="cafe"&&ME.cls.startsWith("OX-")?`☕ 카페 · OX ${ME.cls.slice(3)}방`:r==="cafe"&&ME.cls!=="all"?`☕ 카페 · ${ME.cls}`:ROOMS[r].name;
-  $("tbar").hidden=!CTL.sk; document.body.classList.toggle("admin",!!CTL.sk); $("qrBtn").hidden=!(r==="cafe"&&!ME.back);
+  $("tbar").hidden=!CTL.sk; document.body.classList.toggle("admin",!!CTL.sk); renderAdminPanel(); $("qrBtn").hidden=!(r==="cafe"&&!ME.back);
   const bb=$("backBtn"); bb.textContent=r!=="cafe"?"← 카페로":ME.back?"← OX 퀴즈방":"🅾️❌ 퀴즈방"; bb.hidden=!bb.textContent;
   const q=$("quick"); q.innerHTML=""; ROOMS[r].quick.forEach(t=>{ const b=document.createElement("button"); b.type="button"; b.textContent=t; b.onclick=()=>sendChat(t); q.append(b); });
   if(r==="sea") Sea.setOwnFish(ME.id,ME.n,MYF);
@@ -1435,7 +1447,20 @@ $("chatForm").onsubmit=e=>{ e.preventDefault(); if(sendChat($("chatIn").value)) 
 const pres=new Map();
 function presence(){ if(!ME.key) return; pub(tPres(),{t:"p",n:ME.n,r:Room.id||""}); }
 setInterval(presence,3000);
-function onPresence(d){ if(d.t!=="p") return; if(CTL.sk&&!pres.has(d.id)&&d.id!==ME.id&&performance.now()-(ME.startT||0)>4000){ blip(988,.18,.08); setTimeout(()=>blip(1319,.35,.07),140); toast(`👋 ${clean(d.n,8)||"친구"}님이 들어왔어요`,1800); } pres.set(d.id,{r:String(d.r||""),n:clean(d.n,8),at:performance.now()}); if(CTL.sk&&!$("tbar").hidden) $("tPeople").textContent=`👥 학생 ${peopleList().length}명`+(CTL.mu.length?` · 🔇${CTL.mu.length}`:""); }
+const joinLog=[];
+function hhmm(){ const d=new Date(); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
+function logPeople(n,txt){ joinLog.unshift({t:hhmm(),n,txt}); if(joinLog.length>60) joinLog.pop(); renderAdminPanel(); }
+function onPresence(d){ if(d.t!=="p"||d.id===ME.id) return; const prev=pres.get(d.id), isNew=!prev||prev.gone, n=clean(d.n,8)||"친구", r=String(d.r||"");
+  if(isNew&&CTL.sk){ const fresh=performance.now()-(ME.startT||0)>4000; logPeople(n,fresh?"들어옴":"접속 중"); if(fresh){ blip(988,.18,.08); setTimeout(()=>blip(1319,.35,.07),140); toast(`👋 ${n}님이 들어왔어요`,1800); } }
+  else if(prev&&CTL.sk&&prev.r!==r&&ROOMS[r]) prev.moved=performance.now();
+  pres.set(d.id,{r,n,at:performance.now(),since:isNew?Date.now():prev.since}); if(CTL.sk&&!$("tbar").hidden) $("tPeople").textContent=`👥 학생 ${peopleList().length}명`+(CTL.mu.length?` · 🔇${CTL.mu.length}`:""); }
+setInterval(()=>{ const now=performance.now(); for(const [id,p] of pres){ if(!p.gone&&now-p.at>10000){ p.gone=true; if(CTL.sk) logPeople(p.n,"나감"); } } if(CTL.sk) renderAdminPanel(); },2000);
+function renderAdminPanel(){ const el=$("adminPanel"); if(!el||!CTL.sk||!Room.id){ if(el) el.hidden=true; return; } el.hidden=false; if(el.classList.contains("fold")){ $("apCount").textContent=`👥 ${peopleList().length}명`; return; }
+  const L=peopleList(), cnt={}; for(const q of L) cnt[q.r]=(cnt[q.r]||0)+1; $("apCount").textContent=`👥 지금 ${L.length}명`;
+  const box=$("apList"); box.innerHTML=""; if(!L.length){ const e=document.createElement("div"); e.className="apEmpty"; e.textContent="아직 아무도 없어요"; box.append(e); }
+  for(const q of L){ const row=document.createElement("div"); row.className="apRow"+(isMuted(q.id)?" mu":""); const nm=document.createElement("b"); nm.textContent=(isMuted(q.id)?"🔇 ":"")+q.n; const rm=document.createElement("span"); rm.textContent=ROOMS[q.r]?ROOMS[q.r].name.replace("쉬는 시간 ",""):"입장 중"; const p0=pres.get(q.id), mins=p0&&p0.since?Math.floor((Date.now()-p0.since)/60000):0; const tm=document.createElement("small"); tm.textContent=mins?`${mins}분`:"방금"; row.append(nm,rm,tm); box.append(row); }
+  const lg=$("apLog"); lg.innerHTML=""; for(const e of joinLog.slice(0,30)){ const row=document.createElement("div"); row.className="apLog "+(e.txt==="나감"?"out":"in"); row.textContent=`${e.t}  ${e.n} ${e.txt==="나감"?"← 나감":e.txt==="들어옴"?"→ 들어옴":"(이미 접속)"}`; lg.append(row); } }
+
 
 /* ================= 시작 ================= */
 const QS=new URLSearchParams(location.search), HS=new URLSearchParams(location.hash.slice(1));
