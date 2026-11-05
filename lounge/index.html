@@ -118,15 +118,15 @@ input[type=text]{width:100%;font:inherit;font-size:18px;padding:12px 14px;border
   <form class="card glass" id="introForm" autocomplete="off">
     <p class="dim" style="font-size:14px">인공지능 히어로 · 쉬는 시간</p>
     <h1>쉬는 시간 카페</h1>
-    <p class="dim">우리 반 친구들끼리만 만나는 카페예요. 돌아다니며 음료를 주문하고, 피아노를 치고, 안쪽 문으로 불멍·물멍·비 오는 창가·명상 쉼터·댄스홀에 들어가 놀아요.</p>
+    <p class="dim">접속 코드를 아는 사람끼리 만나는 쉬는 시간 카페예요. 돌아다니며 음료를 주문하고, 피아노를 치고, 안쪽 문으로 불멍·물멍·비 오는 창가·명상 쉼터·댄스홀에 들어가 놀아요.</p>
     <div><label for="acc">접속 코드 (선생님이 알려 준 숫자)</label><input type="text" id="acc" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="숫자 5자리"></div>
-    <div><label for="cls">반 이름 (선택 · 우리 반끼리만 만나고 싶을 때)</label><input type="text" id="cls" maxlength="16" placeholder="비워 두면 모두 함께 만나요"></div>
+    <div id="clsRow" hidden><label for="cls">반 이름 (선택 · 우리 반끼리만 만나고 싶을 때)</label><input type="text" id="cls" maxlength="16" placeholder="비워 두면 모두 함께 만나요"></div>
     <div><label for="nick">별명 (실명 말고!)</label><input type="text" id="nick" maxlength="8" placeholder="예: 졸린판다"></div>
     <div><label>내 캐릭터</label><div class="swatches" id="gsel"></div></div>
     <div><label>내 캐릭터 색</label><div class="swatches" id="sws"></div></div>
     <div class="err" id="introErr"></div>
     <button class="pill sun" type="submit">카페 들어가기</button>
-    <p class="note">접속 코드를 아는 사람만 들어올 수 있어요. 반 이름을 넣으면 같은 반 이름끼리만 서로 보여요. 공개 서버를 거쳐 전달되니 이름·학교·전화번호 같은 개인정보는 쓰지 마세요.</p>
+    <p class="note">접속 코드를 아는 사람만 들어올 수 있어요. 공개 서버를 거쳐 전달되니 이름·학교·전화번호 같은 개인정보는 쓰지 마세요.</p>
   </form>
 </section>
 
@@ -1259,20 +1259,22 @@ function colorBtns(box,cur,onPick){ box.innerHTML=""; COLORS.forEach((c,i)=>{ co
 (function initIntro(){
   colorBtns($("sws"),ME.c,c=>ME.c=c); genderBtns($("gsel"),ME.g,g=>ME.g=g);
   const qc=QS.get("c"), qa=QS.get("a"); if(qa&&accOK(qa)) ME.acc=qa.trim();
-  $("acc").value=ME.acc; $("cls").value=qc&&!qc.startsWith("OX-")?qc:ME.cls; $("nick").value=ME.n;
-  $("introForm").onsubmit=e=>{ e.preventDefault(); const acc=$("acc").value.trim(), cls=$("cls").value.trim().slice(0,16)||"all", n=clean($("nick").value,8);
+  // 반 나누기 기능: 지금은 꺼 둠. 켜려면 CLASS_MODE=true 로 바꾸거나 주소 끝에 &class=on 을 붙이세요.
+  const CLASS_MODE=false, classOn=CLASS_MODE||QS.get("class")==="on"; $("clsRow").hidden=!classOn;
+  $("acc").value=ME.acc; $("cls").value=classOn?(qc&&!qc.startsWith("OX-")?qc:(ME.cls==="all"?"":ME.cls)):""; $("nick").value=ME.n;
+  $("introForm").onsubmit=e=>{ e.preventDefault(); const acc=$("acc").value.trim(), cls=(classOn?$("cls").value.trim().slice(0,16):"")||"all", n=clean($("nick").value,8);
     if(!accOK(acc)){ $("introErr").textContent="접속 코드가 맞지 않아요. 선생님께 다시 확인해 주세요."; $("acc").focus(); return; }
     if(cls.toUpperCase().startsWith("OX-")){ $("introErr").textContent="반 이름에는 OX- 를 쓸 수 없어요."; return; }
     if(!n){ $("introErr").textContent="별명을 넣어 주세요."; return; }
     ME.acc=acc; ME.n=n; start(cls); };
   if(qc&&qc.startsWith("OX-")&&QS.get("k")&&ME.n&&QS.get("n")) start(qc.slice(0,16));
-  else { $("intro").hidden=false; (!$("acc").value?$("acc"):!$("nick").value?$("nick"):$("cls")).focus({preventScroll:true}); }
+  else { $("intro").hidden=false; (!$("acc").value?$("acc"):$("nick")).focus({preventScroll:true}); }
 })();
 $("charBtn").onclick=()=>{ let g=ME.g, c=ME.c; genderBtns($("gsel2"),g,v=>g=v); colorBtns($("sws2"),c,v=>c=v); $("charOk").onclick=()=>{ ME.g=g; ME.c=c; saveMe(); Room.dirty=true; sendState(false); $("charBox").hidden=true; toast("🎨 캐릭터를 바꿨어요!"); }; $("charBox").hidden=false; };
 $("charClose").onclick=()=>$("charBox").hidden=true;
 $("backBtn").onclick=leaveRoom;
 $("sndBtn").onclick=()=>{ audio(); setSound(!snd.on); }; setSound(snd.on);
-$("qrBtn").onclick=()=>{ const url=location.origin+location.pathname+"?a="+encodeURIComponent(ME.acc)+(ME.cls!=="all"?"&c="+encodeURIComponent(ME.cls):""); $("qrUrl").textContent=url; $("qrCode").textContent=ME.cls!=="all"?"반: "+ME.cls:"모두 함께";
+$("qrBtn").onclick=()=>{ const url=location.origin+location.pathname+"?a="+encodeURIComponent(ME.acc)+(ME.cls!=="all"?"&class=on&c="+encodeURIComponent(ME.cls):""); $("qrUrl").textContent=url; $("qrCode").textContent=ME.cls!=="all"?"반: "+ME.cls:"모두 함께";
   const q=$("qr"); q.innerHTML=""; try{ const qq=qrcode(0,"M"); qq.addData(url,"Byte"); qq.make(); q.innerHTML=qq.createSvgTag({cellSize:6,margin:2,scalable:true}); }catch(e){ const im=new Image(); im.alt="QR"; im.style.width="100%"; im.src="https://api.qrserver.com/v1/create-qr-code/?size=400x400&data="+encodeURIComponent(url); q.append(im); }
   $("qrbox").hidden=false; };
 $("qrClose").onclick=()=>$("qrbox").hidden=true;
