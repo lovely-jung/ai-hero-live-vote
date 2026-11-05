@@ -84,7 +84,7 @@ body.admin #hint{top:max(150px,calc(env(safe-area-inset-top) + 144px))}
 #topL{left:max(12px,env(safe-area-inset-left));top:max(12px,env(safe-area-inset-top));display:flex;gap:8px;align-items:center;border-radius:999px;padding:6px 8px 6px 6px}
 #topL b{font-family:var(--hand);font-size:24px;padding-right:6px}
 #topR{right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));display:flex;gap:8px;align-items:center}
-#who{border-radius:999px;padding:8px 14px;font-size:14px;font-weight:700}
+#who{border-radius:999px;padding:8px 14px;font-size:14px;font-weight:700;border:1px solid var(--edge)}
 #acts{right:max(12px,env(safe-area-inset-right));top:max(66px,calc(env(safe-area-inset-top) + 60px));display:flex;flex-direction:column;align-items:flex-end;gap:8px}
 #acts button{border-radius:999px;padding:9px 16px;font-weight:700;font-size:15px;border:1px solid var(--edge);background:rgba(32,22,18,.66);backdrop-filter:blur(10px)}
 #acts button.on,#acts button.hot{background:var(--sun);color:#2b1606}
@@ -152,7 +152,7 @@ body.admin #hint{top:max(150px,calc(env(safe-area-inset-top) + 144px))}
   <div class="swatches"><button type="button" class="pill ghost small" data-ann="5분 뒤 수업 시작해요!">⏰ 5분 뒤 시작</button><button type="button" class="pill ghost small" data-ann="바른 말 고운 말을 써요 🙂">🙂 바른 말</button><button type="button" class="pill ghost small" data-ann="이제 자리로 돌아와요!">🪑 자리로</button></div>
   <button class="pill sun" type="submit">공지 보내기</button></form></div>
 <div class="modal" id="peopleBox" hidden><div class="card glass" style="width:min(520px,100%)">
-  <div class="mtitle"><div><h2>👥 지금 들어온 학생</h2><p class="dim" style="font-size:14px">어느 방에 있는지 보이고, 학생별로 채팅을 막을 수 있어요.</p></div><button class="pill ghost small" id="peopleClose">닫기</button></div>
+  <div class="mtitle"><div><h2 id="peopleTitle">👥 지금 들어온 학생</h2><p class="dim" style="font-size:14px" id="peopleDesc"></p></div><button class="pill ghost small" id="peopleClose">닫기</button></div>
   <div id="peopleGrid" class="plist"></div><button class="pill ghost small" id="unmuteAll" type="button" hidden>🔈 모두 채팅 풀기</button></div></div>
 <div class="modal" id="charBox" hidden><div class="card glass" style="width:min(460px,100%)">
   <div class="mtitle"><h2>🎨 내 캐릭터</h2><button class="pill ghost small" id="charClose">닫기</button></div>
@@ -174,7 +174,7 @@ body.admin #hint{top:max(150px,calc(env(safe-area-inset-top) + 144px))}
 <div class="modal" id="callBox" hidden><div class="card glass" style="align-items:center;text-align:center;width:min(440px,100%)"><h2>📣 선생님이 부르세요!</h2><p id="callMsg">쉬는 시간 끝! 퀴즈방으로 돌아가요.</p><button class="pill sun" id="callGo">지금 돌아가기</button></div></div>
 
 <div class="hud glass" id="topL" hidden><button class="pill ghost small" id="backBtn">← 나가기</button><b id="roomName"></b></div>
-<div class="hud" id="topR" hidden><span class="glass" id="who">1명</span><button class="pill ghost small glass" id="charBtn" aria-label="내 캐릭터 바꾸기">🎨</button><button class="pill ghost small glass" id="qrBtn" hidden>📱 초대</button><button class="pill ghost small glass" id="sndBtn">🔊 소리 켜짐</button></div>
+<div class="hud" id="topR" hidden><button type="button" class="glass" id="who" title="누가 어디 있는지 보기">1명</button><button class="pill ghost small glass" id="charBtn" aria-label="내 캐릭터 바꾸기">🎨</button><button class="pill ghost small glass" id="qrBtn" hidden>📱 초대</button><button class="pill ghost small glass" id="sndBtn">🔊 소리 켜짐</button></div>
 <div class="hud glass" id="tbar" hidden><b>🍎 선생님</b><button id="tOn" aria-pressed="true">💬 채팅 켜기</button><button id="tEmo" aria-pressed="false">😊 이모지만</button><button id="tOff" aria-pressed="false">🔇 채팅 끄기</button><button id="tCall" aria-pressed="false">🔔 쉬는 시간 끝</button><button id="tAnn">📣 공지</button><button id="tOx">🅾️ 퀴즈방 코드</button><button id="tPeople">👥 학생</button></div>
 <div class="hud glass" id="hint" hidden></div>
 <div class="hud glass" id="net" hidden></div>
@@ -1116,7 +1116,7 @@ function openPiano(){ const p=$("piano"); if(!p.children.length) NOTES.forEach((
 function pianoKey(i,b){ audio(); const now=performance.now(); if(now-Cafe.lastNote<70) return; Cafe.lastNote=now; playNote(i,.2); Cafe.spawnNote(i); pub(tRoom("cafe"),{t:"e",k:"note",i});
   b=b||$("piano").children[i]; if(b){ b.classList.add("down"); setTimeout(()=>b.classList.remove("down"),160); } }
 function peersStep(dt){ const now=performance.now(); for(const [id,p] of Room.peers){ if(now-p.seen>9000){ Room.peers.delete(id); continue; } const f=Math.min(1,dt*10), ox=p.x; p.x+=(p.tx-p.x)*f; p.y+=(p.ty-p.y)*f; const v=Math.abs(p.tx-p.x)+Math.abs(p.ty-p.y); p.walk=v>2?1:0; if(!(p.st>=0)&&Math.abs(p.x-ox)>.1) p.dir=p.x>ox?1:-1; }
-  $("who").textContent=`👥 ${Room.peers.size+1}명`; }
+  const tot=peopleList().length+1, here=Room.peers.size+1, w=$("who"), txt=innerWidth<560?`👥 ${here}/${tot}`:(tot>here?`👥 여기 ${here}명 · 전체 ${tot}명`:`👥 ${tot}명 접속`); if(w.textContent!==txt){ w.textContent=txt; w.setAttribute("aria-label",`이 방 ${here}명, 전체 ${tot}명 접속 중`); } }
 
 /* ================= 화면 ================= */
 let SCc=1; const cam={x:0,y:0,z:1,init:false}; let taps=[];
@@ -1191,12 +1191,14 @@ function applyCtl(newCall){ const md=chatMode(), inR=!!Room.id;
 function showAnn(text){ const el=$("annBanner"); el.textContent="📣 선생님: "+text; el.hidden=false; el.style.opacity=1; blip(880,.2,.05); setTimeout(()=>blip(1175,.3,.05),150); clearTimeout(showAnn.t); showAnn.t=setTimeout(()=>{ el.style.opacity=0; showAnn.t=setTimeout(()=>el.hidden=true,500); },12000); }
 function peopleList(){ const now=performance.now(), L=[]; for(const [id,p] of pres) if(now-p.at<9000&&id!==ME.id) L.push({id,n:p.n||"친구",r:p.r}); return L.sort((a,b)=>a.n.localeCompare(b.n)); }
 function openPeople(){ const box=$("peopleGrid"); box.innerHTML=""; const L=peopleList();
-  if(!L.length){ const e=document.createElement("p"); e.className="dim"; e.textContent="아직 들어온 학생이 없어요."; box.append(e); }
+  if(!L.length){ const e=document.createElement("p"); e.className="dim"; e.textContent="아직 나 말고 들어온 사람이 없어요."; box.append(e); }
   for(const q of L){ const row=document.createElement("div"); row.className="prow"; const nm=document.createElement("b"); nm.textContent=q.n; const rm=document.createElement("span"); rm.textContent=ROOMS[q.r]?ROOMS[q.r].name:"(입장 중)";
+    if(!CTL.sk){ row.style.gridTemplateColumns="1fr auto"; row.append(nm,rm); box.append(row); continue; }
     const bt=document.createElement("button"); bt.type="button"; bt.className="pill ghost small"; const mu=isMuted(q.id); bt.textContent=mu?"🔈 채팅 풀기":"🔇 채팅 막기"; if(mu) row.classList.add("muted");
     bt.onclick=async()=>{ const next=isMuted(q.id)?CTL.mu.filter(x=>x!==q.id):[...CTL.mu,q.id].slice(-60); await sendCtl(CTL.ch,CTL.call,{mu:next}); openPeople(); toast(isMuted(q.id)?`🔇 ${q.n}의 채팅을 막았어요`:`🔈 ${q.n}의 채팅을 풀었어요`); };
     row.append(nm,rm,bt); box.append(row); }
-  $("unmuteAll").hidden=!CTL.mu.length; $("peopleBox").hidden=false; }
+  $("unmuteAll").hidden=!CTL.sk||!CTL.mu.length; $("peopleTitle").textContent=`👥 지금 접속 ${L.length+1}명 (나 포함)`; $("peopleDesc").textContent=CTL.sk?"어느 방에 있는지 보이고, 학생별로 채팅을 막을 수 있어요.":"누가 어느 방에 있는지 볼 수 있어요. 친구가 있는 방으로 놀러 가 보세요!"; $("peopleBox").hidden=false; }
+$("who").onclick=()=>{ audio(); openPeople(); };
 function oxGoto(code){ const ci=Math.max(0,COLORS.indexOf(ME.c)); location.href=OX_URL+"?room="+code+"&n="+encodeURIComponent(ME.n)+"&col="+ci+"&auto=1"; }
 function openOx(admin){ $("oxErr").textContent=""; $("oxIn").value=CTL.ox||""; $("oxTitle").textContent=admin?"🅾️ 퀴즈방 코드 알려 주기":"🅾️❌ 퀴즈방 가기";
   $("oxDesc").textContent=admin?"OX 퀴즈방(선생님 화면)의 4자리 코드를 넣으면, 학생들의 '퀴즈방 가기' 버튼이 그 방으로 바로 연결돼요. 비우면 연결을 지워요.":"선생님이 알려 준 퀴즈방 코드 4자리를 넣어요.";
