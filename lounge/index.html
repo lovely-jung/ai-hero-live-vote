@@ -1107,13 +1107,18 @@ function takeDrink(o){ const m=Room.me; Cafe.pending=-1; m.dk=o; m.sips=5; Room.
 /* 먹고 마시는 소리 */
 function nzBurst(t0,dur,type,f,q,vol,f2){ const ctx=snd.ctx, s2=ctx.createBufferSource(); s2.buffer=nbuf("white"); const fl=ctx.createBiquadFilter(); fl.type=type; fl.frequency.setValueAtTime(f,t0); if(f2) fl.frequency.exponentialRampToValueAtTime(f2,t0+dur); fl.Q.value=q;
   const g2=ctx.createGain(); g2.gain.setValueAtTime(.0001,t0); g2.gain.exponentialRampToValueAtTime(vol,t0+Math.min(.04,dur/3)); g2.gain.exponentialRampToValueAtTime(.0001,t0+dur); s2.connect(fl); fl.connect(g2); g2.connect(snd.bus); s2.start(t0,Math.random()*2); s2.stop(t0+dur+.05); }
+function bloop(t0,f,vol){ const ctx=snd.ctx, o=ctx.createOscillator(), g2=ctx.createGain(); o.type="sine"; o.frequency.setValueAtTime(f,t0); o.frequency.exponentialRampToValueAtTime(f*1.9,t0+.045); g2.gain.setValueAtTime(.0001,t0); g2.gain.exponentialRampToValueAtTime(vol,t0+.006); g2.gain.exponentialRampToValueAtTime(.0001,t0+.06); o.connect(g2); g2.connect(snd.bus); o.start(t0); o.stop(t0+.08); }
 function gulp(t0,vol){ const ctx=snd.ctx, o=ctx.createOscillator(), g2=ctx.createGain(); o.type="sine"; o.frequency.setValueAtTime(320,t0); o.frequency.exponentialRampToValueAtTime(110,t0+.13); g2.gain.setValueAtTime(.0001,t0); g2.gain.exponentialRampToValueAtTime(vol,t0+.015); g2.gain.exponentialRampToValueAtTime(.0001,t0+.16); o.connect(g2); g2.connect(snd.bus); o.start(t0); o.stop(t0+.2); }
 function eatSound(dk,vol){ const ctx=snd.ctx; if(!ctx||!snd.on||!MENU[dk]) return; const it=MENU[dk], t=ctx.currentTime+.02;
-  if(!it.food){ nzBurst(t,.42,"bandpass",700,2.2,.05*vol,2600); if(it.e==="🧋"){ for(let i=0;i<3;i++) nzBurst(t+.45+i*.09,.05,"bandpass",1200,3,.06*vol); } gulp(t+.55,.22*vol); if(Math.random()<.5) gulp(t+.85,.15*vol); if(it.hot) nzBurst(t+1.1,.5,"lowpass",900,.6,.035*vol); }
+  if(!it.food){ // 호-로-록: 짧게 세 번 빨아들이는 소리 + 찰랑이는 물방울
+    const n=it.e==="🧋"?5:3; for(let i=0;i<n;i++){ const t1=t+i*(.12+Math.random()*.03), up=1+i*.18; nzBurst(t1,.1,"bandpass",800*up,3.2,.05*vol,1900*up);
+      for(let k=0;k<2;k++) bloop(t1+.02+k*.035,rnd(650,1000)*up,.025*vol); }
+    if(it.e==="🧋") for(let i=0;i<3;i++) bloop(t+.7+i*.08,rnd(300,420),.05*vol);
+    if(it.hot) nzBurst(t+.55,.45,"lowpass",800,.6,.03*vol); }
   else if(it.e==="🍪"||it.e==="🥐"){ for(let i=0;i<4;i++) nzBurst(t+i*.13+Math.random()*.03,.07,"bandpass",2400+Math.random()*1500,1.2,.08*vol); for(let i=0;i<3;i++) nzBurst(t+.6+i*.2,.09,"lowpass",500,.7,.05*vol); }
   else { for(let i=0;i<4;i++) nzBurst(t+i*.2,.11,"lowpass",420,.8,.07*vol); gulp(t+.9,.12*vol); } }
 const eatFx=[];
-function eatWord(dk){ const it=MENU[dk]; if(!it) return "😋"; return !it.food?(it.e==="🧋"?"쭈욱~ 🧋":["후루룩~","꿀꺽!","호로록~"][Math.floor(Math.random()*3)]):(it.e==="🍪"||it.e==="🥐"?"바삭바삭!":"냠냠~"); }
+function eatWord(dk){ const it=MENU[dk]; if(!it) return "😋"; return !it.food?(it.e==="🧋"?"쭈욱~ 🧋":it.hot?["호로록~","호록호록~"][Math.floor(Math.random()*2)]:["호로록~","쭈욱~"][Math.floor(Math.random()*2)]):(it.e==="🍪"||it.e==="🥐"?"바삭바삭!":"냠냠~"); }
 function spawnEat(x,y,txt){ eatFx.push({x:x+rnd(-10,10),y:y-110,txt,k:0}); }
 function sip(){ const m=Room.me; if(m.dk<0) return; m.sips--; eatSound(m.dk,1); const w=eatWord(m.dk); spawnEat(m.x,m.y,w); pub(tRoom(Room.id),{t:"e",k:"sip",dk:m.dk,w,x:Math.round(m.x),y:Math.round(m.y)});
   if(m.sips<=0){ toast(MENU[m.dk].food?"냠냠, 다 먹었어요! 😋":"꿀꺽, 다 마셨어요! 😋"); m.dk=-1; Room.dirty=true; sendState(false); } buildActs(); }
@@ -1282,7 +1287,7 @@ function onRoomMsg(t,d){
     if(d.sid&&d.sid!==p.sid&&d.say){ p.sid=d.sid; const s=clean(d.say), md=chatMode(); const pm=CTL.ch; if(p.tch||(!isMuted(d.id)&&(pm===1||(pm===2&&emojiOnly(s))))){ p.say=s; p.sayT=performance.now(); } }
     M.sync(d,p); return; }
   if(d.t==="e"){ const p=Room.peers.get(d.id); if(p) p.seen=performance.now();
-    if(d.k==="sip"){ const dk=+d.dk; if(!p||!(dk>=0&&dk<MENU.length)) return; const now=performance.now(); if(now-(p.sipT||0)<1500) return; p.sipT=now; const ok=["후루룩~","꿀꺽!","호로록~","쭈욱~ 🧋","바삭바삭!","냠냠~"]; spawnEat(p.x,p.y,ok.includes(d.w)?d.w:"냠냠~");
+    if(d.k==="sip"){ const dk=+d.dk; if(!p||!(dk>=0&&dk<MENU.length)) return; const now=performance.now(); if(now-(p.sipT||0)<1500) return; p.sipT=now; const ok=["호로록~","호록호록~","쭈욱~","쭈욱~ 🧋","바삭바삭!","냠냠~"]; spawnEat(p.x,p.y,ok.includes(d.w)?d.w:"냠냠~");
       const dist=Math.hypot(p.x-Room.me.x,p.y-Room.me.y); if(dist<500) eatSound(dk,.5*(1-dist/500)+.1); return; }
     M.ev(d); }
 }
