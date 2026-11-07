@@ -226,8 +226,8 @@ body.admin #hint{top:max(150px,calc(env(safe-area-inset-top) + 144px))}
 <div class="hud glass" id="fishCard" hidden aria-live="polite"></div>
 <div id="skiUI" hidden><canvas id="skiCv" aria-label="스키 슬로프 (왼쪽·오른쪽으로 방향을 바꿔요)"></canvas>
   <button type="button" class="pill ghost small glass" id="skiQuit">✖ 그만 타기</button>
-  <div id="skiHelp" class="glass">← → 방향 · ↓ 웅크려서 빠르게 · ↑ 브레이크</div>
-  <div id="skiPad"><button type="button" id="skiL" aria-label="왼쪽으로">◀</button><button type="button" id="skiDn" aria-label="웅크려서 빠르게">⬇<small>빠르게</small></button><button type="button" id="skiR" aria-label="오른쪽으로">▶</button></div>
+  <div id="skiHelp" class="glass">← → 방향 · ↓ 빠르게 · ↑ 브레이크 · 점프 중 ←→ 빙글 돌고 착지 직전 ↓</div>
+  <div id="skiPad"><button type="button" id="skiL" aria-label="왼쪽으로">◀</button><button type="button" id="skiDn" aria-label="웅크려서 빠르게, 점프 때는 착지 자세">⬇<small>빠르게·착지</small></button><button type="button" id="skiR" aria-label="오른쪽으로">▶</button></div>
   <div id="skiEnd" class="glass" hidden><h2 id="skiEndT"></h2><p id="skiEndM"></p><p id="skiEndB"></p><div class="row"><button type="button" class="pill sun" id="skiAgain">⛷️ 다시 타기</button><button type="button" class="pill ghost" id="skiBoardBtn">🏆 순위</button><button type="button" class="pill ghost" id="skiStop">그만 타기</button></div></div>
 </div>
 <div class="modal" id="skiBox" hidden><div class="card glass">
@@ -381,7 +381,7 @@ function drawAvatar(c,p,t,isMe){
   if(ps===3) tilt=Math.sin(t/900+p.ph)*.04;
   if(ps===2){ const k=(performance.now()-(p.psT||0))/2600, b=k<.35?k/.35:k<.6?1:k<1?1-(k-.6)/.4:0; tilt=.75*(b*b*(3-2*b)); }
   c.translate(dxs,-bob); if(tilt) c.rotate(tilt);
-  const ya=spin?(t/210+p.ph)%(Math.PI*2):.55, cy=Math.cos(ya), fx=Math.sin(ya), wf=.8+.2*Math.abs(cy), front=cy>-.2;
+  if(p.ya!=null) spin=1; const ya=p.ya!=null?p.ya:spin?(t/210+p.ph)%(Math.PI*2):.55, cy=Math.cos(ya), fx=Math.sin(ya), wf=.8+.2*Math.abs(cy), front=cy>-.2;
   const body=c.createRadialGradient(-9*fx-4,-50,4,0,-36,40); body.addColorStop(0,shade(p.c,.38)); body.addColorStop(.55,p.c); body.addColorStop(1,shade(p.c,-.32));
   c.fillStyle=body; c.beginPath(); c.ellipse(0,-34,26*wf,30,0,0,7); c.fill();
   c.fillStyle="rgba(255,255,255,.22)"; c.beginPath(); c.ellipse(-9*wf,-46,6,10,-.35,0,7); c.fill();
@@ -1202,7 +1202,7 @@ function skiCourse(day){ const R=seeded((day*2654435761)^0x5bd1e995), ob=[], pat
   for(let d=0;d<=SKI_L+3000;d+=200){ cx+=(R()-.5)*180; cx=clamp(cx,-280,280); path.push(cx); }
   const cxAt=d=>{ const i=clamp(d/200,0,path.length-1.001), i0=Math.floor(i), f=i-i0; return path[i0]*(1-f)+path[i0+1]*f; };
   const gates=[]; for(let d=1600,k=0;d<SKI_L-900;d+=1500,k++){ const x=clamp(cxAt(d)+(R()-.5)*220,-420,420); gates.push({k:"gate",d,x,w:170+R()*40,red:k%2,i:k}); }
-  const ramps=[]; for(let d=4200;d<SKI_L-2000;d+=3600+R()*1800){ const x=clamp(cxAt(d),-380,380); if(gates.some(g=>Math.abs(g.d-d)<400)) continue; ramps.push({k:"ramp",d,x}); }
+  const ramps=[]; for(let d=3800;d<SKI_L-2000;d+=2600+R()*1400){ const x=clamp(cxAt(d),-380,380); if(gates.some(g=>Math.abs(g.d-d)<400)) continue; ramps.push({k:"ramp",d,x}); }
   for(let d=1000;d<SKI_L-400;d+=80+R()*85){ const r=R(), x=-570+R()*1140, c=cxAt(d);
     if(gates.some(g=>Math.abs(g.d-d)<180&&Math.abs(g.x-x)<g.w/2+70)) continue;
     if(ramps.some(o=>d>o.d-260&&d<o.d+420&&Math.abs(o.x-x)<190)) continue;
@@ -1215,30 +1215,19 @@ function skiAdd(n,tm){ n=clean(n,8); if(!n||!skiOk(tm)) return false; const o=Sk
 function skiTop(k=10){ return [...Ski.board.values()].sort((a,b)=>a.tm-b.tm).slice(0,k); }
 function skiLive(){ const L=[], day=skiDay(), now=performance.now(); for(const p of Room.peers.values()) if(p.sk&&p.sk[0]===day&&now-p.skAt<3000) L.push({n:p.n,pc:Math.min(100,Math.round(p.sk[1]/SKI_L*100))}); return L; }
 function fmtSec(s){ return s.toFixed(1)+"초"; }
-function drawSkier(c,x,y,sc,col,gd,lean,cr,air,t,name,isMe,alpha){
-  c.save(); c.globalAlpha=alpha==null?1:alpha; c.translate(x,y); c.scale(sc,sc);
-  const lift=air>0?Math.sin(clamp(air,0,1)*Math.PI)*34:0;
-  c.fillStyle="rgba(60,90,140,.22)"; c.beginPath(); c.ellipse(lean*4,6,24-lift*.25,8-lift*.08,0,0,7); c.fill();
-  c.translate(0,-lift);
-  if(cr>0){ c.rotate((lean>=0?1:-1)*Math.PI*.45*Math.min(1,(1.1-cr)*6)); }
-  const a=-lean*.5;
-  c.save(); c.rotate(a); for(const dx of [-8,8]){ c.fillStyle="#24324f"; rr(c,dx-3.5,-14,7,58,3.5); c.fill(); c.fillStyle=isMe?"#ffb347":"#ff6b6b"; rr(c,dx-3.5,34,7,10,3.5); c.fill(); } c.restore();
-  c.strokeStyle="#6b7280"; c.lineWidth=2.4; c.beginPath(); c.moveTo(-15,-34); c.lineTo(-25+lean*8,-2); c.moveTo(15,-34); c.lineTo(25+lean*8,-2); c.stroke();
-  c.fillStyle="#2b3550"; rr(c,-11,-28,9,24,4); c.fill(); rr(c,2,-28,9,24,4); c.fill();
-  c.save(); c.rotate(a*.35);
-  c.fillStyle=col; rr(c,-15,-58,30,34,12); c.fill(); c.fillStyle="rgba(255,255,255,.28)"; rr(c,-13,-48,26,5,2.5); c.fill();
-  c.fillStyle=shade(col,-.22); rr(c,-21,-55,8,22,4); c.fill(); rr(c,13,-55,8,22,4); c.fill();
-  c.fillStyle="#ffd9b8"; c.beginPath(); c.arc(0,-70,12,0,7); c.fill();
-  if(gd===1){ c.fillStyle="#4a2e1f"; c.beginPath(); c.ellipse(-12,-61,4,9,0,0,7); c.ellipse(12,-61,4,9,0,0,7); c.fill(); }
-  c.fillStyle=shade(col,-.32); c.beginPath(); c.arc(0,-74,12.6,Math.PI,0); c.fill(); c.fillRect(-12.6,-75,25.2,4);
-  c.fillStyle="#fff"; c.beginPath(); c.arc(0,-88,5,0,7); c.fill();
-  c.fillStyle="#1d2433"; rr(c,-12,-72,24,7,3); c.fill(); c.fillStyle="#8fd3ff"; rr(c,-9.5,-71,19,5,2); c.fill();
-  c.restore();
-  if(cr>0){ for(let i=0;i<3;i++){ const an=t/180+i*2.1; c.fillStyle="#ffd43b"; c.font="16px serif"; c.textAlign="center"; c.textBaseline="middle"; c.fillText("⭐",Math.cos(an)*22,-96+Math.sin(an)*6); } }
-  c.restore();
-  if(name){ c.save(); c.globalAlpha=alpha==null?1:alpha; c.font=`700 ${Math.round(15*sc)}px 'IBM Plex Sans KR'`; c.textAlign="center"; c.textBaseline="middle"; const tw=c.measureText(name).width+12*sc;
-    c.fillStyle=isMe?"rgba(255,179,71,.95)":"rgba(20,30,50,.6)"; rr(c,x-tw/2,y-(122+lift)*sc,tw,22*sc,11*sc); c.fill(); c.fillStyle=isMe?"#2b1606":"#fff"; c.fillText(name,x,y-(111+lift)*sc); c.restore(); }
-}
+function drawSkier(c,x,y,sc,o){ const lean=o.lean||0, cr=o.cr||0, air=o.air||0, lift=air>0?Math.sin(clamp(air,0,1)*Math.PI)*(o.airH||60):0, yaw=o.spin||0;
+  c.save(); c.globalAlpha=o.alpha==null?1:o.alpha; c.translate(x,y); c.scale(sc,sc);
+  c.fillStyle="rgba(60,90,140,.25)"; c.beginPath(); c.ellipse(lean*4,4,30-lift*.2,10-lift*.06,0,0,7); c.fill();
+  c.translate(0,-lift); if(cr>0) c.rotate((lean>=0?1:-1)*Math.PI*.45*Math.min(1,(1.1-cr)*6));
+  c.save(); c.rotate(-lean*.5+yaw); for(const dx of [-10,10]){ c.fillStyle="#24324f"; rr(c,dx-4,-20,8,62,4); c.fill(); c.fillStyle=o.isMe?"#ffb347":"#ff6b6b"; rr(c,dx-4,32,8,12,4); c.fill(); c.fillStyle="rgba(255,255,255,.25)"; c.fillRect(dx-1,-16,2,44); } c.restore();
+  const pa=Math.cos(yaw); c.strokeStyle="#6b7280"; c.lineWidth=2.6; c.beginPath(); c.moveTo(-20*pa,-34); c.lineTo((-30+lean*8)*pa,0); c.moveTo(20*pa,-34); c.lineTo((30+lean*8)*pa,0); c.stroke();
+  c.rotate(lean*.16);
+  drawAvatar(c,{x:0,y:0,S:.7,NS:.8,n:o.name||"",c:o.col,g:o.g||0,dir:1,ph:o.ph||0,walk:0,sit:0,ps:0,m:-1,dk:-1,ya:.55+yaw},o.t,!!o.isMe);
+  { const ya=.55+yaw, fr=Math.cos(ya)>-.2, fx=Math.sin(ya)*5; c.fillStyle=shade(o.col,-.3); c.beginPath(); c.arc(0,-62,20.5,Math.PI*1.02,Math.PI*1.98); c.lineTo(20,-60); c.lineTo(-20,-60); c.fill(); c.fillStyle="rgba(255,255,255,.85)"; c.fillRect(-20,-63,40,4);
+    c.fillStyle="#fff"; c.beginPath(); c.arc(fx*.6,-84,6,0,7); c.fill();
+    if(fr){ c.fillStyle="#1d2433"; rr(c,-15+fx,-71,30,7,3.5); c.fill(); const gg=c.createLinearGradient(0,-70,0,-65); gg.addColorStop(0,"#b5e6ff"); gg.addColorStop(1,"#4dabf7"); c.fillStyle=gg; rr(c,-12+fx,-70,24,5,2.5); c.fill(); } }
+  if(cr>0){ for(let i=0;i<3;i++){ const an=o.t/180+i*2.1; c.font="18px serif"; c.textAlign="center"; c.textBaseline="middle"; c.fillText("⭐",Math.cos(an)*24,-100+Math.sin(an)*6); } }
+  c.restore(); }
 function skiSfx(k){ const ctx=snd.ctx; if(!ctx||!snd.on) return; const t=ctx.currentTime;
   if(k==="beep") blip(660,.18,.08,"square"); else if(k==="go") blip(990,.4,.09,"square");
   else if(k==="crash"){ nzBurst(t,.35,"lowpass",900,.7,.35,200); blip(180,.3,.12,"sine",.5); }
@@ -1246,19 +1235,21 @@ function skiSfx(k){ const ctx=snd.ctx; if(!ctx||!snd.on) return; const t=ctx.cur
   else if(k==="miss") blip(300,.25,.07,"sawtooth",.7);
   else if(k==="star"){ blip(1760,.1,.05,"triangle"); setTimeout(()=>blip(2349,.14,.05,"triangle"),60); }
   else if(k==="jump") nzBurst(t,.5,"bandpass",1200,1.2,.15,3000);
+  else if(k==="whoosh") nzBurst(t,.3,"bandpass",600,1.5,.12,2000);
+  else if(k==="perfect"){ nzBurst(t,.18,"lowpass",600,.8,.2); [784,988,1175,1568].forEach((f,i)=>setTimeout(()=>blip(f,.16,.06,"triangle"),i*60)); }
   else if(k==="land") nzBurst(t,.18,"lowpass",600,.8,.25);
   else if(k==="bump") nzBurst(t,.15,"lowpass",700,.8,.18);
   else if(k==="fin"){ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>blip(f,.3,.08,"triangle"),i*120)); }
   else if(k==="throw") nzBurst(t,.18,"bandpass",1500,1,.12,600);
   else if(k==="splat") nzBurst(t,.2,"lowpass",1200,.8,.25,300); }
-const Ski={id:"ski",W:2400,H:1600,top:610,men:[],balls:[],fx:[],board:new Map(),run:null,course:null,tl:0,tr:0,td:0,camX:0,
+const Ski={id:"ski",W:2400,H:1600,top:610,men:[],balls:[],fx:[],trails:[],rollProps:new Map(),bases:new Map(),roll:null,hits:0,board:new Map(),run:null,course:null,tl:0,tr:0,td:0,camX:0,
   init(){ const M=this, C=M.col, P=M.props;
     C.push({t:"r",x0:1060,y0:590,x1:1110,y1:625}); C.push({t:"r",x0:1290,y0:590,x1:1340,y1:625}); P.push({k:"skigate",x:1200,y:625});
     C.push({t:"r",x0:280,y0:640,x1:640,y1:700}); P.push({k:"board",x:460,y:700});
     C.push({t:"r",x0:1860,y0:560,x1:2340,y1:820}); P.push({k:"lodge",x:2100,y:820});
     addGroup(M,"🔥 산장 앞 벤치",2100,930,260,70); for(const bx of [1950,2250]){ C.push({t:"r",x0:bx-95,y0:900,x1:bx+95,y1:925}); P.push({k:"bench",x:bx,y:925,w:190,c1:"#9b6a48",c2:"#5a3826"}); for(const dx of [-50,50]) addSeat(M,bx+dx,915,1,14,bx+dx,975); } M._g=-1;
     for(const [x,y,h] of [[110,760,180],[210,1050,150],[100,1340,190],[2330,1110,170],[2250,1400,160],[650,1450,140],[1760,1470,150],[800,820,130],[1620,800,130],[330,1500,150],[2080,1250,140]]){ C.push({t:"c",x,y,r:26}); P.push({k:"spine",x,y,h}); }
-    C.push({t:"c",x:1480,y:1180,r:30}); P.push({k:"snowman",x:1480,y:1180,col:"#ff6b6b",n:""});
+    C.push({t:"c",x:1480,y:1180,r:30}); P.push({k:"snowman",x:1480,y:1180,col:"#ff6b6b",n:"",r1:36,r2:24});
     exitProp(M); },
   build(){ const R=seeded(77), W=this.W, H=this.H;
     this.bg=off(W,H,(c)=>{
@@ -1281,9 +1272,18 @@ const Ski={id:"ski",W:2400,H:1600,top:610,men:[],balls:[],fx:[],board:new Map(),
   spawn(){ return {x:EXIT.x+rnd(-60,60),y:1470}; },
   tick(dt,t){ const now=performance.now();
     this.balls=this.balls.filter(b=>{ b.u+=dt/b.T; if(b.u<1) return true; this.fx.push({x:b.tx,y:b.ty,k:0}); if(Room.id==="ski") skiSfx("splat");
-      const m=Room.me; if(b.by!==ME.id&&Math.hypot(m.x-b.tx,(m.y-b.ty)*1.3)<55){ m.hitT=now; toast(`❄️ 퍽! ${b.n}의 눈덩이에 맞았어요!`); } return false; });
-    this.fx=this.fx.filter(f=>(f.k+=dt*1.6)<1); },
-  back(c,t){ for(let i=0;i<7;i++){ const u=((t/26000)+i/7)%1, x=1580+u*580, y=600-u*450; c.strokeStyle="#4b5568"; c.lineWidth=2; c.beginPath(); c.moveTo(x,y); c.lineTo(x,y+26); c.stroke(); c.fillStyle=["#ff6b6b","#4dabf7","#ffd43b"][i%3]; rr(c,x-16,y+24,32,14,5); c.fill(); } },
+      const m=Room.me; if(Room.id==="ski"&&!this.run&&b.by!==ME.id&&Math.hypot(m.x-b.tx,(m.y-b.ty)*1.3)<60){ m.hitT=now; m.sn=Math.min(5,(m.sn||0)+1); Room.dirty=true; pub(tRoom("ski"),{t:"e",k:"hit",by:b.by});
+        if(m.sn>=5){ m.tx=null; m.goal=null; toast("☃️ 눈에 파묻혔어요! '털어내기'를 여러 번 눌러요",2600); } else toast(`❄️ 퍽! ${b.n}의 눈덩이! (눈 ${m.sn}/5)`); buildActs(); } return false; });
+    this.fx=this.fx.filter(f=>(f.k+=dt*1.6)<1);
+    if(Room.id!=="ski") return; const m=Room.me;
+    if(m.sn>0&&m.sn<5&&m.walk){ this.meltT=(this.meltT||0)+dt; if(this.meltT>5){ this.meltT=0; m.sn--; Room.dirty=true; buildActs(); } }
+    const RL=this.roll; if(RL){ const lx=RL.lx??m.x, ly=RL.ly??m.y, d=Math.hypot(m.x-lx,m.y-ly); RL.lx=m.x; RL.ly=m.y; if(d>0&&d<80){ RL.r=Math.min(RL.st===1?48:30,RL.r+d*(RL.st===1?.013:.011)); RL.mv=(RL.mv||0)+d; } if(d>.3) RL.dir=m.dir; }
+    const live=new Set(); const upd=(id,p,st,r)=>{ live.add(id); let q=this.rollProps.get(id); if(!q){ q={k:"rollball",x:p.x,y:p.y,r,rot:0}; this.rollProps.set(id,q); this.props.push(q); }
+      const nx=p.x+(p.dir<0?-1:1)*(30+r), ny=p.y+2, mv=Math.hypot(nx-q.x,ny-q.y); q.rot+=mv/Math.max(8,r)*(p.dir<0?-1:1); if(mv>1&&mv<80&&(!q.tl||Math.hypot(nx-q.tl.x,ny-q.tl.y)>12)){ q.tl={x:nx,y:ny}; this.trails.push({x:nx,y:ny,r}); if(this.trails.length>400) this.trails.shift(); } q.x=nx; q.y=ny; q.r=r; q.mine=id===ME.id; q.st=st; };
+    if(RL) upd(ME.id,m,RL.st,RL.r); for(const [id,p] of Room.peers) if(p.rl) upd(id,p,p.rl[0],p.rl[1]);
+    for(const [id,q] of this.rollProps) if(!live.has(id)){ this.rollProps.delete(id); const i=this.props.indexOf(q); if(i>=0) this.props.splice(i,1); } },
+  back(c,t){ c.fillStyle="rgba(170,195,225,.35)"; for(const q of this.trails){ c.beginPath(); c.ellipse(q.x,q.y+2,q.r*.75,q.r*.28,0,0,7); c.fill(); }
+    for(let i=0;i<7;i++){ const u=((t/26000)+i/7)%1, x=1580+u*580, y=600-u*450; c.strokeStyle="#4b5568"; c.lineWidth=2; c.beginPath(); c.moveTo(x,y); c.lineTo(x,y+26); c.stroke(); c.fillStyle=["#ff6b6b","#4dabf7","#ffd43b"][i%3]; rr(c,x-16,y+24,32,14,5); c.fill(); } },
   prop(c,p,t){ const x=p.x, y=p.y;
     if(p.k==="skigate"){ const live=skiLive().length;
       for(const sx of [1085,1315]){ c.fillStyle="rgba(60,90,140,.2)"; c.beginPath(); c.ellipse(sx,y+2,30,9,0,0,7); c.fill(); c.fillStyle="#2f4b7c"; rr(c,sx-14,y-200,28,200,8); c.fill(); c.fillStyle="#fff"; for(let k=0;k<5;k++) c.fillRect(sx-14,y-190+k*38,28,8); }
@@ -1306,43 +1306,75 @@ const Ski={id:"ski",W:2400,H:1600,top:610,men:[],balls:[],fx:[],board:new Map(),
       c.fillStyle="#3d2619"; rr(c,2060,y-140,80,140,8); c.fill(); c.fillStyle="#ffd43b"; c.beginPath(); c.arc(2125,y-70,4,0,7); c.fill();
       c.fillStyle="#2b1d15"; rr(c,2010,y-212,180,34,10); c.fill(); c.fillStyle="#ffe7b0"; c.font="700 20px 'Gaegu'"; c.textAlign="center"; c.textBaseline="middle"; c.fillText("☕ 산장 코코아",2100,y-195); }
     else if(p.k==="spine"){ drawPine(c,x,y,p.h,"#2f6b4f"); c.fillStyle="rgba(255,255,255,.85)"; for(let k=0;k<4;k++){ const yy=y-p.h*.12-p.h*.2*k-p.h*.33, w=p.h*.1*(1-k*.15); c.beginPath(); c.moveTo(x-w,yy+w*.6); c.lineTo(x,yy-2); c.lineTo(x+w,yy+w*.6); c.fill(); } }
-    else if(p.k==="snowman"){ c.fillStyle="rgba(60,90,140,.22)"; c.beginPath(); c.ellipse(x,y+3,36,11,0,0,7); c.fill(); c.fillStyle="#fff"; c.strokeStyle="#c9d8ea"; c.lineWidth=2;
-      for(const [yy,r] of [[y-30,32],[y-82,24],[y-120,17]]){ c.beginPath(); c.arc(x,yy,r,0,7); c.fill(); c.stroke(); }
-      c.fillStyle="#222"; c.beginPath(); c.arc(x-6,y-124,2.6,0,7); c.arc(x+6,y-124,2.6,0,7); c.fill(); for(let k=0;k<3;k++){ c.beginPath(); c.arc(x,y-92+k*12,2.6,0,7); c.fill(); }
-      c.fillStyle="#ff8a3d"; c.beginPath(); c.moveTo(x,y-120); c.lineTo(x+16,y-117); c.lineTo(x,y-114); c.fill();
-      c.fillStyle=p.col||"#ff6b6b"; c.fillRect(x-22,y-104,44,8); c.fillRect(x+8,y-104,8,22); c.fillStyle="#333"; c.fillRect(x-16,y-150,32,16); c.fillRect(x-22,y-136,44,5);
-      c.strokeStyle="#6b4733"; c.lineWidth=3; c.beginPath(); c.moveTo(x-22,y-86); c.lineTo(x-46,y-104); c.moveTo(x+22,y-86); c.lineTo(x+46,y-100); c.stroke();
+    else if(p.k==="rollball"||p.k==="sball"){ const r=p.r; c.fillStyle="rgba(60,90,140,.25)"; c.beginPath(); c.ellipse(x,y+2,r*1.05,r*.32,0,0,7); c.fill();
+      const bg=c.createRadialGradient(x-r*.35,y-r*1.35,r*.1,x,y-r,r*1.1); bg.addColorStop(0,"#ffffff"); bg.addColorStop(.7,"#eef4fb"); bg.addColorStop(1,"#c3d4e8"); c.fillStyle=bg; c.beginPath(); c.arc(x,y-r,r,0,7); c.fill();
+      c.save(); c.beginPath(); c.arc(x,y-r,r,0,7); c.clip(); c.strokeStyle="rgba(150,175,205,.45)"; c.lineWidth=2; const rot=p.rot||0; for(let k=0;k<4;k++){ const a=rot+k*Math.PI/2; c.beginPath(); c.ellipse(x+Math.cos(a)*r*.5,y-r+Math.sin(a)*r*.25,r*.25,r*.12,a,0,7); c.stroke(); } c.restore();
+      if(p.k==="rollball"&&p.mine){ const full=p.st===1?48:30, pc=Math.round(p.r/full*100); c.font="700 15px 'IBM Plex Sans KR'"; c.textAlign="center"; c.textBaseline="middle"; const s2=(p.st===1?"몸통 ":"머리 ")+pc+"%"; const tw=c.measureText(s2).width+14; c.fillStyle=pc>=(p.st===1?50:47)?"rgba(47,158,68,.9)":"rgba(20,30,50,.6)"; rr(c,x-tw/2,y-r*2-28,tw,22,11); c.fill(); c.fillStyle="#fff"; c.fillText(s2,x,y-r*2-17); }
+      if(p.k==="sball"&&p.n){ c.font="700 14px 'IBM Plex Sans KR'"; c.textAlign="center"; c.textBaseline="middle"; const s2=p.n+"의 몸통 (머리를 올려요!)"; const tw=c.measureText(s2).width+12; c.fillStyle="rgba(20,30,50,.55)"; rr(c,x-tw/2,y+10,tw,20,10); c.fill(); c.fillStyle="#fff"; c.fillText(s2,x,y+20); } }
+    else if(p.k==="snowman"){ const r1=p.r1||32, r2=p.r2||22, y1=y-r1+2, y2=y1-r1-r2+8; c.fillStyle="rgba(60,90,140,.22)"; c.beginPath(); c.ellipse(x,y+3,r1*1.1,r1*.34,0,0,7); c.fill(); c.strokeStyle="#c9d8ea"; c.lineWidth=2;
+      for(const [yy,r] of [[y1,r1],[y2,r2]]){ const bg=c.createRadialGradient(x-r*.35,yy-r*.35,r*.1,x,yy,r*1.1); bg.addColorStop(0,"#fff"); bg.addColorStop(.75,"#f1f6fc"); bg.addColorStop(1,"#c9d8ea"); c.fillStyle=bg; c.beginPath(); c.arc(x,yy,r,0,7); c.fill(); c.stroke(); }
+      const e=r2*.3; c.fillStyle="#222"; c.beginPath(); c.arc(x-e,y2-r2*.15,2.8,0,7); c.arc(x+e,y2-r2*.15,2.8,0,7); c.fill(); for(let k=0;k<3;k++){ c.beginPath(); c.arc(x,y1-r1*.45+k*r1*.38,2.8,0,7); c.fill(); }
+      c.fillStyle="#ff8a3d"; c.beginPath(); c.moveTo(x,y2+r2*.05-3); c.lineTo(x+r2*.75,y2+r2*.12); c.lineTo(x,y2+r2*.05+4); c.fill();
+      c.strokeStyle="rgba(60,40,40,.6)"; c.lineWidth=2; c.beginPath(); c.arc(x,y2+r2*.25,r2*.32,.3,Math.PI-.3); c.stroke();
+      c.fillStyle=p.col||"#ff6b6b"; rr(c,x-r2*1.0,y2+r2*.72,r2*2,9,4); c.fill(); c.fillRect(x+r2*.35,y2+r2*.72,9,r2*.9);
+      c.fillStyle="#333"; c.fillRect(x-r2*.7,y2-r2*1.55,r2*1.4,r2*.75); c.fillRect(x-r2,y2-r2*.85,r2*2,5); c.fillStyle=p.col||"#ff6b6b"; c.fillRect(x-r2*.7,y2-r2*1.0,r2*1.4,4);
+      c.strokeStyle="#6b4733"; c.lineWidth=3; c.beginPath(); c.moveTo(x-r1*.7,y1-r1*.5); c.lineTo(x-r1*1.45,y1-r1*1.05); c.lineTo(x-r1*1.6,y1-r1*1.3); c.moveTo(x-r1*1.45,y1-r1*1.05); c.lineTo(x-r1*1.7,y1-r1*.95); c.moveTo(x+r1*.7,y1-r1*.5); c.lineTo(x+r1*1.45,y1-r1*.95); c.lineTo(x+r1*1.65,y1-r1*1.2); c.stroke();
       if(p.n){ c.font="700 14px 'IBM Plex Sans KR'"; c.textAlign="center"; c.textBaseline="middle"; c.fillStyle="rgba(20,30,50,.55)"; const s=p.n+"의 눈사람", tw=c.measureText(s).width+12; rr(c,x-tw/2,y+12,tw,20,10); c.fill(); c.fillStyle="#fff"; c.fillText(s,x,y+22); } } },
   front(c,t){ const now=performance.now();
     for(const b of this.balls){ const x=b.x+(b.tx-b.x)*b.u, y=b.y+(b.ty-b.y)*b.u, h=50+Math.sin(b.u*Math.PI)*90-b.u*40; c.fillStyle="rgba(60,90,140,.2)"; c.beginPath(); c.ellipse(x,y,9,3,0,0,7); c.fill(); c.fillStyle="#fff"; c.strokeStyle="#b8cce4"; c.lineWidth=2; c.beginPath(); c.arc(x,y-h,10,0,7); c.fill(); c.stroke(); }
     for(const f of this.fx){ c.fillStyle=`rgba(255,255,255,${1-f.k})`; for(let i=0;i<9;i++){ const a=i/9*7, r=10+f.k*40; c.beginPath(); c.arc(f.x+Math.cos(a)*r,f.y-40+Math.sin(a)*r*.6,6*(1-f.k)+2,0,7); c.fill(); } }
     const m=Room.me; if(m.hitT&&now-m.hitT<1200){ const k=(now-m.hitT)/1200; c.fillStyle=`rgba(255,255,255,${.9*(1-k)})`; c.beginPath(); c.arc(m.x+10,m.y-95,18,0,7); c.arc(m.x-6,m.y-88,12,0,7); c.fill(); }
+    if(!this.run&&m.sn>0) this.snowOn(c,m.x,m.y,m.sn,t,m.shT); for(const p of Room.peers.values()) if(p.sn>0) this.snowOn(c,p.x,p.y,p.sn,t,0);
     c.fillStyle="rgba(255,255,255,.85)"; for(let i=0;i<(G.low?50:110);i++){ const x=(i*317+t*.02*(1+i%3))%this.W, y=(i*191+t*.06*(1+i%2))%this.H; c.beginPath(); c.arc(x+Math.sin(t/900+i)*14,y,2+(i%3),0,7); c.fill(); } },
   click(w){ if(Math.abs(w.x-1200)<150&&w.y>380&&w.y<700){ goTo(SKI_GATE.x,SKI_GATE.y,{k:"ski"}); return true; }
     if(Math.abs(w.x-460)<190&&w.y>390&&w.y<710){ openSkiBoard(); return true; } return false; },
   ctx(m){ if(Math.hypot(m.x-SKI_GATE.x,m.y-SKI_GATE.y)<170) return ["⛷️ 슬로프 출발!",()=>this.start()];
     if(Math.hypot(m.x-460,m.y-740)<190) return ["🏆 오늘 순위 보기",openSkiBoard]; return null; },
-  acts(){ return [{t:"⛷️ 스키 타러 가기",fn:()=>{ const m=Room.me; if(Math.hypot(m.x-SKI_GATE.x,m.y-SKI_GATE.y)<170) this.start(); else goTo(SKI_GATE.x,SKI_GATE.y,{k:"ski"}); }},
-    {t:"❄️ 눈덩이 던지기",cd:900,fn:()=>this.throwBall()},{t:"⛄ 눈사람 만들기",cd:6000,fn:()=>this.makeMan()},{t:"🏆 오늘 순위",fn:openSkiBoard}]; },
-  throwBall(){ const m=Room.me; let best=null, bd=700; for(const p of Room.peers.values()){ const d=Math.hypot(p.x-m.x,p.y-m.y); if(d<bd&&d>40){ bd=d; best=p; } }
+  acts(){ const m=Room.me, L=[];
+    if(m.sn>0) L.push({t:m.sn>=5?"🫨 눈 털어내기! (파묻힘)":`🫨 눈 털어내기 (${m.sn})`,cls:m.sn>=5?"on":"",fn:()=>this.shake()});
+    L.push({t:"⛷️ 스키 타러 가기",fn:()=>{ if(m.sn>=5){ toast("먼저 눈을 털어내요! 🫨"); return; } if(Math.hypot(m.x-SKI_GATE.x,m.y-SKI_GATE.y)<170) this.start(); else goTo(SKI_GATE.x,SKI_GATE.y,{k:"ski"}); }});
+    L.push({t:this.hits?`❄️ 눈덩이 던지기 (명중 ${this.hits})`:"❄️ 눈덩이 던지기",cd:800,fn:()=>this.throwBall()});
+    const RL=this.roll; if(!RL) L.push({t:"⛄ 눈 굴리기 (눈사람)",fn:()=>this.rollStart()});
+    else if(RL.st===1) L.push({t:"⬇ 몸통 내려놓기",fn:()=>this.rollPlace()},{t:"✖ 그만 굴리기",fn:()=>this.rollCancel()});
+    else L.push({t:"⬆ 머리 올리기",fn:()=>this.rollStack()},{t:"✖ 그만 굴리기",fn:()=>this.rollCancel()});
+    L.push({t:"🏆 오늘 순위",fn:openSkiBoard}); return L; },
+  snowOn(c,x,y,sn,t,shT){ const sh=shT&&performance.now()-shT<300?Math.sin(performance.now()/25)*4:0; x+=sh; const W="#ffffff", E="#d3e1f0";
+    const blob=(bx,by,rx,ry)=>{ c.fillStyle=E; c.beginPath(); c.ellipse(bx,by+2,rx,ry,0,0,7); c.fill(); c.fillStyle=W; c.beginPath(); c.ellipse(bx,by,rx,ry,0,0,7); c.fill(); };
+    if(sn>=5){ c.fillStyle="rgba(60,90,140,.25)"; c.beginPath(); c.ellipse(x,y+4,52,15,0,0,7); c.fill(); const g2=c.createRadialGradient(x-14,y-40,6,x,y-20,56); g2.addColorStop(0,"#fff"); g2.addColorStop(.7,"#eef4fb"); g2.addColorStop(1,"#c3d4e8"); c.fillStyle=g2;
+      c.beginPath(); c.moveTo(x-50,y+4); c.quadraticCurveTo(x-56,y-26,x-32,y-34); c.quadraticCurveTo(x-22,y-48,x-6,y-40); c.quadraticCurveTo(x+8,y-50,x+22,y-38); c.quadraticCurveTo(x+48,y-34,x+50,y+4); c.closePath(); c.fill();
+      blob(x,y-70,22,10); c.font="700 15px 'IBM Plex Sans KR'"; c.textAlign="center"; c.textBaseline="middle"; const s2="☃️ 파묻힘!", tw=c.measureText(s2).width+14; c.fillStyle="rgba(28,93,153,.85)"; rr(c,x-tw/2,y-118,tw,22,11); c.fill(); c.fillStyle="#fff"; c.fillText(s2,x,y-107); return; }
+    blob(x,y-70+(sn>=3?-2:0),12+sn*3,5+sn); if(sn>=2){ blob(x-16,y-42,8,5); blob(x+16,y-42,8,5); } if(sn>=3){ blob(x-7,y-27,6,4); blob(x+9,y-20,7,4); } if(sn>=4){ blob(x,y-2,30,9); blob(x-14,y-10,10,7); blob(x+14,y-10,10,7); } },
+  shake(){ const m=Room.me; if(!(m.sn>0)) return; m.sn--; m.shT=performance.now(); Room.dirty=true; skiSfx("splat"); for(let i=0;i<3;i++) this.fx.push({x:m.x+rnd(-20,20),y:m.y-rnd(0,30),k:0}); if(!m.sn) toast("후~ 눈을 다 털었어요! 😆"); buildActs(); },
+  rollStart(){ const m=Room.me; if(m.sn>=5){ toast("먼저 눈을 털어내요! 🫨"); return; } if(m.st>=0) standUp(); this.roll={st:1,r:10}; toast("⛄ 걸어 다니면 눈덩이가 점점 커져요! 몸통부터 굴려요",2600); Room.dirty=true; buildActs(); },
+  rollPlace(){ const RL=this.roll; if(!RL||RL.st!==1) return; if(RL.r<24){ toast("조금 더 굴려서 크게 만들어요! (50% 이상)"); return; } const q=this.rollProps.get(ME.id), x=q?q.x:Room.me.x, y=q?q.y:Room.me.y;
+    this.addBase(ME.id,x,y,RL.r,ME.n); pub(tRoom("ski"),{t:"e",k:"base",x:Math.round(x),y:Math.round(y),r:Math.round(RL.r)}); this.roll={st:2,r:8}; toast("이제 머리를 굴려서 몸통 위에 올려요! ⬆",2400); Room.dirty=true; buildActs(); },
+  rollStack(){ const RL=this.roll, b=this.bases.get(ME.id), m=Room.me; if(!RL||!b) return; if(RL.r<14){ toast("머리를 조금 더 굴려요! (47% 이상)"); return; }
+    if(Math.hypot(m.x-b.x,m.y-b.y)>140){ goTo(b.x-(m.x<b.x?1:-1)*0-90,b.y,null); toast("몸통 옆으로 가서 다시 눌러요"); return; }
+    const r1=Math.round(b.r), r2=Math.round(Math.min(RL.r,b.r*.85)); this.removeBase(ME.id); this.addMan(b.x,b.y,ME.c,ME.n,r1,r2); pub(tRoom("ski"),{t:"e",k:"man",x:Math.round(b.x),y:Math.round(b.y),c:ME.c,r1,r2}); this.roll=null; skiSfx("perfect"); toast("⛄ 내 눈사람 완성!"); Room.dirty=true; buildActs(); },
+  rollCancel(){ if(this.bases.has(ME.id)){ this.removeBase(ME.id); pub(tRoom("ski"),{t:"e",k:"unbase"}); } this.roll=null; Room.dirty=true; buildActs(); },
+  addBase(id,x,y,r,n){ this.removeBase(id); const q={k:"sball",x,y,r:clamp(r,10,50),n:clean(n,8)}; this.bases.set(id,q); this.props.push(q); },
+  removeBase(id){ const q=this.bases.get(id); if(!q) return; this.bases.delete(id); const i=this.props.indexOf(q); if(i>=0) this.props.splice(i,1); },
+  throwBall(){ const m=Room.me; if(m.sn>=5){ toast("파묻혀서 못 던져요! 먼저 털어내요 🫨"); return; } let best=null, bd=700; for(const p of Room.peers.values()){ const d=Math.hypot(p.x-m.x,p.y-m.y); if(d<bd&&d>40){ bd=d; best=p; } }
     const tx=best?best.x:clamp(m.x+(m.dir<0?-1:1)*420,62,this.W-62), ty=best?best.y:m.y; if(best) m.dir=best.x>=m.x?1:-1;
     this.addBall(m.x+m.dir*20,m.y,tx,ty,ME.id,ME.n); skiSfx("throw"); pub(tRoom("ski"),{t:"e",k:"sb",x:Math.round(m.x+m.dir*20),y:Math.round(m.y),tx:Math.round(tx),ty:Math.round(ty)}); },
   addBall(x,y,tx,ty,by,n){ if(this.balls.length>30) return; const d=Math.hypot(tx-x,ty-y); this.balls.push({x,y,tx,ty,by,n:clean(n,8)||"친구",u:0,T:clamp(d/850,.25,.9)}); },
-  makeMan(){ const m=Room.me, x=clamp(m.x+(m.dir<0?-1:1)*70,90,this.W-90), y=clamp(m.y,this.top+60,this.H-90); this.addMan(x,y,ME.c,ME.n); pub(tRoom("ski"),{t:"e",k:"man",x:Math.round(x),y:Math.round(y),c:ME.c}); toast("⛄ 눈사람 완성!"); },
-  addMan(x,y,col,n){ const p={k:"snowman",x,y,col:COLORS.includes(col)?col:"#ff6b6b",n:clean(n,8)}; this.men.push(p); this.props.push(p); if(this.men.length>8){ const o=this.men.shift(), i=this.props.indexOf(o); if(i>=0) this.props.splice(i,1); } },
+  addMan(x,y,col,n,r1,r2){ const p={k:"snowman",x,y,col:COLORS.includes(col)?col:"#ff6b6b",n:clean(n,8),r1:clamp(+r1||32,16,50),r2:clamp(+r2||22,10,42)}; this.men.push(p); this.props.push(p); if(this.men.length>8){ const o=this.men.shift(), i=this.props.indexOf(o); if(i>=0) this.props.splice(i,1); } },
   ev(d){ if(d.k==="sb"){ const p=Room.peers.get(d.id); this.addBall(clamp(+d.x||0,0,this.W),clamp(+d.y||0,0,this.H),clamp(+d.tx||0,0,this.W),clamp(+d.ty||0,0,this.H),d.id,p?p.n:"친구"); }
-    if(d.k==="man"){ const p=Room.peers.get(d.id); this.addMan(clamp(+d.x||0,90,this.W-90),clamp(+d.y||0,this.top,this.H-60),d.c,p?p.n:""); }
+    if(d.k==="man"){ const p=Room.peers.get(d.id); this.removeBase(d.id); this.addMan(clamp(+d.x||0,90,this.W-90),clamp(+d.y||0,this.top,this.H-60),d.c,p?p.n:"",d.r1,d.r2); }
+    if(d.k==="base"){ const p=Room.peers.get(d.id); this.addBase(d.id,clamp(+d.x||0,60,this.W-60),clamp(+d.y||0,this.top,this.H-40),+d.r||24,p?p.n:""); }
+    if(d.k==="unbase") this.removeBase(d.id);
+    if(d.k==="hit"&&d.by===ME.id&&!this.run){ const p=Room.peers.get(d.id); this.hits++; toast(`🎯 명중! ${p?p.n:"친구"}`+(p&&p.sn>=4?" ☃️ 파묻혔어요!":""),1500); buildActs(); }
     if(d.k==="fin"&&+d.day===skiDay()){ const p=Room.peers.get(d.id), n=p?p.n:clean(d.n,8); if(skiAdd(n,+d.tm)&&!this.run) toast(`🏁 ${n} 완주! ${fmtSec(+d.tm)}`,2200); if(!$("skiBox").hidden) openSkiBoard(); } },
-  hello(){ const R=this.run, o={}; if(R&&!R.done) o.sk=[this.course.day,Math.round(R.d),Math.round(R.x),R.crash>0?1:0,R.air>0?1:0]; if(SKI_REC.best) o.sb=[SKI_REC.day,SKI_REC.best];
+  hello(){ const R=this.run, o={}; const m=Room.me; if(m.sn>0) o.sn=m.sn; if(this.roll) o.rl=[this.roll.st,Math.round(this.roll.r)]; if(R&&!R.done) o.sk=[this.course.day,Math.round(R.d),Math.round(R.x),R.crash>0?1:0,R.air>0?1:0,Math.round((R.spin||0)*180/Math.PI)%3600]; if(SKI_REC.best) o.sb=[SKI_REC.day,SKI_REC.best];
     const top=skiTop(5); if(top.length) o.top=top.map(r=>[r.n,r.tm]); return o; },
-  sync(d,p){ const day=skiDay();
-    if(Array.isArray(d.sk)&&+d.sk[0]===day){ p.sk=[day,clamp(+d.sk[1]||0,0,SKI_L),clamp(+d.sk[2]||0,-SKI_HALF,SKI_HALF),d.sk[3]?1:0,d.sk[4]?1:0]; p.skAt=performance.now(); if(p.gd==null||Math.abs(p.gd-p.sk[1])>3000){ p.gd=p.sk[1]; p.gx=p.sk[2]; } } else p.sk=null;
+  sync(d,p){ const day=skiDay(); p.sn=clamp(+d.sn||0,0,5); p.rl=Array.isArray(d.rl)?[d.rl[0]===2?2:1,clamp(+d.rl[1]||8,6,50)]:null;
+    if(Array.isArray(d.sk)&&+d.sk[0]===day){ p.sk=[day,clamp(+d.sk[1]||0,0,SKI_L),clamp(+d.sk[2]||0,-SKI_HALF,SKI_HALF),d.sk[3]?1:0,d.sk[4]?1:0,clamp(+d.sk[5]||0,-3600,3600)]; p.skAt=performance.now(); if(p.gd==null||Math.abs(p.gd-p.sk[1])>3000){ p.gd=p.sk[1]; p.gx=p.sk[2]; } } else p.sk=null;
     if(Array.isArray(d.sb)&&+d.sb[0]===day) skiAdd(p.n,+d.sb[1]);
     if(Array.isArray(d.top)) for(const r of d.top.slice(0,5)) if(Array.isArray(r)) skiAdd(String(r[0]||""),+r[1]); },
   mini(c,k){ c.fillStyle="#e8453c"; c.fillRect(1060*k,560*k,280*k,60*k); c.fillStyle="#7a4a2c"; c.fillRect(1880*k,600*k,440*k,220*k); c.fillStyle="#fbf6ec"; c.fillRect(280*k,420*k,360*k,260*k); },
 
   /* ---------- 슬로프 레이스 ---------- */
-  start(){ if(this.run||Room.id!=="ski") return; const m=Room.me; if(m.st>=0) standUp(); m.tx=null; m.goal=null; m.dn=0;
+  start(){ if(this.run||Room.id!=="ski") return; const m=Room.me; if(m.sn>=5){ toast("먼저 눈을 털어내요! 🫨"); return; } if(this.roll) this.rollCancel(); if(m.st>=0) standUp(); m.tx=null; m.goal=null; m.dn=0;
     const day=skiDay(); if(!this.course||this.course.day!==day) this.course=skiCourse(day);
     this.run={d:0,x:0,v:0,vx:0,t:0,cnt:3.2,lastCnt:4,crash:0,air:0,airMax:0,miss:0,stars:0,gi:0,oi:0,done:false,shake:0,msgs:[],trail:[],hit:new Set(),lean:0,sent:0,passed:new Map()};
     this.camX=0; this.tl=this.tr=this.td=0; Room.keys={};
@@ -1355,40 +1387,50 @@ const Ski={id:"ski",W:2400,H:1600,top:610,men:[],balls:[],fx:[],board:new Map(),
   step(dt,t){ const R=this.run, C=this.course, k=Room.keys;
     if(R.cnt>0){ R.cnt-=dt; const n=Math.ceil(R.cnt); if(n!==R.lastCnt&&n>0){ R.lastCnt=n; skiSfx("beep"); } if(R.cnt<=0){ skiSfx("go"); this.msg("출발! 🚩","#ffd43b"); } }
     else if(!R.done){
-      R.t+=dt; const steer=clamp((k.ArrowLeft||k.a||this.tl?-1:0)+(k.ArrowRight||k.d||this.tr?1:0),-1,1), tuck=k.ArrowDown||k.s||this.td, brake=k.ArrowUp||k.w;
+      R.t+=dt; const steer=clamp((k.ArrowLeft||k.a||this.tl?-1:0)+(k.ArrowRight||k.d||this.tr?1:0),-1,1), tuck=k.ArrowDown||k.s||this.td, brake=k.ArrowUp||k.w, landK=!!(tuck||k[" "]);
+      if(R.jump&&R.air>0){ R.spin+=steer*dt*Math.PI*2*1.6; if(steer&&!R.spinSnd){ R.spinSnd=1; skiSfx("whoosh"); } if(!steer) R.spinSnd=0;
+        if(landK&&!R.prevLand){ if(R.air*R.airMax<=.32) R.landKey=true; else R.early=true; } }
+      R.prevLand=landK;
+      if(!R.tip&&R.cnt<=0){ const nr=C.ob.find(o=>o.k==="ramp"&&o.d>R.d&&o.d-R.d<1300); if(nr){ R.tip=1; this.msg("점프대! 공중에서 ←→ 빙글, 착지 직전 ↓","#74c0fc"); } }
       if(R.crash>0){ R.crash-=dt; R.v=0; R.vx=0; }
       else { const vmax=tuck?1250:1000, acc=tuck?560:420; if(brake) R.v=Math.max(250,R.v-900*dt); else R.v=Math.min(vmax,R.v+acc*dt*(R.v>vmax*.8?.5:1)); if(R.v>vmax) R.v-=600*dt;
         if(R.air<=0){ R.vx+=(steer*(300+R.v*.5)-R.vx)*Math.min(1,dt*7); if(steer) R.v*=1-.12*dt; }
         R.lean+=((R.air>0?R.lean:steer)-R.lean)*Math.min(1,dt*8); R.x+=R.vx*dt;
         if(Math.abs(R.x)>SKI_HALF){ R.x=Math.sign(R.x)*SKI_HALF; R.vx=0; R.v*=1-2.2*dt; if(!R.edgeT||t-R.edgeT>1500){ R.edgeT=t; this.msg("펜스! 안쪽으로 ↔","#ffd8a8"); } }
         R.d+=R.v*dt; }
-      if(R.air>0){ R.air-=dt/R.airMax; if(R.air<=0){ R.air=0; skiSfx("land"); } }
+      if(R.air>0){ R.air-=dt/R.airMax; if(R.air<=0){ R.air=0; if(R.jump) this.land(); else skiSfx("land"); } }
       while(R.oi<C.ob.length&&C.ob[R.oi].d<R.d-80) R.oi++;
       for(let i=R.oi;i<C.ob.length&&C.ob[i].d<R.d+30;i++){ const o=C.ob[i]; if(R.hit.has(o)||Math.abs(o.d-R.d)>28) continue; const dx=R.x-o.x;
         if(o.k==="tree"&&Math.abs(dx)<34&&R.air<=0||o.k==="rock"&&Math.abs(dx)<28*o.s&&R.air<=0){ R.hit.add(o); R.crash=1.1; R.v=0; R.shake=.4; R.x=o.x+(dx>=0?1:-1)*46; skiSfx("crash"); this.msg(o.k==="tree"?"꽈당! 🌲":"쿵! 🪨","#ff8787"); }
-        else if(o.k==="bump"&&Math.abs(dx)<40&&R.air<=0){ R.hit.add(o); R.v*=.8; R.air=1; R.airMax=.28; skiSfx("bump"); }
+        else if(o.k==="bump"&&Math.abs(dx)<40&&R.air<=0){ R.hit.add(o); R.v*=.8; R.air=1; R.airMax=.28; R.airH=18; R.jump=false; skiSfx("bump"); }
         else if(o.k==="star"&&Math.abs(dx)<44){ R.hit.add(o); R.stars++; skiSfx("star"); this.msg("⭐ -0.5초","#ffe066"); }
-        else if(o.k==="ramp"&&Math.abs(dx)<80&&R.air<=0){ R.hit.add(o); R.air=1; R.airMax=.55+R.v/1000*.5; R.v=Math.min(R.v*1.08+80,1300); skiSfx("jump"); this.msg("점프! 🚀","#74c0fc"); } }
+        else if(o.k==="ramp"&&Math.abs(dx)<80&&R.air<=0){ R.hit.add(o); R.air=1; R.airMax=.8+Math.min(R.v,1250)/1000*.55; R.airH=95; R.jump=true; R.spin=0; R.landKey=false; R.early=false; R.jumps=(R.jumps||0)+1; R.v=Math.min(R.v*1.08+80,1300); skiSfx("jump"); this.msg("점프! 🚀","#74c0fc"); } }
       while(R.gi<C.gates.length&&C.gates[R.gi].d<=R.d){ const gt=C.gates[R.gi++]; const ok=Math.abs(R.x-gt.x)<=gt.w/2; R.passed.set(gt,ok); if(ok){ skiSfx("gate"); this.msg("통과! 🚩","#8ce99a"); } else { R.miss++; skiSfx("miss"); this.msg("깃발 놓침 +3초","#ff8787"); } }
       if(R.d>=SKI_L){ this.finish(); } }
     else { R.v*=1-1.6*dt; R.d+=R.v*dt; R.x+=R.vx*dt; R.vx*=1-3*dt; }
-    if(R.shake>0) R.shake-=dt;
+    if(R.shake>0) R.shake-=dt; if(R.wob>0){ R.wob-=dt; R.lean=Math.sin(t/60)*R.wob; }
     if(R.cnt<=0&&(R.trail.length===0||R.d-R.trail[R.trail.length-1][1]>14)){ R.trail.push([R.x,R.d,R.air>0]); if(R.trail.length>90) R.trail.shift(); }
     if(this.sw&&snd.ctx){ const ct=snd.ctx.currentTime, on=R.cnt<=0&&R.air<=0&&R.crash<=0; this.sw.g.gain.setTargetAtTime(on?Math.min(.11,R.v/1250*.11+(Math.abs(R.vx)>300?.03:0)):0,ct,.08); this.sw.f.frequency.setTargetAtTime(500+R.v*1.4,ct,.1); }
     const now=performance.now(); if(now-R.sent>150){ R.sent=now; sendState(false); }
     peersStep(dt); for(const p of Room.peers.values()) if(p.sk){ p.gd+=(p.sk[1]-p.gd)*Math.min(1,dt*8); p.gx+=(p.sk[2]-p.gx)*Math.min(1,dt*8); }
     this.render(t,dt); },
-  finish(){ const R=this.run; R.done=true; const tm=Math.max(12,R.t+R.miss*3-R.stars*.5); R.final=tm; skiSfx("fin");
+  land(){ const R=this.run; R.jump=false; const deg=Math.abs(R.spin)*180/Math.PI, rot=Math.round(deg/360), off=Math.abs(deg-rot*360); R.spin=0;
+    if(off<=30){ let b=rot*1+(rot>=2?.5:0), txt=rot?`완벽 착지! 🌀${rot*360}°`:"착지 성공!"; if(R.landKey&&!R.early){ b+=.5; txt=rot?txt+" + 텔레마크":"텔레마크 착지! 🎯"; }
+      if(b>0){ R.bonus=(R.bonus||0)+b; R.tricks=(R.tricks||0)+1; txt+=` -${b.toFixed(1)}초`; this.msg(txt,"#ffd43b"); skiSfx("perfect"); } else { this.msg(txt+" (↓ 타이밍 놓침)","#e7f5ff"); skiSfx("land"); }
+      R.v=Math.min(1300,R.v+rot*120+(R.landKey&&!R.early?60:0)); }
+    else if(off<=75){ R.v*=.55; R.shake=.25; R.wob=.8; this.msg(`휘청~ 😵 ${Math.round(off)}° 비뚤어졌어요`,"#ffc078"); skiSfx("bump"); }
+    else { R.crash=1.1; R.v=0; R.shake=.45; this.msg("착지 실패! 꽈당 🤕","#ff8787"); skiSfx("crash"); } },
+  finish(){ const R=this.run; R.done=true; const tm=Math.max(12,R.t+R.miss*3-R.stars*.5-(R.bonus||0)); R.final=tm; skiSfx("fin");
     const day=skiDay(); if(SKI_REC.day!==day){ SKI_REC.day=day; SKI_REC.best=0; } const nb=!SKI_REC.best||tm<SKI_REC.best; if(nb){ SKI_REC.best=Math.round(tm*10)/10; try{ localStorage.setItem("lounge-ski",JSON.stringify(SKI_REC)); }catch(e){} }
     skiAdd(ME.n,tm); pub(tRoom("ski"),{t:"e",k:"fin",tm:Math.round(tm*10)/10,day,n:ME.n}); sendState(true);
     const top=skiTop(99), rank=top.findIndex(r=>r.n===clean(ME.n,8))+1;
     $("skiEndT").textContent=`🏁 완주! ${fmtSec(tm)}`;
-    const parts=[`달린 시간 ${fmtSec(R.t)}`]; if(R.miss) parts.push(`깃발 놓침 ${R.miss}개 (+${R.miss*3}초)`); if(R.stars) parts.push(`별 ${R.stars}개 (-${(R.stars*.5).toFixed(1)}초)`);
+    const parts=[`달린 시간 ${fmtSec(R.t)}`]; if(R.miss) parts.push(`깃발 놓침 ${R.miss}개 (+${R.miss*3}초)`); if(R.stars) parts.push(`별 ${R.stars}개 (-${(R.stars*.5).toFixed(1)}초)`); if(R.bonus) parts.push(`점프 기술 ${R.tricks}번 (-${R.bonus.toFixed(1)}초)`);
     $("skiEndM").textContent=parts.join(" · "); $("skiEndB").textContent=(nb?"🎉 오늘 내 최고 기록! ":`오늘 내 최고: ${fmtSec(SKI_REC.best)} · `)+(rank?`지금 ${rank}등`:"");
     setTimeout(()=>{ if(this.run===R) $("skiEnd").hidden=false; },900); },
   resize(){ const cv2=$("skiCv"), dp=Math.min(G.low?1:1.5,devicePixelRatio||1); const w=Math.round(innerWidth*dp), h=Math.round(innerHeight*dp); if(cv2.width!==w||cv2.height!==h){ cv2.width=w; cv2.height=h; } this.dp=dp; },
   render(t,dt){ this.resize(); const cv2=$("skiCv"), c=cv2.getContext("2d"), R=this.run, C=this.course, Wp=cv2.width, Hp=cv2.height, dp=this.dp;
-    const s=Math.min(innerWidth/(innerWidth<700?620:1000),innerHeight/800)*dp, vw=Wp/s, vh=Hp/s, pyW=vh*.3;
+    const s=Math.min(innerWidth/(innerWidth<700?620:1000),innerHeight/800)*dp, vw=Wp/s, vh=Hp/s, pyW=vh*.4;
     const lim=Math.max(0,(1500-vw)/2), camT=clamp(R.x*.85,-lim,lim); this.camX+=(camT-this.camX)*Math.min(1,dt*5);
     const sh=R.shake>0?R.shake*18:0, ox=Wp/2+rnd(-sh,sh)*dp, oy=rnd(-sh,sh)*dp;
     const SX=x=>(x-this.camX)*s+ox, SY=d=>(d-R.d+pyW)*s+oy, d0=R.d-pyW-200, d1=R.d+vh-pyW+260;
@@ -1414,19 +1456,26 @@ const Ski={id:"ski",W:2400,H:1600,top:610,men:[],balls:[],fx:[],board:new Map(),
         if(st==null){ c.strokeStyle=col+"55"; c.lineWidth=3*s; c.setLineDash([8*s,8*s]); c.beginPath(); c.moveTo(SX(o.x-o.w/2),Y); c.lineTo(SX(o.x+o.w/2),Y); c.stroke(); c.setLineDash([]); }
         for(const sd of [-1,1]){ const fx=SX(o.x+sd*o.w/2); c.fillStyle="rgba(60,90,140,.2)"; c.beginPath(); c.ellipse(fx,Y+2*s,10*s,4*s,0,0,7); c.fill(); c.strokeStyle="#495057"; c.lineWidth=4*s; c.beginPath(); c.moveTo(fx,Y); c.lineTo(fx,Y-80*s); c.stroke();
           c.fillStyle=col; c.beginPath(); c.moveTo(fx,Y-80*s); c.lineTo(fx-sd*44*s,Y-66*s+Math.sin(t/200+sd)*3*s); c.lineTo(fx,Y-48*s); c.fill(); } }
-      else if(o.k==="ghost"){ const p=o.p; drawSkier(c,X,Y,s,p.c||"#adb5bd",p.g||0,0,p.sk[3]?.5:0,p.sk[4]?.5:0,t,p.n,false,.6); }
-      else if(o.k==="me"){ drawSkier(c,X,Y,s,ME.c,ME.g||0,R.lean,R.crash,R.air,t,ME.n,true,1); } }
+      else if(o.k==="ghost"){ const p=o.p; drawSkier(c,X,Y,s,{col:p.c||"#adb5bd",g:p.g||0,cr:p.sk[3]?.5:0,air:p.sk[4]?.5:0,airH:50,spin:(p.sk[5]||0)*Math.PI/180,t,name:p.n,ph:p.ph,alpha:.6}); }
+      else if(o.k==="me"){ drawSkier(c,X,Y,s,{col:ME.c,g:ME.g||0,lean:R.lean,cr:R.crash,air:R.air,airH:R.airH||60,spin:R.spin||0,t,name:ME.n,isMe:true,ph:Room.me.ph}); } }
     c.fillStyle="rgba(255,255,255,.9)"; for(let i=0;i<70;i++){ const x=(i*157+t*.03*(1+i%3))%Wp, y=(i*233+t*.12*(1+i%2))%Hp; c.beginPath(); c.arc(x,y,(1.5+i%3)*dp,0,7); c.fill(); }
     // HUD
     const u=dp, fs=n=>`700 ${Math.round(n*u)}px 'IBM Plex Sans KR'`; c.textBaseline="middle";
-    const tShow=R.done?R.final:R.t+R.miss*3-R.stars*.5; const pill=(x,y,w,txt,bgc,fg)=>{ c.fillStyle=bgc; rr(c,x,y,w,40*u,20*u); c.fill(); c.fillStyle=fg||"#fff"; c.textAlign="center"; c.fillText(txt,x+w/2,y+20*u); };
+    const tShow=R.done?R.final:R.t+R.miss*3-R.stars*.5-(R.bonus||0); const pill=(x,y,w,txt,bgc,fg)=>{ c.fillStyle=bgc; rr(c,x,y,w,40*u,20*u); c.fill(); c.fillStyle=fg||"#fff"; c.textAlign="center"; c.fillText(txt,x+w/2,y+20*u); };
     const nar=innerWidth<620, ty=nar?16*u:14*u; c.font=fs(nar?19:22); pill(nar?Wp-150*u:Wp/2-95*u,ty,nar?136*u:190*u,`⏱ ${Math.max(0,tShow).toFixed(1)}초`,"rgba(20,30,50,.75)");
     c.font=fs(17); pill(Wp-140*u,nar?62*u:14*u,126*u,`${Math.round(R.v*.072)} km/h`,"rgba(20,30,50,.6)");
     pill(Wp-140*u,nar?110*u:62*u,126*u,`🚩${[...R.passed.values()].filter(v=>v).length}/${C.gates.length}  ⭐${R.stars}`,"rgba(20,30,50,.6)");
     const bx=Wp-28*u, by0=(innerWidth<620?160:112)*u, by1=Hp-150*u; c.fillStyle="rgba(20,30,50,.25)"; rr(c,bx-5*u,by0,10*u,by1-by0,5*u); c.fill(); c.fillStyle="#e8453c"; c.fillRect(bx-12*u,by1-2*u,24*u,4*u);
     for(const p of Room.peers.values()) if(p.sk&&p.sk[0]===day&&nowP-p.skAt<3000){ c.fillStyle=p.c||"#fff"; c.beginPath(); c.arc(bx,by0+(by1-by0)*clamp(p.gd/SKI_L,0,1),6*u,0,7); c.fill(); }
     c.fillStyle="#ffb347"; c.strokeStyle="#fff"; c.lineWidth=2*u; c.beginPath(); c.arc(bx,by0+(by1-by0)*clamp(R.d/SKI_L,0,1),8*u,0,7); c.fill(); c.stroke();
-    R.msgs=R.msgs.filter(m=>(m.k+=dt/1.3)<1); R.msgs.slice(-3).forEach((m,i,a)=>{ const y=SY(R.d)-150*s-(a.length-1-i)*40*u-m.k*30*u; c.globalAlpha=m.k<.1?m.k*10:1-Math.max(0,m.k-.6)/.4; c.font=`700 ${Math.round(30*u)}px 'Gaegu'`; c.textAlign="center"; c.lineWidth=5*u; c.strokeStyle="rgba(20,30,50,.6)"; c.strokeText(m.txt,SX(R.x),y); c.fillStyle=m.col; c.fillText(m.txt,SX(R.x),y); c.globalAlpha=1; });
+    R.msgs=R.msgs.filter(m=>(m.k+=dt/1.3)<1); R.msgs.slice(-3).forEach((m,i,a)=>{ const y=SY(R.d)+70*s+(a.length-1-i)*38*u+30*u-m.k*24*u; c.globalAlpha=m.k<.1?m.k*10:1-Math.max(0,m.k-.6)/.4; c.font=`700 ${Math.round(30*u)}px 'Gaegu'`; c.textAlign="center"; c.lineWidth=5*u; c.strokeStyle="rgba(20,30,50,.6)"; c.strokeText(m.txt,SX(R.x),y); c.fillStyle=m.col; c.fillText(m.txt,SX(R.x),y); c.globalAlpha=1; });
+    if(R.jump&&R.air>0){ const X=SX(R.x), Y=SY(R.d)-(R.airH||60)*Math.sin(clamp(R.air,0,1)*Math.PI)*s-50*s, rad=86*s, deg=R.spin*180/Math.PI, rem=R.air*R.airMax, win=rem<=.32;
+      c.lineWidth=7*u; c.strokeStyle="rgba(20,30,50,.25)"; c.beginPath(); c.arc(X,Y,rad,0,7); c.stroke();
+      const rot=Math.round(Math.abs(deg)/360), off=Math.abs(Math.abs(deg)-rot*360); c.strokeStyle=off<=30?"#40c057":off<=75?"#fab005":"#fa5252"; c.beginPath(); c.arc(X,Y,rad,-Math.PI/2,-Math.PI/2+R.spin,R.spin<0); c.stroke();
+      c.fillStyle="#fff"; c.beginPath(); c.arc(X+Math.cos(-Math.PI/2+R.spin)*rad,Y+Math.sin(-Math.PI/2+R.spin)*rad,7*u,0,7); c.fill();
+      c.fillStyle="#40c057"; c.beginPath(); c.moveTo(X,Y-rad-12*u); c.lineTo(X-8*u,Y-rad-24*u); c.lineTo(X+8*u,Y-rad-24*u); c.fill();
+      c.font=`700 ${Math.round(24*u)}px 'Gaegu'`; c.textAlign="center"; c.lineWidth=5*u; c.strokeStyle="rgba(20,30,50,.6)"; const lab=win?(R.landKey?"착지 자세 OK! 🎯":"지금 ↓ !"):(Math.abs(deg)>20?`${Math.round(Math.abs(deg))}°`:"←→ 빙글!"); c.strokeText(lab,X,Y+rad+26*u); c.fillStyle=win?"#ffd43b":"#fff"; c.fillText(lab,X,Y+rad+26*u);
+      if(win&&!R.landKey&&Math.floor(t/120)%2){ c.strokeStyle="rgba(255,212,59,.8)"; c.lineWidth=4*u; c.beginPath(); c.arc(X,Y,rad+12*u,0,7); c.stroke(); } }
     if(R.cnt>0){ const n=Math.ceil(R.cnt), f=R.cnt-Math.floor(R.cnt); c.font=`700 ${Math.round((90+60*f)*u)}px 'Gaegu'`; c.textAlign="center"; c.lineWidth=8*u; c.strokeStyle="rgba(20,30,50,.5)"; c.strokeText(n,Wp/2,Hp*.45); c.fillStyle="#ff6b6b"; c.fillText(n,Wp/2,Hp*.45);
       c.font=fs(20); c.fillStyle="#243b5a"; c.fillText("깃발 사이를 지나가고 나무·바위는 피해요!",Wp/2,Hp*.45+90*u); }
   }
@@ -1443,6 +1492,7 @@ function mapStep(dt,t){
   const M=MAP(), m=Room.me, k=Room.keys; let vx=0,vy=0; const SP=330;
   if(k.ArrowLeft||k.a) vx-=1; if(k.ArrowRight||k.d) vx+=1; if(k.ArrowUp||k.w) vy-=1; if(k.ArrowDown||k.s) vy+=1;
   const ox=m.x, oy=m.y;
+  const buried=Room.id==="ski"&&m.sn>=5; if(buried){ vx=vy=0; m.tx=null; m.goal=null; }
   if(vx||vy){ if(m.st>=0) standUp(); m.goal=null; m.tx=null; const d=Math.hypot(vx,vy); m.x+=vx/d*SP*dt; m.y+=vy/d*SP*.85*dt; }
   else if(m.tx!=null&&m.st<0){ const dx=m.tx-m.x, dy=m.ty-m.y, d=Math.hypot(dx,dy);
     if(d<6){ m.tx=null; const gl=m.goal; m.goal=null; if(gl) runGoal(gl); }
@@ -1648,7 +1698,7 @@ function enterRoom(r){
   if(from){ pub(tRoom(from),{t:"bye"}); unsub(tRoom(from)); }
   Room.id=r; Room.peers.clear(); for(const id in MAPS) if(id!==r&&MAPS[id].bg){ MAPS[id].bg=null; MAPS[id].frame=null; MAPS[id].view=null; } const M=MAPS[r]; if(!M.bg) buildMap(M);
   if(r!=="zen"){ Zen.breath=false; $("breath").hidden=true; }
-  const m=Room.me; m.tx=null; m.goal=null; m.m=-1; m.say=""; m.st=-1; m.dn=0; m.ps=0;
+  const m=Room.me; m.tx=null; m.goal=null; m.m=-1; m.say=""; m.st=-1; m.dn=0; m.ps=0; m.sn=0; Ski.roll=null;
   const sp=M.spawn(from); m.x=sp.x; m.y=sp.y; cam.init=false; cam.z=1;
   ["menuBox","roomsBox","seatBox","dexBox","mfBox","danceBox","skiBox"].forEach(i=>$(i).hidden=true); $("fishCard").hidden=true; $("piano").hidden=true;
   $("intro").hidden=true; document.body.classList.add("inroom");
