@@ -1,0 +1,136 @@
+{
+ "eventName": "2026 직원 얼굴 그리기 대회",
+ "topic": "우리 팀장님 얼굴을 그려주세요!",
+ "entries": [
+  {
+   "name": "민지",
+   "file": "demo1.png",
+   "ink": "demo1_ink.png",
+   "scores": {
+    "creativity": 8,
+    "topic": 9,
+    "completeness": 9,
+    "fun": 9
+   },
+   "title": "무지개 곱슬 박사",
+   "comment": "무지개 곱슬머리 아이디어가 기발해요! 활짝 웃는 표정이 화면을 밝혀요.",
+   "message": "안녕! 👋",
+   "likes": 5
+  },
+  {
+   "name": "준호",
+   "file": "demo2.png",
+   "ink": "demo2_ink.png",
+   "scores": {
+    "creativity": 10,
+    "topic": 7,
+    "completeness": 8,
+    "fun": 8
+   },
+   "title": "피카소의 후예",
+   "comment": "과감한 색 면 분할이 미술관 작품 같아요. 독창성 최고!",
+   "message": "예술은 폭발이다",
+   "likes": 4
+  },
+  {
+   "name": "서연",
+   "file": "demo3.png",
+   "ink": "demo3_ink.png",
+   "scores": {
+    "creativity": 9,
+    "topic": 7,
+    "completeness": 8,
+    "fun": 7
+   },
+   "title": "로봇 선생님",
+   "comment": "선생님을 로봇으로 바꾼 상상력이 돋보여요. 나사 하나까지 꼼꼼해요.",
+   "message": "삐빅 충전 완료",
+   "likes": 3
+  },
+  {
+   "name": "도윤",
+   "file": "demo4.png",
+   "ink": "demo4_ink.png",
+   "scores": {
+    "creativity": 8,
+    "topic": 8,
+    "completeness": 6,
+    "fun": 10
+   },
+   "title": "웃음 폭탄",
+   "comment": "보는 순간 웃음이 터지는 표정 연출! 땀방울 디테일이 재치 있어요.",
+   "message": "ㅋㅋㅋㅋ",
+   "likes": 6
+  },
+  {
+   "name": "하은",
+   "file": "demo5.png",
+   "ink": "demo5_ink.png",
+   "scores": {
+    "creativity": 5,
+    "topic": 7,
+    "completeness": 5,
+    "fun": 6
+   },
+   "title": "미니멀 장인",
+   "comment": "군더더기 없는 선으로 표정을 잘 잡았어요. 색을 더하면 더 빛날 거예요.",
+   "message": "최선을 다했다",
+   "likes": 1
+  },
+  {
+   "name": "지우",
+   "file": "demo6.png",
+   "ink": "demo6_ink.png",
+   "scores": {
+    "creativity": 7,
+    "topic": 8,
+    "completeness": 8,
+    "fun": 6
+   },
+   "title": "햇살 요정",
+   "comment": "햇님처럼 따뜻한 분위기를 색으로 잘 표현했어요.",
+   "message": "화이팅!",
+   "likes": 2
+  },
+  {
+   "name": "태민",
+   "file": "demo7.png",
+   "ink": "demo7_ink.png",
+   "scores": {
+    "creativity": 6,
+    "topic": 9,
+    "completeness": 9,
+    "fun": 6
+   },
+   "title": "꼼꼼 신사",
+   "comment": "머리카락 결과 넥타이까지 정성이 가득! 완성도가 돋보여요.",
+   "message": "잘 부탁해요",
+   "likes": 2
+  },
+  {
+   "name": "유나",
+   "file": "demo8.png",
+   "ink": "demo8_ink.png",
+   "scores": {
+    "creativity": 9,
+    "topic": 8,
+    "completeness": 8,
+    "fun": 9
+   },
+   "title": "고양이 선생님",
+   "comment": "고양이 귀와 수염으로 변신시킨 아이디어가 사랑스러워요.",
+   "message": "야옹 🐱",
+   "likes": 7
+  }
+ ],
+ "waiting": [
+  {
+   "name": "현우",
+   "message": "아직 그리는 중"
+  },
+  {
+   "name": "수아",
+   "message": "저 늦었어요!"
+  }
+ ]
+}

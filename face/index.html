@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#fff7e8">
+<title>얼굴 그리기 대회 — 참가</title>
+<link rel="stylesheet" href="common.css">
+<link rel="stylesheet" href="join.css">
+</head>
+<body class="join">
+
+<!-- 0. 방 코드 입력 (QR 없이 주소로만 들어온 경우) -->
+<section id="scr-code" class="screen center hidden">
+  <div class="card name-card">
+    <div class="badge">🎨 얼굴 그리기 대회</div>
+    <h1>방 코드 입력</h1>
+    <p class="hint big">큰 화면에 보이는 4자리 코드를 입력하세요<br>(QR을 찍었다면 이 화면은 나오지 않아요)</p>
+    <form id="code-form" autocomplete="off">
+      <input id="code-input" class="input code-input" maxlength="6" placeholder="ABCD" autocapitalize="characters" enterkeyhint="go" required>
+      <button class="btn btn-primary btn-lg wide">들어가기 →</button>
+    </form>
+  </div>
+</section>
+
+<!-- 1. 이름 입력 -->
+<section id="scr-name" class="screen center hidden">
+  <div class="card name-card">
+    <div class="badge">🎨 참가하기</div>
+    <h1 id="n-event">얼굴 그리기 대회</h1>
+    <div class="topic-box"><span>오늘의 주제</span><b id="n-topic">—</b></div>
+    <form id="name-form" autocomplete="off">
+      <input id="name-input" class="input" maxlength="12" placeholder="이름 또는 별칭" enterkeyhint="go" required>
+      <button class="btn btn-primary btn-lg wide" id="join-btn">입장하기 →</button>
+      <p class="hint">로그인 없이 이름만 쓰면 끝! 내 이름표를 단 캐릭터가 큰 화면에 나타나요.</p>
+    </form>
+  </div>
+</section>
+
+<!-- 2. 시작 대기 -->
+<section id="scr-wait" class="screen center hidden">
+  <div class="card wait-card">
+    <h2>👀 큰 화면을 보세요!</h2>
+    <p class="hint big"><b id="w-name"></b>님 캐릭터가 등장했어요</p>
+    <canvas class="mini-char" id="w-char" width="360" height="480"></canvas>
+    <div class="topic-box"><span>오늘의 주제 · 제한 시간 <b id="w-dur">5분</b></span><b id="w-topic">—</b></div>
+    <div class="say" data-say></div>
+    <p class="hint">진행자가 <b>시작</b>을 누르면 그림판이 열려요 <span class="loader"><i></i><i></i><i></i></span></p>
+  </div>
+</section>
+
+<!-- 3. 그리기 -->
+<section id="scr-draw" class="screen draw hidden">
+  <header class="draw-head">
+    <div class="topic-line"><span class="topic-tag">주제</span><b id="d-topic">—</b></div>
+    <button class="say-btn" id="say-open" aria-label="한마디 보내기">💬</button>
+    <div class="timer" id="d-timer">5:00</div>
+  </header>
+
+  <div class="canvas-wrap" id="canvas-wrap">
+    <div class="zoomer" id="zoomer">
+      <canvas id="c-base"></canvas>
+      <canvas id="c-ink" aria-label="그림판"></canvas>
+      <canvas id="c-badge"></canvas>
+    </div>
+    <button class="fit-btn hidden" id="fit-btn">↺ 원래 크기</button>
+    <div class="pinch-hint" id="pinch-hint">✌️ 두 손가락으로 확대·이동</div>
+    <div class="paused-cover hidden" id="paused-cover"><div>⏸️<br>잠시 멈춤<small>진행자가 다시 시작할 때까지 기다려 주세요</small></div></div>
+  </div>
+
+  <div class="tools" id="tools">
+    <div class="colors" id="colors"></div>
+    <div class="tool-row">
+      <button class="tool on" id="t-pen">✏️<span>펜</span></button>
+      <button class="tool" id="t-eraser">🧽<span>지우개</span></button>
+      <button class="tool" id="t-undo">↩️<span>되돌리기</span></button>
+      <button class="tool" id="t-clear">🗑️<span>전체 지우기</span></button>
+    </div>
+    <div class="size-row" id="sizes">
+      <span class="size-label">굵기</span>
+    </div>
+    <button class="btn btn-primary btn-lg submit-btn" id="submit-btn">✨ 화면에 띄우기</button>
+  </div>
+</section>
+
+<!-- 4. 제출 완료 -->
+<section id="scr-done" class="screen scroll hidden">
+  <div class="done-wrap">
+    <div class="card done-card">
+      <div class="big-emoji pop">🎉</div>
+      <h2>큰 화면에 떴어요!</h2>
+      <img id="done-img" alt="내 캐릭터">
+      <div class="say" data-say></div>
+      <div class="reveal-note hidden" id="reveal-note">🏆 시상식이 시작됐어요! 앞 화면을 봐 주세요</div>
+    </div>
+    <div class="card like-card hidden" id="like-card">
+      <h3>💗 마음에 드는 그림에 하트!</h3>
+      <p class="hint" id="like-hint"></p>
+      <div class="like-grid" id="like-grid"></div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. 마감(미제출) -->
+<section id="scr-closed" class="screen center hidden">
+  <div class="card done-card">
+    <div class="big-emoji">⏰</div>
+    <h2>그리기 시간이 끝났어요</h2>
+    <p class="hint big">다음 라운드를 기다려 주세요!</p>
+    <div class="say" data-say></div>
+  </div>
+</section>
+
+<div class="net-badge hidden" id="net-badge">📶 연결 중…</div>
+
+<script src="vendor/supabase.js"></script>
+<script src="common.js"></script>
+<script src="fd.js"></script>
+<script src="join.js"></script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>큰 화면 — 얼굴 그리기 대회</title>
+<link rel="stylesheet" href="common.css">
+<link rel="stylesheet" href="screen.css">
+</head>
+<body class="screen-page">
+
+<!-- 캐릭터 무대 -->
+<div id="stage">
+  <div class="floor"></div>
+  <div id="crowd"></div>
+</div>
+
+<!-- 상단 정보 -->
+<header id="hud">
+  <div class="hud-topic"><span id="hud-state">대기</span><b id="hud-topic"></b></div>
+  <div class="hud-timer" id="hud-timer">5:00</div>
+  <div class="hud-count"><div><small>참가</small><b id="hud-pc">0</b></div><div><small>완성</small><b id="hud-sc">0</b></div></div>
+</header>
+
+<!-- 대기 화면 QR -->
+<aside id="lobby">
+  <div class="lb-badge">🎨 QR 찍고 참가!</div>
+  <h1 id="lb-event"></h1>
+  <div class="qr" id="lb-qr"></div>
+  <div class="lb-url" id="lb-url"></div>
+  <p class="lb-how">📱 카메라로 QR 찍기 → 이름 입력 → 끝!<br><small>앱 설치·로그인 필요 없어요</small></p>
+</aside>
+
+<!-- 구석 QR -->
+<div id="qr-corner"><div class="qr" id="corner-qr"></div><span>QR로 참가</span></div>
+
+<!-- 새 그림 등장 알림 -->
+<div id="arrivals"></div>
+
+<!-- AI 심사 연출 -->
+<div id="judge-panel" class="hidden">
+  <div class="jp-frame"><img id="jp-img" alt=""><i class="scan"></i><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="jp-info">
+    <div class="jp-head"><span class="jp-dot"></span><b id="jp-title">AI 심사위원 분석 중</b></div>
+    <div class="jp-name" id="jp-name"></div>
+    <div class="jp-bars" id="jp-bars"></div>
+    <div class="jp-result hidden" id="jp-result"><div class="jp-nick" id="jp-nick"></div><div class="jp-score" id="jp-score"></div><p id="jp-comment"></p></div>
+    <div class="jp-progress" id="jp-progress"></div>
+  </div>
+</div>
+
+<!-- 크게 보기 -->
+<div id="spot" class="hidden"></div>
+
+<!-- 시상식 -->
+<div id="award" class="hidden">
+  <div class="beams"></div>
+  <div id="award-body"></div>
+</div>
+
+<!-- 조작 바 -->
+<nav id="dock">
+  <div id="dock-main"></div>
+  <span class="sep"></span>
+  <button class="dk" id="dk-qr">📱 QR</button>
+  <button class="dk" id="dk-full">⛶ 전체화면</button>
+  <a class="dk" id="dk-host" target="dc-host">⚙️ 진행자 화면</a>
+</nav>
+
+<script src="vendor/qrcode.js"></script>
+<script src="vendor/supabase.js"></script>
+<script src="common.js"></script>
+<script src="fd.js"></script>
+<script src="screen.js"></script>
+</body>
+</html>

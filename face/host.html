@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>진행자 — 얼굴 그리기 대회</title>
+<link rel="stylesheet" href="common.css">
+<link rel="stylesheet" href="host.css">
+</head>
+<body class="host">
+
+<header class="topbar">
+  <div class="brand">🎨 <span id="h-event">얼굴 그리기 대회</span> <span class="room-code">방 코드 <b id="h-code">—</b></span></div>
+  <span class="chip waiting" id="h-status"><i class="dot"></i><b>시작 전</b></span>
+  <div class="h-timer" id="h-timer">5:00</div>
+  <div class="counts">
+    <div><small>참가</small><b id="h-pc">0</b></div>
+    <div><small>제출</small><b id="h-sc">0</b></div>
+  </div>
+  <a class="btn btn-sky btn-sm" id="open-screen" target="dc-screen">📺 프로젝터 화면 열기</a>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button class="tab on" data-tab="run">① 진행</button>
+  <button class="tab" data-tab="judge">② 심사</button>
+  <button class="tab" data-tab="award">③ 시상</button>
+  <button class="tab" data-tab="admin">⚙️ 관리</button>
+</nav>
+
+<!-- ① 진행 -->
+<main class="panel" id="tab-run">
+  <div class="run-grid">
+    <div class="col">
+      <section class="card">
+        <h3>대회 설정</h3>
+        <form id="cfg-form">
+          <label class="field" for="cfg-event">행사 이름</label>
+          <input class="input" id="cfg-event" maxlength="60">
+          <label class="field" for="cfg-topic">그림 주제</label>
+          <input class="input" id="cfg-topic" maxlength="120">
+          <label class="field" for="cfg-min">제한 시간 (분)</label>
+          <input class="input" id="cfg-min" type="number" min="1" max="180" step="0.5">
+          <label class="field">점수 방식</label>
+          <div class="opt-row"><label><input type="checkbox" id="cfg-likes"> 💗 좋아요 투표 반영</label>
+            <span>심사 <input class="input mini" id="cfg-weight" type="number" min="0" max="100" step="5">% · 1인당 하트 <input class="input mini" id="cfg-maxlikes" type="number" min="1" max="10">개</span></div>
+          <div class="opt-row"><label><input type="checkbox" id="cfg-bubbles"> 💬 한마디 말풍선 허용</label></div>
+          <label class="field" for="cfg-judge">AI 심사</label>
+          <select class="input" id="cfg-judge">
+            <option value="manual">끄기 (진행자가 직접 채점)</option>
+            <option value="mock">테스트용 가짜 AI (리허설용)</option>
+            <option value="claude">Claude AI 심사</option>
+          </select>
+          <button class="btn btn-mint wide" id="cfg-save" style="margin-top:12px">저장</button>
+        </form>
+      </section>
+
+      <section class="card">
+        <h3>진행</h3>
+        <div class="controls" id="controls"></div>
+        <p class="note" id="ctl-note"></p>
+      </section>
+
+      <section class="card qr-card">
+        <h3>참가자 접속 QR</h3>
+        <div class="tunnel" id="tunnel"></div>
+        <div class="qr" id="qr"></div>
+        <div class="url" id="join-url">—</div>
+        <button class="btn btn-sun wide" id="qr-big">🔍 QR 크게 보기</button>
+      </section>
+    </div>
+
+    <div class="col wide-col">
+      <section class="card">
+        <div class="sec-head">
+          <h3>실시간 갤러리</h3>
+          <div class="progress"><i id="sub-bar"></i></div>
+          <span id="sub-text" class="muted"></span>
+        </div>
+        <div class="gallery" id="gallery"></div>
+        <p class="empty" id="gallery-empty">아직 제출된 그림이 없어요. 그림이 들어오면 여기에 바로 나타나요.</p>
+      </section>
+      <section class="card">
+        <div class="sec-head"><h3>참가자</h3><span class="muted">● 접속 중 · ✅ 완성 · 💬 마지막 한마디 · 이름을 누르면 내보내기</span></div>
+        <div class="people" id="people"></div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<!-- ② 심사 -->
+<main class="panel hidden" id="tab-judge">
+  <section class="card judge-bar">
+    <div class="ai-state" id="ai-state"></div>
+    <div class="row wrap">
+      <button class="btn btn-grape" id="ai-new">🤖 AI 심사 (아직 안 본 그림)</button>
+      <button class="btn btn-ghost" id="ai-all">🔁 AI 전체 다시 심사</button>
+      <a class="btn btn-ghost" id="csv" download>📄 결과 CSV 저장</a>
+    </div>
+    <div class="ai-progress hidden" id="ai-progress"><div class="progress"><i></i></div><span></span></div>
+    <p class="note">심사 기준: <b>창의성 · 주제 표현력 · 완성도 · 재미</b> (각 10점, 총 40점). 그려진 사람의 외모는 평가하지 않고, 그림의 표현과 아이디어만 평가합니다. 진행자가 직접 입력한 점수가 AI 점수보다 우선합니다. <b id="formula-note"></b> 동점이면 창의성 → 좋아요 → 먼저 제출한 순입니다.</p>
+  </section>
+  <div class="judge-grid">
+    <div class="judge-list" id="judge-list"></div>
+    <aside class="card rank-panel">
+      <h3>현재 순위</h3>
+      <ol class="rank-list" id="rank-list"></ol>
+      <p class="muted" id="rank-empty">점수가 입력되면 순위가 나타나요.</p>
+    </aside>
+  </div>
+</main>
+
+<!-- ③ 시상 -->
+<main class="panel hidden" id="tab-award">
+  <div class="award-grid">
+    <section class="card">
+      <h3>시상식 진행</h3>
+      <ol class="steps">
+        <li>프로젝터에 <b>📺 프로젝터 화면</b>을 띄워 두세요 (위 오른쪽 버튼).</li>
+        <li><b>시상식 시작</b>을 누르면 큰 화면이 시상 화면으로 바뀝니다.</li>
+        <li><b>다음 ▶</b>을 누를 때마다 3위 → 2위 → 1위 → 전체 순위 순서로 공개됩니다.</li>
+        <li>큰 화면 아래쪽 조작 바(마우스를 움직이면 나타남)나 키보드 → ← 로도 넘길 수 있어요.</li>
+      </ol>
+      <div class="award-ctl">
+        <button class="btn btn-primary btn-lg" id="rv-open">🏆 시상식 시작</button>
+        <div class="row">
+          <button class="btn btn-ghost btn-lg" id="rv-prev">◀ 이전</button>
+          <button class="btn btn-sun btn-lg" id="rv-next">다음 ▶</button>
+        </div>
+        <button class="btn btn-ghost" id="rv-close">시상식 닫기</button>
+      </div>
+      <div class="rv-now" id="rv-now"></div>
+    </section>
+    <section class="card">
+      <h3>공개될 순위 미리보기</h3>
+      <div id="award-preview"></div>
+    </section>
+  </div>
+</main>
+
+<!-- ⚙️ 관리 -->
+<main class="panel hidden" id="tab-admin">
+  <div class="admin-grid">
+    <section class="card">
+      <h3>시연용 데이터</h3>
+      <p>예시 참가자 10명과 캐릭터 8개(한마디·하트·점수·작품 별명 포함)를 넣습니다. 큰 화면에서 바로 🏆 순위 발표까지 시연할 수 있어요.</p>
+      <div class="row wrap">
+        <button class="btn btn-sun" id="demo-scored">🧪 예시 데이터 넣기 (점수 포함)</button>
+        <button class="btn btn-ghost" id="demo-plain">예시 그림만 넣기 (채점 연습용)</button>
+      </div>
+    </section>
+    <section class="card">
+      <h3>초기화</h3>
+      <p><b>새 라운드</b>: 그림과 점수만 지우고 접속한 참가자는 그대로 둡니다. 참가자 화면은 새 그림판으로 바뀝니다.</p>
+      <button class="btn btn-sun" id="reset-round">🔄 새 라운드 시작</button>
+      <p style="margin-top:22px"><b>전체 초기화</b>: 참가자, 그림, 점수를 모두 지웁니다. 참가자는 이름을 다시 입력해야 합니다.</p>
+      <button class="btn btn-danger" id="reset-all">🧹 전체 초기화</button>
+    </section>
+    <section class="card">
+      <h3>다른 기기에서 진행하기</h3>
+      <p>아래 링크를 다른 노트북·태블릿에서 열면 같은 대회를 진행할 수 있어요. <b>진행자 키가 들어 있으니 학생에게 보여주지 마세요.</b></p>
+      <label class="field">진행자 화면 링크</label><input class="input sm" id="host-link" readonly onclick="this.select()">
+      <label class="field">큰 화면(프로젝터) 링크</label><input class="input sm" id="screen-link" readonly onclick="this.select()">
+      <p style="margin-top:18px"><a class="btn btn-sky" href="host.html">＋ 새 대회 만들기 / 다른 대회 열기</a></p>
+    </section>
+    <section class="card">
+      <h3>데이터 저장</h3>
+      <p>참가자·그림·점수는 인터넷(Supabase)에 실시간으로 저장돼요. 창을 닫거나 새로고침해도 그대로 이어집니다. 결과는 심사 탭의 <b>CSV 저장</b>으로 엑셀에서 열 수 있어요.</p>
+      <p class="muted" id="judge-info"></p>
+    </section>
+  </div>
+</main>
+
+<!-- 대회 만들기 -->
+<div class="gate hidden" id="gate">
+  <div class="card gate-card">
+    <h1>🎨 얼굴 그리기 대회</h1>
+    <p class="muted">설치 없이 바로 시작! 대회를 만들면 방 코드와 QR이 생겨요.</p>
+    <form id="gate-form">
+      <label class="field" for="g-event">행사 이름</label>
+      <input class="input" id="g-event" maxlength="60" value="직원 얼굴 그리기 대회">
+      <label class="field" for="g-topic">그림 주제</label>
+      <input class="input" id="g-topic" maxlength="120" value="우리 선생님 얼굴을 그려주세요!">
+      <label class="field" for="g-min">제한 시간 (분)</label>
+      <input class="input" id="g-min" type="number" min="1" max="60" step="0.5" value="5">
+      <button class="btn btn-primary btn-lg wide" style="margin-top:18px">✨ 새 대회 만들기</button>
+    </form>
+    <h3 style="margin-top:26px">내가 만든 대회</h3>
+    <div class="gate-list" id="gate-list"></div>
+  </div>
+</div>
+
+<!-- QR 크게 보기 -->
+<div class="qr-full hidden" id="qr-full">
+  <div class="qr-full-inner">
+    <h1 id="qf-event"></h1>
+    <div class="qr" id="qr-full-code"></div>
+    <div class="url big" id="qf-url"></div>
+    <p>📱 카메라로 QR을 비추면 바로 참가할 수 있어요 · 로그인 필요 없음</p>
+    <button class="btn btn-ghost" id="qr-close">닫기</button>
+  </div>
+</div>
+
+<script src="vendor/qrcode.js"></script>
+<script src="vendor/supabase.js"></script>
+<script src="common.js"></script>
+<script src="fd.js"></script>
+<script src="host.js"></script>
+</body>
+</html>
