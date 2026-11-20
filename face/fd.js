@@ -311,7 +311,9 @@ async function runJudging(code, secret, st, { ids, onlyUnscored }) {
   if (onlyUnscored) targets = targets.filter((x) => !x.ai);
   if (!targets.length) throw new Error('심사할 그림이 없습니다.');
   const J = { running: true, done: 0, total: targets.length, errors: 0, message: '', currentId: null, at: Date.now() };
-  const save = () => rpc('fd_judging', { p_code: code, p_secret: secret, p: J }).catch(() => {});
+  // 진행 상황 저장은 순서대로 (늦게 도착한 예전 값이 '끝남'을 덮지 않도록)
+  let chain = Promise.resolve();
+  const save = () => (chain = chain.then(() => rpc('fd_judging', { p_code: code, p_secret: secret, p: { ...J } })).catch(() => {}));
   await save();
   const queue = [...targets];
   const worker = async () => {
