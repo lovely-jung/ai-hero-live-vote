@@ -164,7 +164,7 @@ function confetti(duration = 3500) {
 }
 
 // ------------------------------------------------------------------------------
-// 캐릭터(이름표를 단 민머리 마네킹) — 참가자 그림판, 큰 화면, 완성 그림에 똑같이 사용
+// 캐릭터(이름표를 단 어깨 + 목) — 얼굴형은 참가자가 직접 그립니다. 그림판, 큰 화면, 완성 그림에 똑같이 사용
 // 좌표는 900×1200 기준입니다.
 const CHAR_W = 900, CHAR_H = 1200;
 const HEAD = { cx: 450, cy: 470, rx: 285, ry: 340 };
@@ -187,23 +187,8 @@ function drawCharBody(ctx, { bg } = {}) {
   g.addColorStop(0, '#d8c3a5'); g.addColorStop(0.5, '#efe2cf'); g.addColorStop(1, '#d2bc9d');
   ctx.fillStyle = g;
   ctx.beginPath();
-  ctx.moveTo(385, 760); ctx.lineTo(515, 760); ctx.lineTo(525, 900);
+  ctx.moveTo(392, 790); ctx.lineTo(508, 790); ctx.lineTo(525, 900);
   ctx.quadraticCurveTo(450, 935, 375, 900); ctx.closePath(); ctx.fill();
-  // 귀
-  for (const sx of [-1, 1]) {
-    const ex = HEAD.cx + sx * (HEAD.rx - 8), ey = HEAD.cy + 40;
-    g = ctx.createRadialGradient(ex - sx * 10, ey - 20, 5, ex, ey, 80);
-    g.addColorStop(0, '#f6ead9'); g.addColorStop(1, '#d6c0a2');
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.ellipse(ex, ey, 52, 85, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = 'rgba(150,120,90,.35)'; ctx.lineWidth = 7; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.arc(ex + sx * 6, ey, 30, sx > 0 ? -1.2 : Math.PI - 1.9, sx > 0 ? 1.9 : Math.PI + 1.2); ctx.stroke();
-  }
-  // 머리 (입체감 있는 달걀 모양)
-  g = ctx.createRadialGradient(HEAD.cx - 90, HEAD.cy - 120, 30, HEAD.cx, HEAD.cy + 40, HEAD.ry * 1.05);
-  g.addColorStop(0, '#fbf5ec'); g.addColorStop(0.55, '#efe3d1'); g.addColorStop(0.85, '#dfcdb3'); g.addColorStop(1, '#c9b291');
-  ctx.fillStyle = g;
-  ctx.beginPath(); ctx.ellipse(HEAD.cx, HEAD.cy, HEAD.rx, HEAD.ry, 0, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
 }
 
@@ -235,9 +220,42 @@ function roundRect(ctx, x, y, w, h, r) {
 }
 
 // 완성 캐릭터 그리기: 몸통 → 참가자 그림(투명 PNG/캔버스) → 이름표
+// 그림판에만 보이는 안내선 (완성 그림에는 들어가지 않음)
+function drawFaceGuide(ctx) {
+  ctx.save();
+  ctx.setLineDash([18, 22]); ctx.lineWidth = 6; ctx.lineCap = 'round';
+  ctx.strokeStyle = 'rgba(47,85,200,.22)';
+  ctx.beginPath(); ctx.ellipse(HEAD.cx, HEAD.cy, HEAD.rx, HEAD.ry, 0, 0, Math.PI * 2); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(47,85,200,.45)';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = `800 52px ${getComputedStyle(document.body).fontFamily}`;
+  ctx.fillText('얼굴형부터', HEAD.cx, HEAD.cy - 34);
+  ctx.fillText('직접 그려 보세요', HEAD.cx, HEAD.cy + 34);
+  ctx.font = `600 34px ${getComputedStyle(document.body).fontFamily}`;
+  ctx.fillText('동그라미 · 네모 · 세모 · 무엇이든', HEAD.cx, HEAD.cy + 110);
+  ctx.restore();
+}
+
+// 아직 그리기 전인 참가자: 점선 얼굴 자리 + 물음표
+function drawFacePlaceholder(ctx) {
+  ctx.save();
+  ctx.fillStyle = 'rgba(255,255,255,.7)';
+  ctx.beginPath(); ctx.ellipse(HEAD.cx, HEAD.cy, HEAD.rx, HEAD.ry, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.setLineDash([26, 22]); ctx.lineWidth = 12; ctx.lineCap = 'round';
+  ctx.strokeStyle = 'rgba(47,85,200,.45)'; ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(47,85,200,.55)';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = `900 260px ${getComputedStyle(document.body).fontFamily}`;
+  ctx.fillText('?', HEAD.cx, HEAD.cy + 10);
+  ctx.restore();
+}
+
 function drawCharacter(ctx, { name, ink, bg }) {
   drawCharBody(ctx, { bg });
   if (ink) ctx.drawImage(ink, 0, 0, CHAR_W, CHAR_H);
+  else drawFacePlaceholder(ctx);
   drawCharBadge(ctx, name);
 }
 

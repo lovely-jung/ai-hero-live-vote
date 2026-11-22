@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#fff7e8">
 <title>얼굴 그리기 대회 — 참가</title>
 <link rel="stylesheet" href="common.css">
-<link rel="stylesheet" href="join.css">
+<link rel="stylesheet" href="join.css?v=face2">
 </head>
 <body class="join">
 
@@ -62,6 +62,7 @@
   <div class="canvas-wrap" id="canvas-wrap">
     <div class="zoomer" id="zoomer">
       <canvas id="c-base"></canvas>
+      <canvas id="c-guide" aria-hidden="true"></canvas>
       <canvas id="c-ink" aria-label="그림판"></canvas>
       <canvas id="c-badge"></canvas>
     </div>
@@ -116,8 +117,8 @@
 <div class="net-badge hidden" id="net-badge">📶 연결 중…</div>
 
 <script src="vendor/supabase.js"></script>
-<script src="common.js"></script>
+<script src="common.js?v=face2"></script>
 <script src="fd.js"></script>
-<script src="join.js"></script>
+<script src="join.js?v=face2"></script>
 </body>
 </html>

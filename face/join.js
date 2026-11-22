@@ -176,8 +176,8 @@ function drawMini() {
 // ------------------------------------------------------------ 그림판
 const wrap = $('#canvas-wrap');
 const zoomer = $('#zoomer');
-const cBase = $('#c-base'), cInk = $('#c-ink'), cBadge = $('#c-badge');
-for (const c of [cBase, cInk, cBadge]) { c.width = W * SCALE; c.height = H * SCALE; }
+const cBase = $('#c-base'), cGuide = $('#c-guide'), cInk = $('#c-ink'), cBadge = $('#c-badge');
+for (const c of [cBase, cGuide, cInk, cBadge]) { c.width = W * SCALE; c.height = H * SCALE; }
 const ctx = cInk.getContext('2d');
 ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
 
@@ -197,6 +197,11 @@ function drawStatic() {
   b.setTransform(SCALE, 0, 0, SCALE, 0, 0);
   b.clearRect(0, 0, W, H);
   drawCharBody(b);
+  const gd = cGuide.getContext('2d');
+  gd.setTransform(SCALE, 0, 0, SCALE, 0, 0);
+  gd.clearRect(0, 0, W, H);
+  drawFaceGuide(gd);
+  updateGuide();
   const g = cBadge.getContext('2d');
   g.setTransform(SCALE, 0, 0, SCALE, 0, 0);
   g.clearRect(0, 0, W, H);
@@ -252,10 +257,12 @@ function paintStroke(c, s) {
   }
   c.globalCompositeOperation = 'source-over';
 }
+function updateGuide() { cGuide.classList.toggle('gone', !!cur || hasInk()); }
 function redraw(c = ctx) {
   c.clearRect(0, 0, W, H);
   for (const s of visibleStrokes()) paintStroke(c, s);
   updateButtons();
+  if (c === ctx) updateGuide();
 }
 
 function toCanvas(e) {
@@ -285,6 +292,7 @@ wrap.addEventListener('pointerdown', (e) => {
   const [x, y] = toCanvas(e);
   cur = { t: 's', c: color, w: tool === 'eraser' ? Math.max(size * 2, 24) : size, p: [rd(x), rd(y)] };
   if (tool === 'eraser') cur.e = 1;
+  updateGuide();
   strokes.push(cur);
   paintStroke(ctx, cur);
 });
