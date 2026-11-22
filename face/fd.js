@@ -215,7 +215,7 @@ class LiveRoom {
         rank: rk?.rank ?? null, judge: rk?.judge ?? null, likeScore: rk?.likeScore ?? null, final: rk?.final ?? null,
       };
     });
-    const mode = settings.judgeMode || 'manual';
+    const mode = settings.judgeMode || 'claude';
     return {
       code: r.code,
       eventName: r.event_name,
@@ -233,7 +233,7 @@ class LiveRoom {
       likesEnabled: settings.likesEnabled !== false,
       bubblesEnabled: settings.bubblesEnabled !== false,
       maxLikes: settings.maxLikes || 3,
-      settings: Object.assign({ judgeWeight: 70, likesEnabled: true, maxLikes: 3, bubblesEnabled: true, judgeMode: 'manual' }, settings),
+      settings: Object.assign({ judgeWeight: 70, likesEnabled: true, maxLikes: 3, bubblesEnabled: true, judgeMode: 'claude' }, settings),
       participants,
       submissions,
       ranking,
@@ -282,6 +282,22 @@ function autoEnd(post, st) {
     autoEnd.busy = true;
     post('control', { action: 'end' }).catch(() => {}).finally(() => setTimeout(() => (autoEnd.busy = false), 3000));
   }
+}
+
+// 그리기 시간이 끝나면 AI가 알아서 채점 (진행자 화면 · 큰 화면 중 열려 있는 곳에서 한 번만)
+// keyOk: Claude 모드일 때 API 키가 연결돼 있는지. 한 그림은 이 화면에서 한 번만 자동 시도합니다.
+function autoJudge(post, st, keyOk, delayMs = 0) {
+  if (!st || !st.judge.connected || st.judging.running) return;
+  if (st.settings.judgeMode === 'claude' && !keyOk) return;
+  if (st.status !== 'ended' && st.rawStatus !== 'ended') return;
+  const tried = (autoJudge.tried ||= new Set());
+  const ids = st.submissions.filter((x) => !x.ai && !tried.has(x.id)).map((x) => x.id);
+  if (!ids.length || autoJudge.busy) return;
+  autoJudge.busy = true;
+  setTimeout(() => {
+    ids.forEach((id) => tried.add(id));
+    post('judge', { ids }).catch(() => {}).finally(() => setTimeout(() => (autoJudge.busy = false), 4000));
+  }, delayMs);
 }
 
 // ------------------------------------------------------------ AI 심사 (이 브라우저에서 진행)

@@ -8,17 +8,18 @@ let joinUrl = '';
 const chars = new Map(); // pid -> 캐릭터
 let charH = 300, charW = 225;
 let post = async () => { throw new Error('진행자 키가 없어요.'); };
+let keyOk = false;
 
 // ------------------------------------------------------------ 시작
 (async function boot() {
   if (!CODE) { document.body.innerHTML = '<div style="padding:3em;font-size:2em;font-weight:800">진행자 화면에서 “📺 프로젝터 화면 열기”로 열어 주세요.</div>'; return; }
   const ok = KEY ? await rpc('fd_host_check', { p_code: CODE, p_secret: KEY }).catch(() => null) : false;
   if (ok === null) return setTimeout(boot, 3000);
-  if (ok) post = makeHostApi(CODE, KEY, () => hs);
+  if (ok) { post = makeHostApi(CODE, KEY, () => hs); judgeAvailable().then((v) => (keyOk = v)); }
   else { $('#dock').classList.add('hidden'); toast('보기 전용 화면이에요 (진행자 키 없음)'); }
   $('#dk-host').href = 'host.html?r=' + CODE;
   const room = new LiveRoom(CODE, {
-    onChange: (s) => { onState(s); if (ok) autoEnd(post, s); },
+    onChange: (s) => { onState(s); if (ok) { autoEnd(post, s); autoJudge(post, s, keyOk, 6000); } },
     onEvent: (type, d) => ({
       bubble: () => showBubble(d.pid, d.text, 7000),
       join: () => arrival(`👋 ${d.name} 님 입장!`),

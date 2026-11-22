@@ -24,9 +24,9 @@ let post = async () => { throw new Error('대회를 먼저 열어 주세요.'); 
   $('#host-link').value = new URL(`host.html?r=${CODE}&k=${KEY}`, location.href).href;
   $('#screen-link').value = new URL(`screen.html?r=${CODE}&k=${KEY}`, location.href).href;
   $('#h-code').textContent = CODE;
-  judgeAvailable().then((v) => { claudeOk = v; if (hs) onState(hs); });
+  judgeAvailable().then((v) => { claudeOk = v; if (hs) { onState(hs); autoJudge(post, hs, claudeOk, 1500); } });
   room = new LiveRoom(CODE, {
-    onChange: (s) => { onState(s); autoEnd(post, s); },
+    onChange: (s) => { onState(s); autoEnd(post, s); autoJudge(post, s, claudeOk, 1500); },
     onConn: (ok) => !ok && toast('연결이 끊겼어요. 다시 연결 중…', 'error'),
   });
   room.start().catch((e) => toast(e.message, 'error'));
@@ -97,7 +97,7 @@ function onState(s) {
   renderJudge();
   renderRanking();
   renderAward();
-  $('#judge-info').textContent = 'AI 심사 상태: ' + s.judge.label + (claudeOk ? ' · Claude 키 연결됨' : ' · Claude 키 없음');
+  $('#judge-info').textContent = 'AI 심사 상태: ' + s.judge.label + (s.settings.judgeMode === 'claude' ? (claudeOk ? ' · 키 연결됨 · 시간이 끝나면 AI가 알아서 채점합니다' : ' · API 키가 없어 AI 채점을 할 수 없어요') : s.judge.connected ? ' · 시간이 끝나면 자동 채점' : '');
 }
 
 function fillConfig() {
@@ -108,7 +108,7 @@ function fillConfig() {
   set('#cfg-weight', hs.settings.judgeWeight);
   set('#cfg-judge', hs.settings.judgeMode);
   $('#cfg-judge option[value=claude]').disabled = !claudeOk;
-  $('#cfg-judge option[value=claude]').textContent = claudeOk ? 'Claude AI 심사' : 'Claude AI 심사 (API 키 설정 필요)';
+  $('#cfg-judge option[value=claude]').textContent = claudeOk ? 'AI가 알아서 채점 (기본)' : 'AI가 알아서 채점 (API 키 설정 필요)';
   set('#cfg-maxlikes', hs.settings.maxLikes);
   for (const [id, v] of [['#cfg-likes', hs.settings.likesEnabled], ['#cfg-bubbles', hs.settings.bubblesEnabled]]) {
     const el = $(id); if (!el.dataset.dirty) el.checked = v;
