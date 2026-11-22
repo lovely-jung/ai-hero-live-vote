@@ -90,7 +90,7 @@ function onState(s) {
     refreshMe().then(render);
   }
   if (!submitting) refreshMe();
-  if (current === 'scr-done' && (s.submissionCount !== lastCounts.s || s.likeCount !== lastCounts.l || prev?.revealActive !== s.revealActive)) loadGallerySoon();
+  if (current === 'scr-done' && (s.submissionCount !== lastCounts.s || s.likeCount !== lastCounts.l || prev?.revealActive !== s.revealActive || prev?.rawStatus !== s.rawStatus)) loadGallerySoon();
   lastCounts = { p: s.participantCount, s: s.submissionCount, l: s.likeCount };
   if (prev && prev.status !== s.status && s.status === 'running') autoTried = false;
   loadDraft();
@@ -507,16 +507,17 @@ async function loadGallery() {
   if (!st?.likesEnabled || !LS.pid) { $('#like-card').classList.add('hidden'); return; }
   const mine = st.likedBy.get(LS.pid) || new Set();
   const g = {
-    maxLikes: st.maxLikes, left: st.maxLikes - mine.size, closed: st.revealActive,
+    maxLikes: st.maxLikes, left: st.maxLikes - mine.size, closed: st.revealActive, notYet: st.votesOnly && st.rawStatus !== 'ended',
     items: st.submissions.map((x) => ({ id: x.id, name: x.name, url: x.url, mine: x.pid === LS.pid, liked: mine.has(x.id) })),
   };
   $('#like-card').classList.remove('hidden');
   const others = g.items.filter((x) => !x.mine).length;
   $('#like-hint').textContent = g.closed ? '투표가 마감됐어요. 결과를 기대해 주세요!'
-    : others ? `하트 ${g.left}개 남음 · 최대 ${g.maxLikes}개 · 하트는 최종 점수에 들어가요!` : '친구들의 그림이 올라오면 여기에 보여요.';
+    : g.notYet ? (others ? '그리기 시간이 끝나면 투표가 열려요. 먼저 친구들 그림을 구경해 보세요!' : '친구들의 그림이 올라오면 여기에 보여요.')
+    : others ? `하트 ${g.left}개 남음 · 최대 ${g.maxLikes}개 · ${st.votesOnly ? '하트를 가장 많이 받은 그림이 1등!' : '하트는 최종 점수에 들어가요!'}` : '친구들의 그림이 올라오면 여기에 보여요.';
   $('#like-grid').innerHTML = g.items.map((x) => `<div class="lk ${x.mine ? 'mine' : ''}">
       <img src="${x.url}" alt="" loading="lazy"><div class="nm">${esc(x.name)}</div>
-      ${x.mine ? '<span class="tag">내 그림</span>' : `<button class="heart ${x.liked ? 'on' : ''}" data-id="${x.id}" ${g.closed ? 'disabled' : ''} aria-label="하트">${x.liked ? '💗' : '🤍'}</button>`}
+      ${x.mine ? '<span class="tag">내 그림</span>' : `<button class="heart ${x.liked ? 'on' : ''}" data-id="${x.id}" ${g.closed || g.notYet ? 'disabled' : ''} aria-label="하트">${x.liked ? '💗' : '🤍'}</button>`}
     </div>`).join('');
 }
 $('#like-grid').addEventListener('click', async (e) => {
@@ -526,7 +527,7 @@ $('#like-grid').addEventListener('click', async (e) => {
     const r = await rpc('fd_like', { p_code: CODE, p_pid: LS.pid, p_token: LS.token, p_sid: b.dataset.id });
     b.classList.toggle('on', r.liked);
     b.textContent = r.liked ? '💗' : '🤍';
-    $('#like-hint').textContent = `하트 ${r.left}개 남음 · 최대 ${st.maxLikes}개 · 하트는 최종 점수에 들어가요!`;
+    $('#like-hint').textContent = `하트 ${r.left}개 남음 · 최대 ${st.maxLikes}개 · ${st.votesOnly ? '하트를 가장 많이 받은 그림이 1등!' : '하트는 최종 점수에 들어가요!'}`;
   } catch (err) { toast(err.message, 'error'); }
 });
 

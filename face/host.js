@@ -108,7 +108,7 @@ function fillConfig() {
   set('#cfg-weight', hs.settings.judgeWeight);
   set('#cfg-judge', hs.settings.judgeMode);
   $('#cfg-judge option[value=claude]').disabled = !claudeOk;
-  $('#cfg-judge option[value=claude]').textContent = claudeOk ? 'AI가 알아서 채점 (기본)' : 'AI가 알아서 채점 (API 키 설정 필요)';
+  $('#cfg-judge option[value=claude]').textContent = claudeOk ? 'AI가 알아서 채점' : 'AI가 알아서 채점 (API 키 설정 필요)';
   set('#cfg-maxlikes', hs.settings.maxLikes);
   for (const [id, v] of [['#cfg-likes', hs.settings.likesEnabled], ['#cfg-bubbles', hs.settings.bubblesEnabled]]) {
     const el = $(id); if (!el.dataset.dirty) el.checked = v;
@@ -134,7 +134,7 @@ function renderControls() {
     waiting: b('▶ 시작', 'start', 'btn-primary span2') + b('+1분', 'add-minute', 'btn-ghost span2'),
     running: b('⏸ 일시정지', 'pause', 'btn-sun') + b('⏹ 마감', 'end', 'btn-danger') + b('+1분 연장', 'add-minute', 'btn-ghost span2'),
     paused: b('▶ 다시 시작', 'resume', 'btn-mint') + b('⏹ 마감', 'end', 'btn-danger') + b('+1분', 'add-minute', 'btn-ghost span2'),
-    ended: b('🏅 심사하러 가기', 'go-judge', 'btn-grape span2') + b('⏱ 시간 다시 주기', 'start', 'btn-ghost span2'),
+    ended: b(hs.votesOnly ? '🏆 투표 결과 · 시상식' : '🏅 심사하러 가기', 'go-judge', 'btn-grape span2') + b('⏱ 시간 다시 주기', 'start', 'btn-ghost span2'),
   }[hs.status];
   const box = $('#controls');
   if (box.dataset.status !== hs.status) {
@@ -198,7 +198,7 @@ function openViewer(id) {
     <img src="${x.url}" alt="">
     <div><h2 style="margin-top:0">${esc(x.name)}</h2>
       <p class="muted">${new Date(x.submittedAt).toLocaleString('ko-KR')} 제출</p>
-      ${x.final != null ? `<p><b style="font-size:1.6rem">${x.final}점</b> · ${x.rank}위 · 💗 ${x.likes}</p><p>${esc(x.title ? '「' + x.title + '」 ' : '')}${esc(x.comment)}</p>` : `<p class="muted">아직 채점 전 · 💗 ${x.likes}</p>`}
+      ${x.final != null ? `<p><b style="font-size:1.6rem">${x.final}${hs.unit}</b> · ${x.rank}위 · 💗 ${x.likes}</p><p>${esc(x.title ? '「' + x.title + '」 ' : '')}${esc(x.comment)}</p>` : `<p class="muted">아직 채점 전 · 💗 ${x.likes}</p>`}
       <div class="row wrap" style="margin-top:20px">
         <button class="btn btn-sky btn-sm" data-spot>📺 큰 화면에 크게</button>
         <button class="btn btn-ghost" data-close>닫기</button>
@@ -394,7 +394,7 @@ function renderRanking() {
   const medal = (r) => ({ 1: '🥇', 2: '🥈', 3: '🥉' })[r] || r;
   $('#rank-list').innerHTML = hs.ranking.map((r) => {
     const x = byId[r.id];
-    return `<li class="r${r.rank}"><span class="rank-no">${medal(r.rank)}</span><img src="${x.url}" alt=""><span>${esc(x.name)}<br><small class="muted">심사 ${r.judge} · 💗${x.likes}</small></span><span>${r.final}점</span></li>`;
+    return `<li class="r${r.rank}"><span class="rank-no">${medal(r.rank)}</span><img src="${x.url}" alt=""><span>${esc(x.name)}<br><small class="muted">${hs.votesOnly ? '친구 투표' : '심사 ' + r.judge} · 💗${x.likes}</small></span><span>${r.final}${hs.unit}</span></li>`;
   }).join('');
   $('#rank-empty').classList.toggle('hidden', hs.ranking.length > 0);
 }
@@ -411,7 +411,7 @@ function renderAward() {
   let now = '시상식 대기 중 — 큰 화면은 그림 갤러리를 보여주고 있어요';
   if (hs.reveal.active) {
     if (step === 0) now = '🎬 시상식 시작 화면';
-    else if (step <= n) { const p = P[n - step]; now = `🎉 ${p.rank}위 공개 중: ${p.name} (${p.final}점)`; }
+    else if (step <= n) { const p = P[n - step]; now = `🎉 ${p.rank}위 공개 중: ${p.name} (${p.final}${hs.unit})`; }
     else now = '📋 전체 순위 공개 중';
   }
   $('#rv-now').textContent = now;
@@ -420,8 +420,8 @@ function renderAward() {
   $('#rv-next').disabled = !hs.reveal.active || step >= hs.maxRevealStep;
   $('#rv-close').disabled = !hs.reveal.active;
   $('#award-preview').innerHTML = n
-    ? P.map((p) => `<div class="pv-row"><span class="pv-rank">${({ 1: '🥇', 2: '🥈', 3: '🥉' })[p.rank] || p.rank + '위'}</span><img src="${p.url}" alt=""><div><b>${esc(p.name)}</b> — ${p.final}점 ${p.title ? '「' + esc(p.title) + '」' : ''}<br><span class="muted">심사 ${p.judge}점 · 💗 ${p.likes} · ${esc(p.comment)}</span></div></div>`).join('') +
-      `<p class="muted">채점된 그림 ${hs.ranking.length}장 / 전체 ${hs.submissions.length}장</p>`
+    ? P.map((p) => `<div class="pv-row"><span class="pv-rank">${({ 1: '🥇', 2: '🥈', 3: '🥉' })[p.rank] || p.rank + '위'}</span><img src="${p.url}" alt=""><div><b>${esc(p.name)}</b> — ${p.final}${hs.unit} ${p.title ? '「' + esc(p.title) + '」' : ''}<br><span class="muted">${hs.votesOnly ? '💗 친구들 하트 ' + p.likes + '개' : '심사 ' + p.judge + '점 · 💗 ' + p.likes + ' · ' + esc(p.comment)}</span></div></div>`).join('') +
+      (hs.votesOnly ? `<p class="muted">하트를 가장 많이 받은 순서예요 · 전체 ${hs.submissions.length}장</p>` : `<p class="muted">채점된 그림 ${hs.ranking.length}장 / 전체 ${hs.submissions.length}장</p>`)
     : '<p class="muted">채점된 그림이 없어요. ② 심사 탭에서 먼저 점수를 넣어 주세요.</p>';
 }
 $('#rv-open').onclick = () => post('control', { action: 'reveal-open' }).catch((e) => toast(e.message, 'error'));

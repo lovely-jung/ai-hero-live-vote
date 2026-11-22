@@ -196,10 +196,20 @@ class LiveRoom {
       const final = settings.likesEnabled ? judge * (w / 100) + likeScore * (1 - w / 100) : judge;
       return { total, judge: Math.round(judge), likeScore: Math.round(likeScore), final: Math.round(final) };
     };
-    const scored = subsArr.filter((x) => x.scores).map((x) => ({ x, sc: scoreOf(x) }));
-    scored.sort((a, b) => b.sc.final - a.sc.final || b.x.scores.creativity - a.x.scores.creativity ||
-      (likeCount.get(b.x.id) || 0) - (likeCount.get(a.x.id) || 0) || Date.parse(a.x.submitted_at) - Date.parse(b.x.submitted_at));
-    const ranking = scored.map((o, i) => ({ id: o.x.id, rank: i + 1, ...o.sc }));
+    const mode = settings.judgeMode || 'votes';
+    const votesOnly = mode === 'votes';
+    let ranking;
+    if (votesOnly) {
+      // 친구 투표로만 순위: 하트 수가 곧 점수, 같은 표는 공동 순위 (pos는 화면 배치용 순서)
+      const arr = subsArr.map((x) => ({ x, n: likeCount.get(x.id) || 0 }))
+        .sort((a, b) => b.n - a.n || Date.parse(a.x.submitted_at) - Date.parse(b.x.submitted_at));
+      ranking = arr.map((o, i) => ({ id: o.x.id, pos: i + 1, rank: 1 + arr.filter((z) => z.n > o.n).length, total: null, judge: null, likeScore: null, final: o.n }));
+    } else {
+      const scored = subsArr.filter((x) => x.scores).map((x) => ({ x, sc: scoreOf(x) }));
+      scored.sort((a, b) => b.sc.final - a.sc.final || b.x.scores.creativity - a.x.scores.creativity ||
+        (likeCount.get(b.x.id) || 0) - (likeCount.get(a.x.id) || 0) || Date.parse(a.x.submitted_at) - Date.parse(b.x.submitted_at));
+      ranking = scored.map((o, i) => ({ id: o.x.id, rank: i + 1, pos: i + 1, ...o.sc }));
+    }
     const rankMap = Object.fromEntries(ranking.map((x) => [x.id, x]));
     const subByPid = new Map(subsArr.map((x) => [x.pid, x]));
     const participants = [...this.parts.values()].sort((a, b) => Date.parse(a.joined_at) - Date.parse(b.joined_at)).map((p) => {
@@ -215,8 +225,9 @@ class LiveRoom {
         rank: rk?.rank ?? null, judge: rk?.judge ?? null, likeScore: rk?.likeScore ?? null, final: rk?.final ?? null,
       };
     });
-    const mode = settings.judgeMode || 'claude';
     return {
+      votesOnly,
+      unit: votesOnly ? '표' : '점',
       code: r.code,
       eventName: r.event_name,
       topic: r.topic,
@@ -230,10 +241,10 @@ class LiveRoom {
       submissionCount: submissions.length,
       likeCount: this.likes.size,
       revealActive: !!r.reveal?.active,
-      likesEnabled: settings.likesEnabled !== false,
+      likesEnabled: votesOnly || settings.likesEnabled !== false,
       bubblesEnabled: settings.bubblesEnabled !== false,
       maxLikes: settings.maxLikes || 3,
-      settings: Object.assign({ judgeWeight: 70, likesEnabled: true, maxLikes: 3, bubblesEnabled: true, judgeMode: 'claude' }, settings),
+      settings: Object.assign({ judgeWeight: 70, likesEnabled: true, maxLikes: 3, bubblesEnabled: true, judgeMode: 'votes' }, settings),
       participants,
       submissions,
       ranking,
@@ -243,7 +254,7 @@ class LiveRoom {
       judging: r.judging || { running: false, done: 0, total: 0 },
       criteria: CRITERIA,
       maxScore: MAX_SCORE,
-      judge: { connected: mode !== 'manual', id: mode, label: { manual: 'AI 미연결 (직접 채점)', mock: '테스트용 가짜 AI', claude: 'Claude AI' }[mode] },
+      judge: { connected: mode === 'mock' || mode === 'claude', id: mode, label: { votes: '친구 투표로 순위', manual: 'AI 미연결 (직접 채점)', mock: '테스트용 가짜 AI', claude: 'Claude AI' }[mode] },
       joinUrl: joinUrlFor(r.code),
       lanUrls: [],
       tunnel: null,

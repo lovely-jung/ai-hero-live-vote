@@ -343,7 +343,7 @@ function renderAward() {
   awardKey = k;
   const body = $('#award-body');
   const usedAi = hs.submissions.some((x) => x.scoreSource === 'ai');
-  const tag = `${usedAi ? 'AI JUDGE' : 'JUDGE'} · ${esc(hs.eventName)}`;
+  const tag = `${hs.votesOnly ? "FRIENDS' VOTE" : usedAi ? 'AI JUDGE' : 'JUDGE'} · ${esc(hs.eventName)}`;
 
   if (step === 0 || !n) {
     body.innerHTML = `<div class="aw-intro"><div class="aw-tag">${tag}</div><div class="trophy">🏆</div><h1>시상식</h1>
@@ -354,11 +354,13 @@ function renderAward() {
     const p = P[n - step];
     const w = hs.settings.judgeWeight;
     const maxLikes = Math.max(1, ...hs.submissions.map((x) => x.likes));
-    const bars = hs.criteria.map((c) => `<div class="ab"><span>${c.label}</span><div class="tr"><div class="fl" data-w="${(p.scores[c.key] / hs.maxScore) * 100}"></div></div><b>${p.scores[c.key]}</b></div>`).join('') +
+    const bars = hs.votesOnly
+      ? `<div class="ab like"><span>💗 친구들 하트</span><div class="tr"><div class="fl" data-w="${(p.likes / maxLikes) * 100}"></div></div><b>${p.likes}</b></div>`
+      : hs.criteria.map((c) => `<div class="ab"><span>${c.label}</span><div class="tr"><div class="fl" data-w="${(p.scores[c.key] / hs.maxScore) * 100}"></div></div><b>${p.scores[c.key]}</b></div>`).join('') +
       (hs.likesEnabled ? `<div class="ab like"><span>💗 좋아요</span><div class="tr"><div class="fl" data-w="${(p.likes / maxLikes) * 100}"></div></div><b>${p.likes}</b></div>` : '');
-    const formula = hs.likesEnabled ? `최종 (심사 ${w}% + 좋아요 ${100 - w}%) = <b>${p.final}점</b>` : `최종 점수 <b>${p.final}점</b>`;
+    const formula = hs.votesOnly ? `친구들이 준 하트 <b>${p.final}표</b>` : hs.likesEnabled ? `최종 (심사 ${w}% + 좋아요 ${100 - w}%) = <b>${p.final}점</b>` : `최종 점수 <b>${p.final}점</b>`;
     body.innerHTML = `<div class="aw-one">
-      <div class="aw-frame r${p.rank}"><img data-sub="${p.id}" alt=""><div class="aw-stamp">${p.final}점!</div></div>
+      <div class="aw-frame r${p.pos}"><img data-sub="${p.id}" alt=""><div class="aw-stamp">${hs.votesOnly ? '💗 ' : ''}${p.final}${hs.unit}!</div></div>
       <div class="aw-info">
         <div class="aw-tag">${tag} · ${p.rank}위</div>
         <div class="aw-rank"><span class="no r${p.rank}">${p.rank}</span><span class="nm">${esc(p.name)}</span></div>
@@ -373,9 +375,9 @@ function renderAward() {
     return;
   }
   const order = [P[1], P[0], P[2]].filter(Boolean);
-  const rest = hs.ranking.slice(3).map((r) => `<span>${r.rank}위 ${esc(subById(r.id).name)} · ${r.final}점</span>`).join('');
+  const rest = hs.ranking.slice(3).map((r) => `<span>${r.rank}위 ${esc(subById(r.id).name)} · ${r.final}${hs.unit}</span>`).join('');
   body.innerHTML = `<div class="aw-final"><div class="aw-tag">${tag}</div><h1>🎉 최종 순위 · 모두 큰 박수! 👏</h1>
-    <div class="podium">${order.map((p) => `<div class="pod p${p.rank}"><img data-sub="${p.id}" alt=""><div class="nm">${MEDAL[p.rank] || ''} ${esc(p.name)}</div><div class="sc">${p.final}점</div><div class="block">${p.rank}</div></div>`).join('')}</div>
+    <div class="podium">${order.map((p) => `<div class="pod p${p.pos}"><img data-sub="${p.id}" alt=""><div class="nm">${MEDAL[p.rank] || ''} ${esc(p.name)}</div><div class="sc">${hs.votesOnly ? '💗 ' : ''}${p.final}${hs.unit}</div><div class="block">${p.rank}</div></div>`).join('')}</div>
     ${rest ? `<div class="rest">${rest}</div>` : ''}</div>`;
   fillImgs(body);
   confetti(4500);
