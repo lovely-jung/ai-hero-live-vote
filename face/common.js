@@ -164,32 +164,26 @@ function confetti(duration = 3500) {
 }
 
 // ------------------------------------------------------------------------------
-// 캐릭터(이름표를 단 어깨 + 목) — 얼굴형은 참가자가 직접 그립니다. 그림판, 큰 화면, 완성 그림에 똑같이 사용
+// 캐릭터: 이름표만 고정, 얼굴 · 목 · 몸은 참가자가 직접 그립니다. 그림판, 큰 화면, 완성 그림에 똑같이 사용
 // 좌표는 900×1200 기준입니다.
 const CHAR_W = 900, CHAR_H = 1200;
 const HEAD = { cx: 450, cy: 470, rx: 285, ry: 340 };
 
 function drawCharBody(ctx, { bg } = {}) {
-  ctx.save();
-  if (bg) { ctx.fillStyle = bg; ctx.fillRect(0, 0, CHAR_W, CHAR_H); }
-  // 몸통
+  // 얼굴 · 목 · 몸은 모두 참가자가 그립니다. 여기서는 배경만 칠합니다.
+  if (bg) { ctx.save(); ctx.fillStyle = bg; ctx.fillRect(0, 0, CHAR_W, CHAR_H); ctx.restore(); }
+}
+
+// 사람 모양 점선 (안내선 · 물음표 캐릭터에 함께 사용)
+function personPath(ctx) {
   ctx.beginPath();
-  ctx.moveTo(110, CHAR_H);
-  ctx.bezierCurveTo(115, 1010, 200, 905, 330, 880);
-  ctx.lineTo(570, 880);
-  ctx.bezierCurveTo(700, 905, 785, 1010, 790, CHAR_H);
-  ctx.closePath();
-  let g = ctx.createLinearGradient(110, 0, 790, 0);
-  g.addColorStop(0, '#d9dcdf'); g.addColorStop(0.25, '#ffffff'); g.addColorStop(0.7, '#f7f7f7'); g.addColorStop(1, '#cfd3d8');
-  ctx.fillStyle = g; ctx.fill();
-  // 목
-  g = ctx.createLinearGradient(380, 0, 520, 0);
-  g.addColorStop(0, '#d8c3a5'); g.addColorStop(0.5, '#efe2cf'); g.addColorStop(1, '#d2bc9d');
-  ctx.fillStyle = g;
-  ctx.beginPath();
-  ctx.moveTo(392, 790); ctx.lineTo(508, 790); ctx.lineTo(525, 900);
-  ctx.quadraticCurveTo(450, 935, 375, 900); ctx.closePath(); ctx.fill();
-  ctx.restore();
+  ctx.ellipse(HEAD.cx, HEAD.cy, HEAD.rx, HEAD.ry, 0, 0, Math.PI * 2);
+  ctx.moveTo(400, 805); ctx.lineTo(392, 895);
+  ctx.moveTo(500, 805); ctx.lineTo(508, 895);
+  ctx.moveTo(120, CHAR_H);
+  ctx.bezierCurveTo(125, 1010, 200, 905, 330, 890);
+  ctx.lineTo(570, 890);
+  ctx.bezierCurveTo(700, 905, 775, 1010, 780, CHAR_H);
 }
 
 function drawCharBadge(ctx, name) {
@@ -225,15 +219,15 @@ function drawFaceGuide(ctx) {
   ctx.save();
   ctx.setLineDash([18, 22]); ctx.lineWidth = 6; ctx.lineCap = 'round';
   ctx.strokeStyle = 'rgba(47,85,200,.22)';
-  ctx.beginPath(); ctx.ellipse(HEAD.cx, HEAD.cy, HEAD.rx, HEAD.ry, 0, 0, Math.PI * 2); ctx.stroke();
+  personPath(ctx); ctx.stroke();
   ctx.setLineDash([]);
   ctx.fillStyle = 'rgba(47,85,200,.45)';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.font = `800 52px ${getComputedStyle(document.body).fontFamily}`;
-  ctx.fillText('얼굴형부터', HEAD.cx, HEAD.cy - 34);
+  ctx.fillText('얼굴부터 몸까지', HEAD.cx, HEAD.cy - 34);
   ctx.fillText('직접 그려 보세요', HEAD.cx, HEAD.cy + 34);
   ctx.font = `600 34px ${getComputedStyle(document.body).fontFamily}`;
-  ctx.fillText('동그라미 · 네모 · 세모 · 무엇이든', HEAD.cx, HEAD.cy + 110);
+  ctx.fillText('점선은 참고만, 크기 · 모양은 자유', HEAD.cx, HEAD.cy + 110);
   ctx.restore();
 }
 
@@ -243,7 +237,8 @@ function drawFacePlaceholder(ctx) {
   ctx.fillStyle = 'rgba(255,255,255,.7)';
   ctx.beginPath(); ctx.ellipse(HEAD.cx, HEAD.cy, HEAD.rx, HEAD.ry, 0, 0, Math.PI * 2); ctx.fill();
   ctx.setLineDash([26, 22]); ctx.lineWidth = 12; ctx.lineCap = 'round';
-  ctx.strokeStyle = 'rgba(47,85,200,.45)'; ctx.stroke();
+  ctx.strokeStyle = 'rgba(47,85,200,.45)';
+  personPath(ctx); ctx.stroke();
   ctx.setLineDash([]);
   ctx.fillStyle = 'rgba(47,85,200,.55)';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
