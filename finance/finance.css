@@ -1,0 +1,60 @@
+/* 실시간 대결용 추가 스타일 (arcade.css 위에 얹음) */
+.top h1 { margin-right: auto }
+.top .pill { font-size: 14px }
+.narrow { max-width: 520px; margin: 24px auto }
+.center { text-align: center; justify-items: center }
+.hero.small { font-size: clamp(34px, 9vw, 52px) }
+.field { display: grid; gap: 6px; font-weight: 700; text-align: left }
+.input { font: inherit; font-size: 20px; padding: 12px 14px; border-radius: 12px; border: 2px solid var(--line); background: #14113a; color: #fff; min-height: 52px; width: 100% }
+#code { text-transform: uppercase; letter-spacing: 8px; font-weight: 900; text-align: center; font-size: 28px }
+.big-btn { min-height: 56px; font-size: 22px }
+.err { color: #ff8aa8; font-weight: 700; min-height: 1.5em; margin: 0 }
+.wait-msg { font-size: 22px; font-weight: 700; line-height: 1.5; margin: 0 }
+.pulse { width: 110px; height: 110px; border-radius: 50%; background: var(--gold); color: #8a6500; display: grid; place-items: center; font-family: "Black Han Sans"; font-size: 60px; box-shadow: 0 8px 0 #b38a10; animation: bob 1.4s ease-in-out infinite }
+@keyframes bob { 50% { transform: translateY(-12px) } }
+.pill { background: var(--panel); border: 2px solid var(--line); border-radius: 999px; padding: 4px 12px; font-weight: 700; white-space: nowrap }
+.pill.sc { color: var(--gold); font-size: 20px }
+.combo { color: var(--pink); display: none }
+.hud { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 4px 0 10px }
+.hud h2 { font-size: 22px; margin-right: auto }
+.front.fn { --c: #1b1846 } .front.fd { --c: #c2185b; background: #fff4f9 }
+.ds { flex: 1; display: grid; place-items: center; text-align: center; padding: 4px 6px; font-weight: 700; font-size: clamp(12px, 1.25vw, 17px); line-height: 1.3; word-break: keep-all; color: #3a1030 }
+.student .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: max(92px, calc((100vh - 170px) / 5)); max-width: 640px }
+.student .grid .nm { font-size: clamp(14px, 4vw, 22px) }
+.student .grid .ds { font-size: clamp(11px, 3.1vw, 15px); padding: 2px 4px }
+#cd { z-index: 40 }
+.countdown { font-family: "Black Han Sans"; font-size: clamp(120px, 30vw, 260px); color: var(--gold); text-shadow: 0 8px 0 #b3367a; animation: pop .4s }
+.result-card { background: var(--panel); border: 2px solid var(--line); border-radius: 20px; padding: 16px 20px; display: grid; gap: 4px; min-width: 260px }
+.result-card .rank { font-family: "Black Han Sans"; font-size: 56px; color: var(--pink); line-height: 1 }
+.result-card .score { font-family: "Black Han Sans"; font-size: 36px; color: var(--gold) }
+
+/* 진행자 화면 */
+.host-grid { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 18px; max-width: 1400px; margin: 0 auto }
+.panel { background: var(--panel); border: 2px solid var(--line); border-radius: 20px; padding: 16px; display: grid; gap: 12px; align-content: start }
+.qr { background: #fff; border-radius: 16px; padding: 12px; display: grid; place-items: center }
+.qr svg { width: 100%; max-width: 300px; height: auto }
+.roomcode { font-family: "Black Han Sans"; font-size: 64px; letter-spacing: 10px; color: var(--gold); text-align: center; line-height: 1 }
+.joinurl { font-size: 14px; color: var(--soft); text-align: center; word-break: break-all }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; max-height: 180px; overflow: auto }
+.chips span { background: #14113a; border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; font-size: 14px }
+.ctrl { display: flex; flex-wrap: wrap; gap: 10px; align-items: center }
+.round { display: flex; align-items: center; gap: 10px }
+.round span { font-family: "Black Han Sans"; font-size: 44px; color: var(--pink); min-width: 56px; text-align: center }
+.round button { width: 48px; font-size: 24px; background: #eee; color: #1b1846 }
+.status { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap }
+.status .clock { font-family: "Black Han Sans"; font-size: 54px; color: var(--gold); line-height: 1 }
+.status .bonus { font-weight: 700; color: var(--soft) }
+.board { display: grid; gap: 6px }
+.rrow { display: grid; grid-template-columns: 44px minmax(0, 9em) minmax(0, 1fr) 74px 64px; gap: 10px; align-items: center; background: #14113a; border-radius: 12px; padding: 6px 10px; transition: transform .3s }
+.rrow .no { font-family: "Black Han Sans"; font-size: 24px; text-align: center }
+.rrow .nm2 { font-weight: 900; font-size: 18px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.rrow .track { height: 16px }
+.rrow .fill { background: var(--blue) }
+.rrow.fin .fill { background: var(--green) }
+.rrow .sc2 { font-family: "Black Han Sans"; font-size: 24px; color: var(--gold); text-align: right }
+.rrow .tm { color: var(--soft); text-align: right; font-weight: 700 }
+.rrow.r1 { background: #4a3a00 } .rrow.r1 .no { color: var(--gold) }
+.rrow.r2 { background: #33364a } .rrow.r3 { background: #4a2a16 }
+.empty { color: var(--soft); text-align: center; padding: 30px }
+.tabs { display: flex; gap: 6px }
+@media (max-width: 900px) { .host-grid { grid-template-columns: 1fr } .rrow { grid-template-columns: 34px minmax(0, 7em) minmax(0, 1fr) 60px } .rrow .tm { display: none } }

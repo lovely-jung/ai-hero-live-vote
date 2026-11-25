@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>금융메모리 대결</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="arcade.css">
+<link rel="stylesheet" href="finance.css">
+</head>
+<body class="student">
+<header class="top"><h1>금융<span>메모리</span> 대결</h1><span class="pill" id="who"></span></header>
+<main>
+  <section class="view on" id="v-join">
+    <form class="setup narrow" id="joinForm">
+      <h2 class="hero small">금융<em>메모리</em> 대결</h2>
+      <p>직업 카드와 그 직업이 ‘하는 일’ 카드를 짝지어요. 정확하고 빠를수록 점수가 높아요.</p>
+      <label class="field" id="codeField">방 코드<input class="input" id="code" maxlength="4" autocomplete="off" autocapitalize="characters" placeholder="ABCD"></label>
+      <label class="field">이름 (화면 랭킹에 나와요)<input class="input" id="name" maxlength="12" autocomplete="off" placeholder="예: 김민준"></label>
+      <button class="btn big-btn" id="joinBtn">입장하기</button>
+      <p class="err" id="joinErr" role="alert"></p>
+    </form>
+  </section>
+
+  <section class="view" id="v-wait">
+    <div class="setup narrow center">
+      <h2 class="hero small" id="waitTitle">입장 완료!</h2>
+      <p class="wait-msg" id="waitMsg">선생님이 시작 버튼을 누르면<br>모두 동시에 시작돼요.</p>
+      <div class="pulse" aria-hidden="true">₩</div>
+      <p class="muted" id="waitInfo"></p>
+      <div id="myResult"></div>
+    </div>
+  </section>
+
+  <section class="view" id="v-play">
+    <div class="hud"><h2 id="pround"></h2><span class="pill sc" id="mscore">0점</span><span class="pill" id="mpairs">0/10</span><span class="pill" id="mtime">0:00</span><span class="pill combo" id="mcombo"></span></div>
+    <div class="grid" id="grid"></div>
+  </section>
+</main>
+<div class="ov" id="cd"><div class="countdown" id="cdn">3</div></div>
+
+<script src="vendor/supabase.js"></script>
+<script src="jobs.js"></script>
+<script src="fm.js"></script>
+<script src="play.js"></script>
+</body>
+</html>

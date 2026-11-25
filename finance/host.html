@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>금융진로 아케이드 · 진행자</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="arcade.css">
+<link rel="stylesheet" href="finance.css">
+</head>
+<body>
+<header class="top">
+  <h1>금융진로 <span>아케이드</span></h1>
+  <nav class="nav" id="nav">
+    <button data-v="race" class="on">금융메모리 대결</button>
+    <button data-v="boss">해커 보스전</button>
+    <button id="snd" aria-pressed="true">소리 켜짐</button>
+  </nav>
+</header>
+<main>
+  <section class="view on" id="v-start">
+    <div class="setup narrow center">
+      <h2 class="hero small">금융<em>메모리</em> 대결</h2>
+      <p>방을 만들면 QR이 나와요. 학생들은 QR로 들어와 이름만 적으면 됩니다.</p>
+      <button class="btn big-btn" id="newRoom">새 방 만들기</button>
+      <p class="err" id="startErr" role="alert"></p>
+    </div>
+  </section>
+
+  <section class="view" id="v-race">
+    <div class="host-grid">
+      <div class="panel">
+        <div class="qr" id="qr"></div>
+        <div class="roomcode" id="rcode"></div>
+        <div class="joinurl" id="jurl"></div>
+        <div><b id="pcount">참가자 0명</b><div class="chips" id="chips"></div></div>
+        <button class="btn s" id="newRoom2">새 방 만들기</button>
+      </div>
+      <div class="panel">
+        <div class="ctrl">
+          <div class="round"><button id="rm" aria-label="판 번호 내리기">−</button><span id="rnum">1</span><button id="rp" aria-label="판 번호 올리기">+</button></div>
+          <span class="muted">판 번호가 같으면 모두 같은 카드 배치</span>
+        </div>
+        <div class="ctrl">
+          <button class="btn big-btn" id="startBtn">▶ 시작</button>
+          <button class="btn s" id="stopBtn">■ 이번 판 종료</button>
+          <button class="btn g" id="nextBtn">다음 판 준비</button>
+        </div>
+        <div class="status"><span class="tag" id="stTag">대기 중</span><span class="clock" id="clock">0:00</span><span class="bonus" id="bonus"></span><span class="bonus" id="done"></span></div>
+        <h2 style="font-size:28px">실시간 랭킹</h2>
+        <div class="board" id="board"><div class="empty">시작하면 여기에 순위가 실시간으로 올라와요.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="v-boss">
+    <div class="arena">
+      <div class="stage" id="stage">
+        <div class="meter hp"><div class="lb"><span>해커 체력</span><span id="hpn"></span></div><div class="track"><div class="fill" id="hpf"></div></div></div>
+        <svg class="boss" id="bossimg" viewBox="0 0 300 260" role="img" aria-label="후드를 쓴 해커 보스">
+          <defs><radialGradient id="glow"><stop offset="0" stop-color="#ff3d9a" stop-opacity=".6"/><stop offset="1" stop-color="#ff3d9a" stop-opacity="0"/></radialGradient></defs>
+          <ellipse cx="150" cy="245" rx="110" ry="12" fill="#000" opacity=".4"/>
+          <circle cx="150" cy="110" r="110" fill="url(#glow)"/>
+          <path d="M60 240 Q60 150 100 120 L200 120 Q240 150 240 240Z" fill="#2b2766"/>
+          <path d="M150 20 Q80 25 78 110 Q80 165 150 170 Q220 165 222 110 Q220 25 150 20Z" fill="#3a3590"/>
+          <path d="M150 40 Q98 46 98 112 Q100 150 150 152 Q200 150 202 112 Q202 46 150 40Z" fill="#0c0a22"/>
+          <g id="eyes"><path d="M112 102 L140 110 L114 118Z" fill="#ff3d9a"/><path d="M188 102 L160 110 L186 118Z" fill="#ff3d9a"/></g>
+          <path d="M128 135 Q150 128 172 135" stroke="#ff3d9a" stroke-width="3" fill="none"/>
+          <rect x="70" y="178" width="160" height="70" rx="8" fill="#9aa0b8"/><rect x="78" y="185" width="144" height="56" rx="4" fill="#10142a"/>
+          <text x="86" y="203" fill="#7fb83a" font-family="monospace" font-size="11">&gt; vault.crack()</text>
+          <text x="86" y="219" fill="#7fb83a" font-family="monospace" font-size="11">&gt; ₩₩₩ 0101 1100</text>
+          <text x="86" y="235" fill="#ff3d9a" font-family="monospace" font-size="11">&gt; ACCESS...</text>
+          <circle cx="150" cy="212" r="10" fill="#ffd23f" opacity=".0" id="coin"/>
+        </svg>
+        <div class="meter vault"><div class="lb"><span>우리 은행 금고</span><span id="vn"></span></div><div class="track"><div class="fill" id="vf"></div></div></div>
+        <p class="muted">반 전체가 한 팀이에요. 많이 맞힐수록 공격이 세지고, 몇 명만 맞히면 해커가 금고를 털어요.</p>
+      </div>
+      <div class="qbox">
+        <div class="qtop"><span class="tag" id="qtag">대기 중</span><span class="muted" id="qnum"></span><svg class="timer" viewBox="0 0 64 64"><circle cx="32" cy="32" r="27" fill="none" stroke="#3d3884" stroke-width="7"/><circle id="tr" cx="32" cy="32" r="27" fill="none" stroke="#ffd23f" stroke-width="7" stroke-linecap="round" transform="rotate(-90 32 32)" stroke-dasharray="169.6" stroke-dashoffset="0"/><text id="tt" x="32" y="40" text-anchor="middle" fill="#fff" font-family="Black Han Sans" font-size="22">20</text></svg></div>
+        <div class="q" id="q">해커가 금고 앞에 나타났다! 문제를 맞혀 막아내자.</div>
+        <div id="qx"></div>
+        <div class="ans" id="ans"></div>
+        <div id="pick" style="display:none"><p class="muted" style="margin-bottom:8px">손 들어 보세요! 정답을 맞힌 사람이 얼마나 되나요?</p><div class="crowd">
+          <button data-hit="many">거의 다 맞힘<small>큰 공격</small></button>
+          <button data-hit="half">절반쯤<small>보통 공격</small></button>
+          <button data-hit="few">몇 명만<small>해커의 반격!</small></button></div></div>
+        <div class="row"><button class="btn" id="qbtn">문제 시작</button><button class="btn s" id="breset">보스 다시 소환</button></div>
+      </div>
+    </div>
+  </section>
+</main>
+<div class="ov" id="cd"><div class="countdown" id="cdn">3</div></div>
+
+<script src="vendor/supabase.js"></script>
+<script src="vendor/qrcode.js"></script>
+<script src="jobs.js"></script>
+<script src="fm.js"></script>
+<script src="host.js"></script>
+<script src="boss.js"></script>
+</body>
+</html>
