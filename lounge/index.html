@@ -153,11 +153,13 @@ body.admin #hint{top:max(150px,calc(env(safe-area-inset-top) + 144px))}
 #tbar b{padding:0 8px;color:var(--sun2)}
 #tbar button{border:0;border-radius:999px;padding:7px 12px;font-weight:700;font-size:13px;background:rgba(255,255,255,.08)}
 #tbar button[aria-pressed="true"]{background:var(--sun);color:#2b1606}
-#piano{left:50%;transform:translateX(-50%);bottom:calc(max(12px,env(safe-area-inset-bottom)) + var(--cb,118px));border-radius:20px;padding:10px;display:flex;gap:4px}
-#piano button{width:46px;height:120px;border-radius:0 0 10px 10px;border:0;background:linear-gradient(#fff,#e9e3da);color:#5a4636;font-weight:700;font-size:13px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;padding-bottom:8px;box-shadow:inset 0 -6px 0 rgba(0,0,0,.08)}
+#piano{--w:46px;--bw:30px;left:50%;transform:translateX(-50%);bottom:calc(max(12px,env(safe-area-inset-bottom)) + var(--cb,118px));border-radius:20px;padding:10px;display:flex;gap:4px}
+#piano button.blk{position:absolute;top:10px;z-index:2;left:calc(10px + var(--n) * (var(--w) + 4px) - 2px - var(--bw) / 2);width:var(--bw);height:74px;border-radius:0 0 7px 7px;background:linear-gradient(#3a3340,#141016);color:#cfc6d6;font-size:10px;padding-bottom:6px;box-shadow:inset 0 -4px 0 rgba(255,255,255,.12),0 3px 4px rgba(0,0,0,.35)}
+#piano button.blk.down{background:linear-gradient(#a36a2c,#5e3a12)}
+#piano button{width:var(--w);height:120px;border-radius:0 0 10px 10px;border:0;background:linear-gradient(#fff,#e9e3da);color:#5a4636;font-weight:700;font-size:13px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;padding-bottom:8px;box-shadow:inset 0 -6px 0 rgba(0,0,0,.08)}
 #piano button.down{background:linear-gradient(#ffe2b5,#ffc46b)}
 #piano button kbd{font:inherit;font-size:10px;opacity:.55}
-@media (max-width:700px){#mini{width:132px;height:88px;bottom:auto;top:max(64px,calc(env(safe-area-inset-top) + 58px))}#piano button{width:30px;height:96px;font-size:11px}#piano button kbd{display:none}}
+@media (max-width:700px){#mini{width:132px;height:88px;bottom:auto;top:max(64px,calc(env(safe-area-inset-top) + 58px))}#piano{--w:34px;--bw:22px}#piano button{height:96px;font-size:11px}#piano button.blk{height:58px;font-size:9px}#piano button kbd{display:none}}
 @media (max-width:560px){#topL b{display:none}#topR .lbl{display:none}#qrBtn{display:none!important}#who{padding:8px 10px}#hint{max-width:calc(100% - 24px);top:auto;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 170px)}#tbar{top:auto;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 118px);flex-wrap:wrap;justify-content:center;width:calc(100% - 24px);border-radius:18px}#ctx{font-size:15px;padding:10px 18px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -499,7 +501,8 @@ const DOORS=[
   {r:"tag",x:2242,e:"🏃",col:"#8ce99a",bg:"linear-gradient(160deg,#2b8a3e,#a9e34b)"}];
 const TABLES=[[960,620,4],[1360,640,2],[1760,620,4],[2140,660,2],[1160,930,4],[1560,950,2],[1960,940,4],[1000,1250,2],[1400,1240,4],[1760,1270,2]];
 const COUNTER={x:370,y:490};
-const NOTES=[261.63,293.66,329.63,349.23,392,440,493.88,523.25,587.33,659.25], NOTE_N=["도","레","미","파","솔","라","시","도","레","미"];
+const NOTES=[261.63,277.18,293.66,311.13,329.63,349.23,369.99,392,415.3,440,466.16,493.88,523.25], NOTE_N=["도","도#","레","레#","미","파","파#","솔","솔#","라","라#","시","도"];
+const WHITE=[0,2,4,5,7,9,11,12], BLACK=[[1,1],[3,2],[6,4],[8,5],[10,6]]; // [음 번호, 왼쪽 흰 건반 경계]
 function emojiOnly(s){ return /^[\p{Extended_Pictographic}‍️\u{1F3FB}-\u{1F3FF}\s]+$/u.test(s); }
 function playNote(i,vol){ const ctx=snd.ctx; if(!ctx||!snd.on) return; const f=NOTES[i], t=ctx.currentTime;
   for(const [mul,v,ty] of [[1,1,"sine"],[2,.35,"sine"],[3,.12,"triangle"]]){ const o=ctx.createOscillator(), gn=ctx.createGain(); o.type=ty; o.frequency.value=f*mul; gn.gain.setValueAtTime(.0001,t); gn.gain.exponentialRampToValueAtTime(vol*v,t+.012); gn.gain.exponentialRampToValueAtTime(.0001,t+1.6/mul); o.connect(gn); gn.connect(snd.bus); o.start(t); o.stop(t+1.7); } }
@@ -1891,10 +1894,13 @@ function buildActs(){ const M=MAP(), box=$("acts"); if(!M) return; box.innerHTML
 function openRooms(){ const grid=$("roomsGrid"); grid.innerHTML=""; for(const d of DOORS){ const b=document.createElement("button"); b.type="button"; b.style.background=d.bg; const e=document.createElement("span"); e.textContent=d.e; const n=doorCount(d.r); const sm=document.createElement("small"); sm.textContent=n?`👥 ${n}명 있어요`:ROOMS[d.r].sub;
     const tx=document.createElement("div"); tx.append(document.createTextNode(ROOMS[d.r].name),document.createElement("br"),sm); b.append(e,tx); b.onclick=()=>{ $("roomsBox").hidden=true; goTo(d.x,290,{k:"door",r:d.r,until:performance.now()+9000}); }; grid.append(b); }
   $("roomsBox").hidden=false; }
-function openPiano(){ const p=$("piano"); if(!p.children.length) NOTES.forEach((f,i)=>{ const b=document.createElement("button"); b.type="button"; const kb=document.createElement("kbd"); kb.textContent=(i+1)%10; b.append(document.createTextNode(NOTE_N[i]),kb); b.onpointerdown=e=>{ e.preventDefault(); pianoKey(i,b); }; p.append(b); });
-  p.hidden=false; toast("🎹 건반을 눌러 보세요 (숫자키 1~0도 돼요)"); }
+function openPiano(){ const p=$("piano"); if(!p.children.length){ Cafe.pkeys=[];
+    const mk=(i,cls)=>{ const b=document.createElement("button"); b.type="button"; if(cls) b.className=cls; b.setAttribute("aria-label",NOTE_N[i]); b.onpointerdown=e=>{ e.preventDefault(); pianoKey(i,b); }; Cafe.pkeys[i]=b; return b; };
+    WHITE.forEach((i,k)=>{ const b=mk(i), kb=document.createElement("kbd"); kb.textContent=k+1; b.append(document.createTextNode(NOTE_N[i]),kb); p.append(b); });
+    BLACK.forEach(([i,n])=>{ const b=mk(i,"blk"); b.style.setProperty("--n",n); b.append(document.createTextNode("#")); p.append(b); }); }
+  p.hidden=false; toast("🎹 건반을 눌러 보세요 (숫자키 1~8도 돼요)"); }
 function pianoKey(i,b){ audio(); const now=performance.now(); if(now-Cafe.lastNote<70) return; Cafe.lastNote=now; playNote(i,.2); Cafe.spawnNote(i); pub(tRoom("cafe"),{t:"e",k:"note",i});
-  b=b||$("piano").children[i]; if(b){ b.classList.add("down"); setTimeout(()=>b.classList.remove("down"),160); } }
+  b=b||(Cafe.pkeys||[])[i]; if(b){ b.classList.add("down"); setTimeout(()=>b.classList.remove("down"),160); } }
 function peersStep(dt){ const now=performance.now(); for(const [id,p] of Room.peers){ if(now-p.seen>9000){ Room.peers.delete(id); continue; } const f=Math.min(1,dt*10), ox=p.x; p.x+=(p.tx-p.x)*f; p.y+=(p.ty-p.y)*f; const v=Math.abs(p.tx-p.x)+Math.abs(p.ty-p.y); p.walk=v>2?1:0; if(!(p.st>=0)&&Math.abs(p.x-ox)>.1) p.dir=p.x>ox?1:-1; }
   const tot=peopleList().length+1, here=Room.peers.size+1, w=$("who"), txt=innerWidth<560?`👥 ${here}/${tot}`:(tot>here?`👥 여기 ${here}명 · 전체 ${tot}명`:`👥 ${tot}명 접속`); if(w.textContent!==txt){ w.textContent=txt; w.setAttribute("aria-label",`이 방 ${here}명, 전체 ${tot}명 접속 중`); } }
 
@@ -2080,7 +2086,7 @@ cv.addEventListener("pointermove",ev=>{ if(!drawing){ if(Room.id==="rain"&&ev.po
   Rain.wipe(l?[[l.x,l.y],[w.x,w.y]]:[[w.x,w.y]]); if(Room.drawPts.length&&l) Room.drawPts.push([Math.round(w.x),Math.round(w.y)]); else Room.drawPts.push([Math.round(l?l.x:w.x),Math.round(l?l.y:w.y)],[Math.round(w.x),Math.round(w.y)]); Room.lastPt=w; });
 addEventListener("pointerup",()=>{ if(drawing&&Room.drawPts.length){ pub(tRoom("rain"),{t:"e",k:"draw",p:Room.drawPts.splice(0,40)}); } drawing=false; Room.lastPt=null; });
 addEventListener("keydown",e=>{ if(!Room.id||e.target.tagName==="INPUT") return;
-  if(Room.id==="cafe"&&!$("piano").hidden&&/^[0-9]$/.test(e.key)){ pianoKey((+e.key+9)%10); return; }
+  if(Room.id==="cafe"&&!$("piano").hidden&&/^[1-8]$/.test(e.key)){ pianoKey(WHITE[+e.key-1]); return; }
   if(!Ski.run&&(e.key==="e"||e.key==="E"||e.key===" ")&&!$("ctx").hidden){ e.preventDefault(); $("ctx").click(); return; }
   if(e.key==="Escape"){ ["menuBox","roomsBox","qrbox","seatBox","dexBox","mfBox","charBox","annBox","peopleBox","oxBox","danceBox","skiBox","gameBox","storyBox"].forEach(i=>$(i).hidden=true); return; }
   if(Ski.run&&(e.key===" "||e.key==="Enter")&&Ski.run.done&&!$("skiEnd").hidden){ e.preventDefault(); $("skiAgain").click(); return; }
