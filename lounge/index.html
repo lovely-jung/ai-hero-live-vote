@@ -499,7 +499,7 @@ const DOORS=[
   {r:"tag",x:2242,e:"🏃",col:"#8ce99a",bg:"linear-gradient(160deg,#2b8a3e,#a9e34b)"}];
 const TABLES=[[960,620,4],[1360,640,2],[1760,620,4],[2140,660,2],[1160,930,4],[1560,950,2],[1960,940,4],[1000,1250,2],[1400,1240,4],[1760,1270,2]];
 const COUNTER={x:370,y:490};
-const NOTES=[261.63,293.66,329.63,392,440,523.25,587.33,659.25,783.99,880], NOTE_N=["도","레","미","솔","라","도","레","미","솔","라"];
+const NOTES=[261.63,293.66,329.63,349.23,392,440,493.88,523.25,587.33,659.25], NOTE_N=["도","레","미","파","솔","라","시","도","레","미"];
 function emojiOnly(s){ return /^[\p{Extended_Pictographic}‍️\u{1F3FB}-\u{1F3FF}\s]+$/u.test(s); }
 function playNote(i,vol){ const ctx=snd.ctx; if(!ctx||!snd.on) return; const f=NOTES[i], t=ctx.currentTime;
   for(const [mul,v,ty] of [[1,1,"sine"],[2,.35,"sine"],[3,.12,"triangle"]]){ const o=ctx.createOscillator(), gn=ctx.createGain(); o.type=ty; o.frequency.value=f*mul; gn.gain.setValueAtTime(.0001,t); gn.gain.exponentialRampToValueAtTime(vol*v,t+.012); gn.gain.exponentialRampToValueAtTime(.0001,t+1.6/mul); o.connect(gn); gn.connect(snd.bus); o.start(t); o.stop(t+1.7); } }
